@@ -6,8 +6,6 @@ import { useQuery } from '@tanstack/react-query';
 import { usePlaybackStore } from '@/store/playback-store';
 import { createClientBrowser } from '@/lib/supabase-browser';
 import { Play, Pause, Sparkles, Disc, Clock, Music } from 'lucide-react';
-import Image from 'next/image';
-import { MusicCoverArt } from '@/components/ui/MusicCoverArt';
 
 interface Track {
   id: string;
@@ -164,17 +162,25 @@ export default function HomePage() {
         className="group relative flex-shrink-0 w-44 snap-start rounded-2xl bg-neutral-950 border border-white/[0.06] overflow-hidden hover:border-emerald-500/40 hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-500/10 transition-all duration-200"
       >
         {/* Cover art */}
-        <div className="relative w-full aspect-square overflow-hidden bg-neutral-900">
+        <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-neutral-900">
           {thumbnail ? (
-            <Image
+            <img
               src={thumbnail}
               alt={track.title}
-              fill
-              sizes="176px"
-              className="object-cover group-hover:scale-105 transition-transform duration-300"
+              className="absolute inset-0 h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+              loading="lazy"
             />
           ) : (
-            <MusicCoverArt title={track.title} className="h-full w-full" iconClassName="h-8 w-8" />
+            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-neutral-800 to-neutral-900">
+              <svg
+                className="h-8 w-8 text-neutral-600"
+                fill="none" viewBox="0 0 24 24"
+                stroke="currentColor" strokeWidth={1.5}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round"
+                  d="M9 9l10.5-3m0 6.553v3.75a2.25 2.25 0 01-1.632 2.163l-1.32.377a1.803 1.803 0 01-.99-3.467l2.31-.66a2.25 2.25 0 001.632-2.163zm0 0V2.25L9 5.25v10.303m0 0v3.75a2.25 2.25 0 01-1.632 2.163l-1.32.377a1.803 1.803 0 01-.99-3.467l2.31-.66A2.25 2.25 0 009 15.553z" />
+              </svg>
+            </div>
           )}
           {/* Play button overlay */}
           <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -326,11 +332,25 @@ export default function HomePage() {
                 className="flex items-center gap-4 px-4 py-3 hover:bg-white/[0.03] cursor-pointer transition-colors"
               >
                 <span className="w-5 text-center text-sm font-bold text-neutral-600">{i + 1}</span>
-                <div className="relative h-12 w-12 rounded-xl overflow-hidden flex-shrink-0 bg-neutral-900 border border-white/[0.06]">
+                <div className="relative h-12 w-12 rounded-xl overflow-hidden flex-shrink-0 bg-neutral-900">
                   {track.thumbnail ? (
-                    <Image src={track.thumbnail} alt={track.title} fill sizes="48px" className="object-cover" />
+                    <img
+                      src={track.thumbnail}
+                      alt={track.title}
+                      className="absolute inset-0 h-full w-full object-cover"
+                      loading="lazy"
+                    />
                   ) : (
-                    <MusicCoverArt title={track.title} className="h-full w-full" iconClassName="h-5 w-5" />
+                    <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-neutral-800 to-neutral-900">
+                      <svg
+                        className="h-5 w-5 text-neutral-600"
+                        fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor" strokeWidth={1.5}
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round"
+                          d="M9 9l10.5-3m0 6.553v3.75a2.25 2.25 0 01-1.632 2.163l-1.32.377a1.803 1.803 0 01-.99-3.467l2.31-.66a2.25 2.25 0 001.632-2.163zm0 0V2.25L9 5.25v10.303m0 0v3.75a2.25 2.25 0 01-1.632 2.163l-1.32.377a1.803 1.803 0 01-.99-3.467l2.31-.66A2.25 2.25 0 009 15.553z" />
+                      </svg>
+                    </div>
                   )}
                 </div>
                 <div className="min-w-0 flex-1 text-left">

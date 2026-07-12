@@ -23,8 +23,6 @@ import {
   Activity,
   Cloud
 } from 'lucide-react';
-import Image from 'next/image';
-import { MusicCoverArt } from '@/components/ui/MusicCoverArt';
 
 type TabType = 'playlists' | 'liked' | 'history' | 'cloud';
 
@@ -245,11 +243,25 @@ export default function LibraryPage() {
                   onClick={() => router.push(`/playlists/${playlist.id}`)}
                   className="liquid-panel liquid-interactive group cursor-pointer rounded-2xl p-4 hover:scale-[1.02] border border-neutral-900/50 hover:border-teal-500/20"
                 >
-                  <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-neutral-800 mb-3 shadow-md">
+                  <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-neutral-900 mb-3 shadow-md">
                     {playlist.cover_url ? (
-                      <Image src={playlist.cover_url} alt={playlist.name} fill className="object-cover" />
+                      <img
+                        src={playlist.cover_url}
+                        alt={playlist.name}
+                        className="absolute inset-0 h-full w-full object-cover"
+                        loading="lazy"
+                      />
                     ) : (
-                      <MusicCoverArt title={playlist.name} className="h-full w-full" iconClassName="h-10 w-10" />
+                      <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-neutral-800 to-neutral-900">
+                        <svg
+                          className="h-10 w-10 text-neutral-600"
+                          fill="none" viewBox="0 0 24 24"
+                          stroke="currentColor" strokeWidth={1.5}
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round"
+                            d="M9 9l10.5-3m0 6.553v3.75a2.25 2.25 0 01-1.632 2.163l-1.32.377a1.803 1.803 0 01-.99-3.467l2.31-.66a2.25 2.25 0 001.632-2.163zm0 0V2.25L9 5.25v10.303m0 0v3.75a2.25 2.25 0 01-1.632 2.163l-1.32.377a1.803 1.803 0 01-.99-3.467l2.31-.66A2.25 2.25 0 009 15.553z" />
+                        </svg>
+                      </div>
                     )}
                     <button
                       className="absolute bottom-2.5 right-2.5 flex h-10 w-10 translate-y-2 items-center justify-center rounded-full bg-gradient-to-r from-teal-400 to-emerald-400 text-black opacity-0 shadow-lg shadow-teal-500/20 transition-all group-hover:translate-y-0 group-hover:opacity-100 hover:scale-105 active:scale-95 duration-300 z-10"
@@ -340,11 +352,25 @@ export default function LibraryPage() {
                     {/* Timestamp Dot */}
                     <div className="absolute left-[7.5px] h-2.5 w-2.5 rounded-full bg-neutral-800 border-2 border-black group-hover:bg-teal-400 transition-colors" />
                     
-                    <div className="relative h-10 w-10 overflow-hidden rounded bg-neutral-900 flex-shrink-0 shadow-sm border border-neutral-950">
+                    <div className="relative h-12 w-12 overflow-hidden rounded-lg bg-neutral-900 flex-shrink-0">
                       {track.coverUrl ? (
-                        <Image src={track.coverUrl} alt={track.title} fill className="object-cover" />
+                        <img
+                          src={track.coverUrl}
+                          alt={track.title}
+                          className="absolute inset-0 h-full w-full object-cover"
+                          loading="lazy"
+                        />
                       ) : (
-                        <MusicCoverArt title={track.title} className="h-full w-full" iconClassName="h-4.5 w-4.5" />
+                        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-neutral-800 to-neutral-900">
+                          <svg
+                            className="h-5 w-5 text-neutral-600"
+                            fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor" strokeWidth={1.5}
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round"
+                              d="M9 9l10.5-3m0 6.553v3.75a2.25 2.25 0 01-1.632 2.163l-1.32.377a1.803 1.803 0 01-.99-3.467l2.31-.66a2.25 2.25 0 001.632-2.163zm0 0V2.25L9 5.25v10.303m0 0v3.75a2.25 2.25 0 01-1.632 2.163l-1.32.377a1.803 1.803 0 01-.99-3.467l2.31-.66A2.25 2.25 0 009 15.553z" />
+                          </svg>
+                        </div>
                       )}
                     </div>
                     <div className="truncate text-left">

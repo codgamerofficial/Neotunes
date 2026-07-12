@@ -19,8 +19,6 @@ import {
   ArrowLeft,
   Music,
 } from 'lucide-react';
-import Image from 'next/image';
-import { MusicCoverArt } from '@/components/ui/MusicCoverArt';
 
 interface Track {
   id: string;
@@ -215,11 +213,25 @@ export default function PlaylistDetailsPage({
       {/* Playlist Meta Banner */}
       {!editMode ? (
         <div className="flex flex-col items-center space-y-4 md:flex-row md:space-y-0 md:space-x-6 border-b border-neutral-900 pb-8">
-          <div className="relative h-36 w-36 overflow-hidden rounded-2xl bg-neutral-800 shadow-xl border border-neutral-800/80 flex-shrink-0">
+          <div className="relative h-36 w-36 overflow-hidden rounded-2xl bg-neutral-900 shadow-xl flex-shrink-0">
             {playlist.coverUrl ? (
-              <Image src={playlist.coverUrl} alt={playlist.name} fill className="object-cover" />
+              <img
+                src={playlist.coverUrl}
+                alt={playlist.name}
+                className="absolute inset-0 h-full w-full object-cover"
+                loading="lazy"
+              />
             ) : (
-              <MusicCoverArt title={playlist.name} className="h-full w-full" iconClassName="h-16 w-16" />
+              <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-neutral-800 to-neutral-900">
+                <svg
+                  className="h-16 w-16 text-neutral-600"
+                  fill="none" viewBox="0 0 24 24"
+                  stroke="currentColor" strokeWidth={1.5}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round"
+                    d="M9 9l10.5-3m0 6.553v3.75a2.25 2.25 0 01-1.632 2.163l-1.32.377a1.803 1.803 0 01-.99-3.467l2.31-.66a2.25 2.25 0 001.632-2.163zm0 0V2.25L9 5.25v10.303m0 0v3.75a2.25 2.25 0 01-1.632 2.163l-1.32.377a1.803 1.803 0 01-.99-3.467l2.31-.66A2.25 2.25 0 009 15.553z" />
+                </svg>
+              </div>
             )}
           </div>
           <div className="text-center md:text-left space-y-2 flex-1">
@@ -408,17 +420,25 @@ export default function PlaylistDetailsPage({
                     {/* Album Art & Title */}
                     <td className="py-3.5 px-4">
                       <div className="flex items-center space-x-3.5 truncate">
-                        <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded bg-neutral-900 shadow-sm border border-neutral-950">
+                        <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg bg-neutral-900">
                           {track.coverUrl ? (
-                            <Image
+                            <img
                               src={track.coverUrl}
                               alt={track.title}
-                              fill
-                              sizes="40px"
-                              className="object-cover"
+                              className="absolute inset-0 h-full w-full object-cover"
+                              loading="lazy"
                             />
                           ) : (
-                            <MusicCoverArt title={track.title} className="h-full w-full" iconClassName="h-4.5 w-4.5" />
+                            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-neutral-800 to-neutral-900">
+                              <svg
+                                className="h-5 w-5 text-neutral-600"
+                                fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor" strokeWidth={1.5}
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round"
+                                  d="M9 9l10.5-3m0 6.553v3.75a2.25 2.25 0 01-1.632 2.163l-1.32.377a1.803 1.803 0 01-.99-3.467l2.31-.66a2.25 2.25 0 001.632-2.163zm0 0V2.25L9 5.25v10.303m0 0v3.75a2.25 2.25 0 01-1.632 2.163l-1.32.377a1.803 1.803 0 01-.99-3.467l2.31-.66A2.25 2.25 0 009 15.553z" />
+                              </svg>
+                            </div>
                           )}
                         </div>
                         <div className="truncate text-left">

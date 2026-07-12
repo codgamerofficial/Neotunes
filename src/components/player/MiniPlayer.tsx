@@ -18,9 +18,7 @@ import {
   Repeat,
   ListMusic,
 } from 'lucide-react';
-import Image from 'next/image';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { MusicCoverArt } from '@/components/ui/MusicCoverArt';
 
 export default function MiniPlayer() {
   const router = useRouter();
@@ -139,21 +137,25 @@ export default function MiniPlayer() {
     >
       {/* 1. LEFT COLUMN: Artwork, Title, Artist, Like Action */}
       <div className="flex items-center space-x-3 w-full min-w-0 md:w-[30%]">
-        <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-md bg-neutral-900 border border-neutral-800">
+        <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg bg-neutral-900">
           {currentTrack.coverUrl ? (
-            <Image
+            <img
               src={currentTrack.coverUrl}
               alt={currentTrack.title}
-              fill
-              sizes="48px"
-              className={`object-cover ${isPlaying ? 'animate-spin [animation-duration:20s]' : ''}`}
+              className="absolute inset-0 h-full w-full object-cover"
+              loading="lazy"
             />
           ) : (
-            <MusicCoverArt
-              title={currentTrack.title}
-              className="h-full w-full"
-              iconClassName="h-5 w-5"
-            />
+            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-neutral-800 to-neutral-900">
+              <svg
+                className="h-5 w-5 text-neutral-600"
+                fill="none" viewBox="0 0 24 24"
+                stroke="currentColor" strokeWidth={1.5}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round"
+                  d="M9 9l10.5-3m0 6.553v3.75a2.25 2.25 0 01-1.632 2.163l-1.32.377a1.803 1.803 0 01-.99-3.467l2.31-.66a2.25 2.25 0 001.632-2.163zm0 0V2.25L9 5.25v10.303m0 0v3.75a2.25 2.25 0 01-1.632 2.163l-1.32.377a1.803 1.803 0 01-.99-3.467l2.31-.66A2.25 2.25 0 009 15.553z" />
+              </svg>
+            </div>
           )}
         </div>
         <div className="flex-1 min-w-0 text-left">

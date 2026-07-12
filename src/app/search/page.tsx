@@ -6,8 +6,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usePlaybackStore } from '@/store/playback-store';
 import { createClientBrowser } from '@/lib/supabase-browser';
 import { Search as SearchIcon, Play, Pause, Heart, Disc, Music, FolderPlus } from 'lucide-react';
-import Image from 'next/image';
-import { MusicCoverArt } from '@/components/ui/MusicCoverArt';
 
 interface Track {
   id: string;
@@ -271,11 +269,25 @@ export default function SearchPage() {
                     >
                       {/* Song Metadata */}
                       <div className="flex items-center space-x-4 truncate flex-1 pr-4">
-                        <div className="relative h-10 w-10 overflow-hidden rounded-md bg-neutral-900 flex-shrink-0">
+                        <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg bg-neutral-900">
                           {track.coverUrl ? (
-                            <Image src={track.coverUrl} alt={track.title} fill className="object-cover" />
+                            <img
+                              src={track.coverUrl}
+                              alt={track.title}
+                              className="absolute inset-0 h-full w-full object-cover"
+                              loading="lazy"
+                            />
                           ) : (
-                            <MusicCoverArt title={track.title} className="h-full w-full" iconClassName="h-4.5 w-4.5" />
+                            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-neutral-800 to-neutral-900">
+                              <svg
+                                className="h-5 w-5 text-neutral-600"
+                                fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor" strokeWidth={1.5}
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round"
+                                  d="M9 9l10.5-3m0 6.553v3.75a2.25 2.25 0 01-1.632 2.163l-1.32.377a1.803 1.803 0 01-.99-3.467l2.31-.66a2.25 2.25 0 001.632-2.163zm0 0V2.25L9 5.25v10.303m0 0v3.75a2.25 2.25 0 01-1.632 2.163l-1.32.377a1.803 1.803 0 01-.99-3.467l2.31-.66A2.25 2.25 0 009 15.553z" />
+                              </svg>
+                            </div>
                           )}
                         </div>
                         <div className="truncate text-left">

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { Redis } from '@upstash/redis';
 import { getSpotifyAccessToken } from '@/services/spotify';
 import { sql } from '@/lib/db';
+import { getBestYouTubeThumbnail } from '@/utils/getYouTubeThumbnail';
 
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL!,
@@ -275,23 +276,26 @@ async function searchYouTubeFallback(query: string): Promise<SearchTrack[]> {
     }
 
     const data = await response.json();
-    return data.items?.map((item: any) => ({
-      id: item.id?.videoId || `yt_${Date.now()}_${Math.random()}`,
-      title: item.snippet?.title || 'Unknown Video',
-      artist: {
-        name: item.snippet?.channelTitle || 'Unknown Artist',
-      },
-      album: {
-        name: 'YouTube Video',
-        coverUrl: item.snippet?.thumbnails?.high?.url || item.snippet?.thumbnails?.medium?.url || '',
-      },
-      durationMs: 180000,
-      popularity: 50,
-      previewUrl: '',
-      sourceType: 'youtube' as const,
-      sourceId: item.id?.videoId,
-      coverUrl: item.snippet?.thumbnails?.high?.url || item.snippet?.thumbnails?.medium?.url || '',
-    })) || [];
+    return data.items?.map((item: any) => {
+      const bestThumbnail = getBestYouTubeThumbnail(item.snippet?.thumbnails);
+      return {
+        id: item.id?.videoId || `yt_${Date.now()}_${Math.random()}`,
+        title: item.snippet?.title || 'Unknown Video',
+        artist: {
+          name: item.snippet?.channelTitle || 'Unknown Artist',
+        },
+        album: {
+          name: 'YouTube Video',
+          coverUrl: bestThumbnail,
+        },
+        durationMs: 180000,
+        popularity: 50,
+        previewUrl: '',
+        sourceType: 'youtube' as const,
+        sourceId: item.id?.videoId,
+        coverUrl: bestThumbnail,
+      };
+    }) || [];
   } catch (error) {
     console.error('YouTube search fallback error:', error);
     return [];

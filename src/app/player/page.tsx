@@ -21,7 +21,6 @@ import {
   Share2,
   Disc,
 } from 'lucide-react';
-import Image from 'next/image';
 
 export default function PlayerPage() {
   const router = useRouter();
@@ -209,23 +208,26 @@ export default function PlayerPage() {
                 <div className="pointer-events-none absolute inset-0 rounded-3xl bg-emerald-500/15 blur-3xl scale-90" />
 
                 {/* Main artwork container */}
-                <div className="relative w-full aspect-square overflow-hidden rounded-3xl shadow-2xl shadow-black/80 ring-1 ring-white/[0.1] bg-neutral-900">
+                <div className="relative aspect-square w-full max-w-[340px] mx-auto overflow-hidden rounded-2xl bg-neutral-900 shadow-2xl">
                   {thumbnail ? (
-                    <Image
+                    <img
                       src={thumbnail}
                       alt={currentTrack.title}
-                      fill
-                      priority
-                      sizes="(max-width: 480px) 380px, 440px"
-                      className="object-cover"
+                      className="absolute inset-0 h-full w-full object-cover"
+                      loading="lazy"
                     />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center text-neutral-600">
-                      <Music className="h-20 w-20 stroke-[1.2]" />
+                    <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-neutral-800 to-neutral-900">
+                      <svg
+                        className="h-16 w-16 text-neutral-600"
+                        fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor" strokeWidth={1.5}
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round"
+                          d="M9 9l10.5-3m0 6.553v3.75a2.25 2.25 0 01-1.632 2.163l-1.32.377a1.803 1.803 0 01-.99-3.467l2.31-.66a2.25 2.25 0 001.632-2.163zm0 0V2.25L9 5.25v10.303m0 0v3.75a2.25 2.25 0 01-1.632 2.163l-1.32.377a1.803 1.803 0 01-.99-3.467l2.31-.66A2.25 2.25 0 009 15.553z" />
+                      </svg>
                     </div>
                   )}
-                  {/* Subtle gradient overlay at bottom */}
-                  <div className="absolute inset-x-0 bottom-0 h-1/4 bg-gradient-to-t from-black/50 to-transparent pointer-events-none" />
                 </div>
               </motion.div>
             ) : (
@@ -264,6 +266,30 @@ export default function PlayerPage() {
                         >
                           <div className="flex items-center space-x-3 truncate">
                             <span className="text-[10px] text-neutral-500 font-bold w-4 text-center">{idx + 1}</span>
+                            
+                            {/* Queue row thumbnail */}
+                            <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-lg bg-neutral-900">
+                              {(track.coverUrl || (track as any).thumbnail) ? (
+                                <img
+                                  src={track.coverUrl || (track as any).thumbnail}
+                                  alt={track.title}
+                                  className="absolute inset-0 h-full w-full object-cover"
+                                  loading="lazy"
+                                />
+                              ) : (
+                                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-neutral-800 to-neutral-900">
+                                  <svg
+                                    className="h-4 w-4 text-neutral-600"
+                                    fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor" strokeWidth={1.5}
+                                  >
+                                    <path strokeLinecap="round" strokeLinejoin="round"
+                                      d="M9 9l10.5-3m0 6.553v3.75a2.25 2.25 0 01-1.632 2.163l-1.32.377a1.803 1.803 0 01-.99-3.467l2.31-.66a2.25 2.25 0 001.632-2.163zm0 0V2.25L9 5.25v10.303m0 0v3.75a2.25 2.25 0 01-1.632 2.163l-1.32.377a1.803 1.803 0 01-.99-3.467l2.31-.66A2.25 2.25 0 009 15.553z" />
+                                  </svg>
+                                </div>
+                              )}
+                            </div>
+
                             <div className="truncate text-left">
                               <p className={`truncate text-xs font-bold ${isActive ? 'text-emerald-400' : 'text-white'}`}>
                                 {track.title}
