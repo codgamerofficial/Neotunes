@@ -197,3 +197,13 @@ body {
   pointer-events: none;
   transition: background-image 0.8s ease;
 }
+
+/* Scrollbar hide helper */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+

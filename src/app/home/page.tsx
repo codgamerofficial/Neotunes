@@ -46,7 +46,7 @@ export default function HomePage() {
     fetchProfile();
   }, []);
 
-  // 1. Fetch Discover Mix recommendations
+  // Fetch Discover Mix recommendations
   interface RecommendationsResponse {
     success: boolean;
     data: {
@@ -66,7 +66,7 @@ export default function HomePage() {
     },
   });
 
-  // 2. Fetch Recently Played History
+  // Fetch Recently Played History
   const { data: historyData, isLoading: historyLoading } = useQuery<{ history: Track[] }>({
     queryKey: ['history'],
     queryFn: async () => {
@@ -76,241 +76,272 @@ export default function HomePage() {
     },
   });
 
+  // Fetch user stats for totalPlays and topTracks
+  interface ProfileStats {
+    totalPlays: number;
+    topTracks: {
+      id: string;
+      title: string;
+      artist: { name: string };
+      durationMs: number;
+      coverUrl?: string;
+      playCount: number;
+    }[];
+  }
+
+  const { data: stats } = useQuery<ProfileStats>({
+    queryKey: ['profile-stats'],
+    queryFn: async () => {
+      const res = await fetch('/api/user/stats');
+      if (!res.ok) throw new Error('Failed to load profile statistics');
+      return res.json();
+    },
+  });
+
   const recommendations = recsResponse?.data?.tracks || [];
   const fallbackUsed = recsResponse?.fallbackUsed || false;
   const history = historyData?.history || [];
 
-  const getGreeting = () => {
+  const getTimeOfDayLabel = () => {
     const hr = new Date().getHours();
-    if (hr < 12) return 'Good Morning';
-    if (hr < 17) return 'Good Afternoon';
-    return 'Good Evening';
+    if (hr < 12) return 'Morning';
+    if (hr < 17) return 'Afternoon';
+    return 'Evening';
   };
+  const timeOfDay = getTimeOfDayLabel().toLowerCase();
+  const displayName = userProfile?.displayName || 'Saswata';
+  const totalPlays = stats?.totalPlays || 0;
 
   const handlePlayTrack = (track: Track, list: Track[]) => {
     if (currentTrack?.id === track.id) {
       setPlaying(!isPlaying);
     } else {
       playTrack(track, list);
+      
+      // Log track in listening history in database
+      fetch('/api/history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trackId: track.id, track }),
+      }).catch((err) => console.warn('Failed to log history:', err));
     }
   };
 
   const recsMessage = recsResponse?.message || 'Picked for Your Vibe';
 
+  // Deduplicate by track ID
+  const uniqueRecommendations = recommendations
+    ? Array.from(new Map(recommendations.map(t => [t.id ?? (t as any).videoId, t])).values())
+    : [];
+
+  // Prepare trending tracks: use stats.topTracks, and fall back to recommendations if not populated yet
+  const trendingTracks = stats?.topTracks && stats.topTracks.length > 0
+    ? stats.topTracks.slice(0, 5).map(t => ({
+        id: t.id,
+        title: t.title,
+        artist: t.artist.name,
+        thumbnail: t.coverUrl,
+        plays: t.playCount
+      }))
+    : uniqueRecommendations.slice(0, 5).map((t, idx) => ({
+        id: t.id,
+        title: t.title,
+        artist: t.artist?.name || 'Unknown',
+        thumbnail: t.coverUrl,
+        plays: 1240 - idx * 150
+      }));
+
+  // Reusable Track Card component rendered inline for simplicity
+  const TrackCard = ({ track, onClick }: { track: Track; onClick: () => void }) => {
+    const isCurrent = currentTrack?.id === track.id;
+    const thumbnail = track.coverUrl || (track as any).thumbnail || (track as any).cover_url;
+    const artistName = track.artist?.name || (track as any).channelTitle || (track as any).artist || 'Unknown';
+
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className="group relative flex-shrink-0 w-44 snap-start rounded-2xl bg-neutral-950 border border-white/[0.06] overflow-hidden hover:border-emerald-500/40 hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-500/10 transition-all duration-200"
+      >
+        {/* Cover art */}
+        <div className="relative w-full aspect-square overflow-hidden bg-neutral-900">
+          {thumbnail ? (
+            <Image
+              src={thumbnail}
+              alt={track.title}
+              fill
+              sizes="176px"
+              className="object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+          ) : (
+            <MusicCoverArt title={track.title} className="h-full w-full" iconClassName="h-8 w-8" />
+          )}
+          {/* Play button overlay */}
+          <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/40">
+              {isCurrent && isPlaying ? (
+                <Pause className="h-4.5 w-4.5 fill-black stroke-black" />
+              ) : (
+                <Play className="h-4.5 w-4.5 fill-black stroke-black translate-x-[1px]" />
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Info */}
+        <div className="p-3 space-y-0.5 text-left font-sans">
+          <p className={`text-sm font-semibold leading-tight line-clamp-1 ${isCurrent ? 'text-emerald-450 drop-shadow-[0_0_8px_rgba(20,240,200,0.3)]' : 'text-white'}`}>
+            {track.title}
+          </p>
+          <p className="text-[11px] text-neutral-500 line-clamp-1">
+            {artistName}
+          </p>
+        </div>
+      </button>
+    );
+  };
+
   return (
-    <div className="space-y-10 text-white pb-12">
-      {/* Dynamic Time-based Greeting & Banner */}
-      <div className="flex flex-col space-y-2 text-left relative overflow-hidden p-6 rounded-2xl border border-teal-500/10 bg-gradient-to-r from-neutral-950 via-teal-950/5 to-neutral-950 shadow-[0_0_30px_rgba(20,250,200,0.02)]">
-        <div className="absolute top-0 right-0 h-40 w-40 rounded-full bg-teal-500/5 blur-3xl" />
-        <h1 className="text-3xl font-extrabold tracking-tight md:text-5xl bg-gradient-to-r from-white via-neutral-100 to-neutral-300 bg-clip-text text-transparent">
-          {getGreeting()}, {userProfile?.displayName || 'Saswata'}
-        </h1>
-        <p className="text-neutral-400 text-sm md:text-base font-medium">
-          &ldquo;The Future Sounds Better.&rdquo; Here is your personalized soundtrack for today.
+    <div className="space-y-8 text-white pb-12 font-sans">
+      {/* A. GREETING HERO BANNER */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-500/15 via-violet-600/10 to-transparent border border-white/[0.06] px-8 py-10 mb-8 text-left">
+        {/* Decorative background blobs */}
+        <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-emerald-500/10 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-12 right-32 h-48 w-48 rounded-full bg-violet-600/10 blur-3xl" />
+
+        {/* Greeting */}
+        <p className="mb-1 text-[11px] font-semibold uppercase tracking-widest text-emerald-400">
+          {getTimeOfDayLabel()} · NeoTune
         </p>
+        <h1 className="text-4xl sm:text-5xl font-black tracking-tighter text-white">
+          Good {timeOfDay},<br className="sm:hidden" /> {displayName}
+        </h1>
+        <p className="mt-2 max-w-md text-sm text-neutral-400 font-semibold leading-relaxed">
+          &ldquo;The Future Sounds Better.&rdquo; Here is your personalised soundtrack for today.
+        </p>
+
+        {/* Quick stats strip */}
+        <div className="mt-6 flex flex-wrap gap-4">
+          <div className="flex items-center gap-2 rounded-full bg-white/[0.05] px-4 py-2 text-xs text-neutral-300 border border-white/[0.06] font-semibold">
+            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+            {totalPlays} total plays
+          </div>
+          <div className="flex items-center gap-2 rounded-full bg-white/[0.05] px-4 py-2 text-xs text-neutral-300 border border-white/[0.06] font-semibold">
+            <span className="h-2 w-2 rounded-full bg-pink-400" />
+            Favourite genre: Eclectic
+          </div>
+        </div>
       </div>
 
-      {/* Grid of recommendations (Discover Mix) */}
-      <section id="discover-section-anchor" className="space-y-6 scroll-mt-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center space-x-2.5">
-            <Sparkles className="h-5 w-5 text-teal-400 fill-teal-400/20" />
-            <h2 className="text-xl font-bold tracking-tight md:text-2xl">
-              {fallbackUsed ? 'Curated for You' : 'Discover Weekly Mix'}
-            </h2>
+      {/* B. "CURATED FOR YOU" SECTION */}
+      <section className="space-y-4 mb-10 text-left">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-emerald-400">✦</span>
+            <h2 className="text-lg font-bold tracking-tight">Curated for You</h2>
           </div>
-          {fallbackUsed && (
-            <span className="liquid-panel self-start inline-flex items-center rounded-full px-3.5 py-1 text-xs font-bold text-teal-400 shadow-[0_0_15px_rgba(0,245,212,0.15)] border border-teal-500/20">
-              <span className="mr-1.5 h-1.5 w-1.5 rounded-full bg-teal-450 animate-pulse shadow-[0_0_8px_#00f5d4]" />
-              {recsMessage}
-            </span>
-          )}
+          <button type="button" className="flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 text-[11px] font-semibold text-emerald-450 hover:bg-emerald-500/20 transition-colors">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            {recsMessage}
+          </button>
         </div>
-        
+
         {recsLoading ? (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+          <div className="flex gap-4 overflow-x-auto pb-3">
             {Array.from({ length: 5 }).map((_, i) => (
-              <div
-                key={i}
-                className="animate-pulse rounded-xl bg-neutral-900/40 border border-neutral-800/40 p-4 space-y-4 shadow-md"
-              >
-                <div className="aspect-square w-full overflow-hidden rounded-lg bg-neutral-800" />
-                <div className="space-y-2">
-                  <div className="h-4 w-3/4 rounded bg-neutral-800" />
-                  <div className="h-3 w-1/2 rounded bg-neutral-800" />
-                </div>
-              </div>
+              <div key={i} className="animate-pulse w-44 h-56 rounded-2xl bg-neutral-900/40 border border-neutral-800/40" />
             ))}
           </div>
-        ) : recommendations.length === 0 ? (
-          <div className="liquid-panel rounded-xl p-8 text-center max-w-md mx-auto border border-neutral-800">
-            <Music className="mx-auto h-12 w-12 text-neutral-500 mb-3" />
-            <h3 className="text-lg font-bold text-white">No recommendations available</h3>
-            <p className="text-sm text-neutral-400 mt-1 font-medium">
-              Start playing or liking music to build your personalized discovery mix.
-            </p>
+        ) : uniqueRecommendations.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-white/[0.07] bg-white/[0.01] py-8 text-center text-sm text-neutral-500">
+            No recommendations available. Start listening to build your mix!
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-            {recommendations.slice(0, 10).map((track) => {
-              const isCurrent = currentTrack?.id === track.id;
-              return (
-                <div
-                  key={track.id}
-                  onClick={() => handlePlayTrack(track, recommendations)}
-                  className="liquid-panel liquid-interactive group cursor-pointer rounded-2xl p-4 hover:scale-[1.03] duration-300 hover:shadow-xl hover:shadow-teal-500/5 hover:border-teal-500/25 border border-neutral-900/50"
-                >
-                  <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-neutral-950 mb-3.5 shadow-md">
-                    {track.coverUrl ? (
-                      <Image
-                        src={track.coverUrl}
-                        alt={track.title}
-                        fill
-                        sizes="(max-width: 640px) 150px, 200px"
-                        className="object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                    ) : (
-                      <MusicCoverArt
-                        title={track.title}
-                        className="h-full w-full"
-                        iconClassName="h-10 w-10"
-                      />
-                    )}
-                    
-                    {/* Floating Hover Play Trigger */}
-                    <button
-                      className="absolute bottom-2.5 right-2.5 flex h-10 w-10 translate-y-2 items-center justify-center rounded-full bg-gradient-to-r from-teal-400 to-emerald-400 text-black opacity-0 shadow-lg shadow-teal-500/20 transition-all group-hover:translate-y-0 group-hover:opacity-100 hover:scale-105 active:scale-95 duration-300 z-10"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handlePlayTrack(track, recommendations);
-                      }}
-                    >
-                      {isCurrent && isPlaying ? (
-                        <Pause className="h-4.5 w-4.5 fill-black stroke-black" />
-                      ) : (
-                        <Play className="h-4.5 w-4.5 fill-black stroke-black translate-x-[1px]" />
-                      )}
-                    </button>
-                  </div>
-                  <h3 className={`truncate text-sm font-bold text-left tracking-tight mb-0.5 ${isCurrent ? 'text-teal-400 drop-shadow-[0_0_8px_rgba(20,240,200,0.3)]' : 'text-white'}`}>
-                    {track.title}
-                  </h3>
-                  <p className="truncate text-xs text-neutral-400 text-left font-semibold group-hover:text-neutral-300 transition-colors">{track.artist.name}</p>
-                </div>
-              );
-            })}
+          <div className="flex gap-4 overflow-x-auto pb-3 snap-x snap-mandatory scrollbar-hide">
+            {uniqueRecommendations.slice(0, 8).map((track) => (
+              <TrackCard
+                key={track.id}
+                track={track}
+                onClick={() => handlePlayTrack(track, uniqueRecommendations)}
+              />
+            ))}
           </div>
         )}
       </section>
 
-      {/* Recently Played History */}
-      <section className="space-y-6">
-        <div className="flex items-center space-x-2.5">
+      {/* D. SECTION 1 - RECENTLY PLAYED */}
+      <section className="space-y-4 mb-10 text-left">
+        <div className="flex items-center gap-2">
           <Clock className="h-5 w-5 text-neutral-400" />
-          <h2 className="text-xl font-bold tracking-tight md:text-2xl">Recently Played</h2>
+          <h2 className="text-lg font-bold tracking-tight">Recently Played</h2>
         </div>
 
         {historyLoading ? (
-          <div className="space-y-2.5 max-w-4xl">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="animate-pulse flex items-center justify-between rounded-lg p-3 bg-neutral-900/20 border border-neutral-850/20">
-                <div className="flex items-center space-x-4">
-                  <div className="h-10 w-10 rounded bg-neutral-800" />
-                  <div className="space-y-2">
-                    <div className="h-4 w-32 rounded bg-neutral-800" />
-                    <div className="h-3 w-20 rounded bg-neutral-800" />
-                  </div>
-                </div>
-                <div className="h-8 w-8 rounded-full bg-neutral-800" />
-              </div>
+          <div className="flex gap-4 overflow-x-auto pb-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="animate-pulse w-44 h-56 rounded-2xl bg-neutral-900/40 border border-neutral-800/40" />
             ))}
           </div>
         ) : history.length === 0 ? (
-          <div className="liquid-panel rounded-2xl p-8 text-center max-w-lg mx-auto shadow-2xl relative overflow-hidden group border border-neutral-900/50">
-            {/* Glowing background blob */}
-            <div className="absolute -inset-px bg-gradient-to-br from-teal-500/5 to-violet-500/5 opacity-50 blur-xl group-hover:opacity-75 transition-opacity" />
-            
-            <div className="relative space-y-4">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-neutral-900 border border-neutral-800 text-neutral-400 shadow-[0_0_15px_rgba(255,255,255,0.02)]">
-                <Clock className="h-6 w-6 stroke-[1.5]" />
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-lg font-bold text-white tracking-tight">Your listening history is empty</h3>
-                <p className="text-sm text-neutral-400 max-w-xs mx-auto text-center leading-normal font-medium">
-                  Songs you play from discovery, search, or playlists will appear here in real-time.
-                </p>
-              </div>
-              
-              <div className="flex flex-wrap justify-center gap-3 pt-2">
-                <button
-                  onClick={() => router.push('/search')}
-                  className="liquid-interactive rounded-full bg-gradient-to-r from-teal-400 to-emerald-450 px-6 py-2 text-xs font-bold text-black hover:scale-105 active:scale-95 shadow-md"
-                >
-                  Search Music
-                </button>
-                <button
-                  onClick={() => {
-                    const el = document.getElementById('discover-section-anchor');
-                    if (el) el.scrollIntoView({ behavior: 'smooth' });
-                  }}
-                  className="liquid-panel liquid-interactive rounded-full px-5 py-2 text-xs font-bold text-neutral-300 hover:text-white border border-neutral-800 transition-colors"
-                >
-                  Explore Discovery
-                </button>
-              </div>
-            </div>
+          <div className="rounded-2xl border border-dashed border-white/[0.07] bg-white/[0.01] py-8 text-center text-sm text-neutral-500">
+            No recently played songs.
           </div>
         ) : (
-          <div className="space-y-3 max-w-4xl">
-            {history.slice(0, 5).map((track, index) => {
-              const isCurrent = currentTrack?.id === track.id;
-              return (
-                <div
-                  key={`${track.id}-${index}`}
-                  onClick={() => handlePlayTrack(track, history)}
-                  className={`liquid-panel liquid-interactive group flex items-center justify-between rounded-xl p-3 transition-colors cursor-pointer border border-neutral-900/50 hover:border-teal-500/20 ${
-                    isCurrent ? 'border-teal-500/20 bg-teal-500/5 shadow-[0_0_15px_rgba(20,250,200,0.02)]' : ''
-                  }`}
-                >
-                  <div className="flex items-center space-x-4 truncate">
-                    <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded bg-neutral-850">
-                      {track.coverUrl ? (
-                        <Image
-                          src={track.coverUrl}
-                          alt={track.title}
-                          fill
-                          sizes="40px"
-                          className="object-cover"
-                        />
-                      ) : (
-                        <MusicCoverArt
-                          title={track.title}
-                          className="h-full w-full"
-                          iconClassName="h-4.5 w-4.5"
-                        />
-                      )}
-                    </div>
-                    <div className="truncate text-left">
-                      <p className={`truncate text-sm font-bold ${isCurrent ? 'text-teal-400 drop-shadow-[0_0_8px_rgba(20,240,200,0.3)]' : 'text-white'}`}>
-                        {track.title}
-                      </p>
-                      <p className="truncate text-xs text-neutral-400 font-semibold">{track.artist.name}</p>
-                    </div>
-                  </div>
-                  
-                  {/* Action Play status */}
-                  <button className="text-neutral-500 hover:text-teal-400 transition-colors p-2">
-                    {isCurrent && isPlaying ? (
-                      <Pause className="h-5 w-5 fill-teal-400 text-teal-400" />
-                    ) : (
-                      <Play className="h-5 w-5 text-neutral-400 group-hover:text-teal-400" />
-                    )}
-                  </button>
-                </div>
-              );
-            })}
+          <div className="flex gap-4 overflow-x-auto pb-3 snap-x snap-mandatory scrollbar-hide">
+            {history.map((track, idx) => (
+              <TrackCard
+                key={`${track.id}-${idx}`}
+                track={track}
+                onClick={() => handlePlayTrack(track, history)}
+              />
+            ))}
           </div>
         )}
+      </section>
+
+      {/* D. SECTION 2 - TRENDING TODAY */}
+      <section className="space-y-4 mb-10 text-left">
+        <h2 className="text-lg font-bold tracking-tight">🔥 Trending Today</h2>
+        <div className="rounded-2xl bg-white/[0.02] border border-white/[0.05] divide-y divide-white/[0.04]">
+          {trendingTracks.map((track, i) => {
+            const fullTrack: Track = {
+              id: track.id,
+              title: track.title,
+              artist: { name: track.artist },
+              coverUrl: track.thumbnail,
+              durationMs: 180000,
+              sourceType: 'youtube'
+            };
+            return (
+              <div
+                key={track.id}
+                onClick={() => handlePlayTrack(fullTrack, trendingTracks.map(t => ({
+                  id: t.id,
+                  title: t.title,
+                  artist: { name: t.artist },
+                  coverUrl: t.thumbnail,
+                  durationMs: 180000,
+                  sourceType: 'youtube'
+                })))}
+                className="flex items-center gap-4 px-4 py-3 hover:bg-white/[0.03] cursor-pointer transition-colors"
+              >
+                <span className="w-5 text-center text-sm font-bold text-neutral-600">{i + 1}</span>
+                <div className="relative h-12 w-12 rounded-xl overflow-hidden flex-shrink-0 bg-neutral-900 border border-white/[0.06]">
+                  {track.thumbnail ? (
+                    <Image src={track.thumbnail} alt={track.title} fill sizes="48px" className="object-cover" />
+                  ) : (
+                    <MusicCoverArt title={track.title} className="h-full w-full" iconClassName="h-5 w-5" />
+                  )}
+                </div>
+                <div className="min-w-0 flex-1 text-left">
+                  <p className="text-sm font-semibold text-white line-clamp-1">{track.title}</p>
+                  <p className="text-xs text-neutral-500">{track.artist}</p>
+                </div>
+                <span className="text-xs text-neutral-600 tabular-nums font-semibold">{track.plays} plays</span>
+              </div>
+            );
+          })}
+        </div>
       </section>
     </div>
   );
