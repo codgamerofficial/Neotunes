@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { createClientBrowser } from '@/lib/supabase-browser';
-import { Settings, User, Key, Sliders, Shield, Loader2, Sparkles } from 'lucide-react';
+import { Settings, User, Key, Sliders, Shield, Loader2, Sparkles, Volume2, Info } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 export default function SettingsPage() {
@@ -14,6 +14,12 @@ export default function SettingsPage() {
   const [quality, setQuality] = useState<'auto' | 'high' | 'low'>('auto');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Additional settings state (mock interactive settings)
+  const [crossfade, setCrossfade] = useState(true);
+  const [normalizeVolume, setNormalizeVolume] = useState(false);
+  const [showExplicit, setShowExplicit] = useState(true);
+  const [themeGlow, setThemeGlow] = useState<'dark' | 'neoglow'>('neoglow');
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -112,19 +118,28 @@ export default function SettingsPage() {
     }
   };
 
+  const handleResetDefaults = () => {
+    setQuality('auto');
+    setCrossfade(true);
+    setNormalizeVolume(false);
+    setShowExplicit(true);
+    setThemeGlow('neoglow');
+    setMessage({ type: 'success', text: 'Settings reset to defaults.' });
+  };
+
   return (
     <div className="space-y-10 text-white pb-12 max-w-2xl mx-auto text-left">
       <div className="flex items-center space-x-3 border-b border-neutral-900 pb-4">
-        <Settings className="h-8 w-8 text-emerald-400" />
-        <h1 className="text-3xl font-extrabold tracking-tight">Settings</h1>
+        <Settings className="h-8 w-8 text-teal-400" />
+        <h1 className="text-3xl font-extrabold tracking-tight md:text-5xl">Settings</h1>
       </div>
 
       {/* Message alerts */}
       {message && (
         <div
-          className={`rounded-lg p-3 text-xs font-semibold ${
+          className={`rounded-xl p-4 text-xs font-bold transition-all ${
             message.type === 'success'
-              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+              ? 'bg-teal-500/10 text-teal-450 border border-teal-500/25 shadow-[0_0_15px_rgba(20,250,200,0.05)]'
               : 'bg-red-500/10 text-red-400 border border-red-500/20'
           }`}
         >
@@ -136,59 +151,165 @@ export default function SettingsPage() {
       <section className="space-y-4">
         <div className="flex items-center space-x-2 border-b border-neutral-900 pb-2">
           <User className="h-5 w-5 text-neutral-400" />
-          <h2 className="text-lg font-bold">Profile Details</h2>
+          <h2 className="text-lg font-bold tracking-tight">Profile Details</h2>
         </div>
-        <form onSubmit={handleUpdateProfile} className="glass-panel rounded-xl p-5 space-y-4">
+        
+        <form onSubmit={handleUpdateProfile} className="glass-panel rounded-2xl p-6 space-y-6 border border-neutral-900/50">
           <div className="space-y-2">
-            <label className="text-xs text-neutral-400 block font-semibold">Display Name</label>
+            <label className="text-xs text-neutral-400 block font-bold uppercase tracking-wider">Display Name</label>
             <input
               type="text"
               required
               placeholder="e.g. Saswata Dey"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              className="w-full rounded-lg border border-neutral-850 bg-neutral-950 px-4 py-2 text-sm text-white outline-none focus:border-emerald-500"
+              className="w-full rounded-xl bg-neutral-900/60 border border-neutral-850 px-4.5 py-3 text-sm text-white outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-400/10 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] transition-all"
             />
           </div>
+          
           <div className="space-y-2">
-            <label className="text-xs text-neutral-400 block font-semibold">Avatar Image URL</label>
+            <label className="text-xs text-neutral-400 block font-bold uppercase tracking-wider">Avatar Image URL</label>
             <input
               type="text"
               placeholder="https://example.com/avatar.jpg"
               value={avatarUrl}
               onChange={(e) => setAvatarUrl(e.target.value)}
-              className="w-full rounded-lg border border-neutral-850 bg-neutral-950 px-4 py-2 text-sm text-white outline-none focus:border-emerald-500"
+              className="w-full rounded-xl bg-neutral-900/60 border border-neutral-850 px-4.5 py-3 text-sm text-white outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-400/10 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] transition-all"
             />
           </div>
 
-          <div className="space-y-2">
-            <label className="text-xs text-neutral-400 block font-semibold">Audio Quality</label>
-            <div className="flex space-x-2">
+          {/* Audio Quality Segmented Control */}
+          <div className="space-y-3 pt-2">
+            <label className="text-xs text-neutral-400 block font-bold uppercase tracking-wider">Audio Quality</label>
+            <div className="flex rounded-xl bg-neutral-900/60 p-1 border border-neutral-850">
               {(['auto', 'high', 'low'] as const).map((q) => (
                 <button
                   key={q}
                   type="button"
                   onClick={() => setQuality(q)}
-                  className={`flex-1 rounded-lg py-2 text-xs font-bold border transition-all ${
+                  className={`flex-1 rounded-lg py-2.5 text-xs font-bold transition-all uppercase tracking-wider ${
                     quality === q
-                      ? 'bg-emerald-500 border-emerald-500 text-black shadow-md shadow-emerald-500/10'
-                      : 'border-neutral-850 hover:border-neutral-700 text-neutral-400'
+                      ? 'bg-gradient-to-r from-teal-400 to-emerald-400 text-black shadow-md shadow-teal-500/10'
+                      : 'text-neutral-400 hover:text-white'
                   }`}
                 >
-                  {q.toUpperCase()}
+                  {q}
                 </button>
               ))}
             </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="flex items-center justify-center space-x-2 rounded-full bg-emerald-500 px-6 py-2 text-sm font-semibold text-black hover:opacity-90 disabled:opacity-50"
-          >
-            {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-            <span>Save Profile</span>
-          </button>
+          {/* Audio Playback Tweaks Toggles */}
+          <div className="space-y-4 pt-2">
+            <label className="text-xs text-neutral-400 block font-bold uppercase tracking-wider border-b border-neutral-900/50 pb-2">Playback Settings</label>
+            
+            {/* Crossfade */}
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <p className="text-sm font-bold text-white">Enable Crossfade</p>
+                <p className="text-xs text-neutral-500 font-medium">Smoothly transition between consecutive tracks</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCrossfade(!crossfade)}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                  crossfade ? 'bg-teal-450' : 'bg-neutral-800'
+                }`}
+              >
+                <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-black shadow ring-0 transition duration-200 ease-in-out ${
+                  crossfade ? 'translate-x-5' : 'translate-x-0'
+                }`} />
+              </button>
+            </div>
+
+            {/* Normalize Volume */}
+            <div className="flex items-center justify-between pt-2">
+              <div className="space-y-0.5">
+                <p className="text-sm font-bold text-white">Normalize Volume</p>
+                <p className="text-xs text-neutral-500 font-medium">Keep playback volume consistent across all tracks</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setNormalizeVolume(!normalizeVolume)}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                  normalizeVolume ? 'bg-teal-450' : 'bg-neutral-800'
+                }`}
+              >
+                <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-black shadow ring-0 transition duration-200 ease-in-out ${
+                  normalizeVolume ? 'translate-x-5' : 'translate-x-0'
+                }`} />
+              </button>
+            </div>
+
+            {/* Explicit Content */}
+            <div className="flex items-center justify-between pt-2">
+              <div className="space-y-0.5">
+                <p className="text-sm font-bold text-white">Show Explicit Content</p>
+                <p className="text-xs text-neutral-500 font-medium">Allow explicit tags and content in recommendation feeds</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowExplicit(!showExplicit)}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                  showExplicit ? 'bg-teal-450' : 'bg-neutral-800'
+                }`}
+              >
+                <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-black shadow ring-0 transition duration-200 ease-in-out ${
+                  showExplicit ? 'translate-x-5' : 'translate-x-0'
+                }`} />
+              </button>
+            </div>
+          </div>
+
+          {/* Theme Section */}
+          <div className="space-y-4 pt-2">
+            <label className="text-xs text-neutral-400 block font-bold uppercase tracking-wider border-b border-neutral-900/50 pb-2">Appearance</label>
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <p className="text-sm font-bold text-white">Visual Interface Theme</p>
+                <p className="text-xs text-neutral-500 font-medium">Switch between standard dark mode and neon glow</p>
+              </div>
+              <div className="flex bg-neutral-900/60 p-0.5 border border-neutral-850 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => setThemeGlow('dark')}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                    themeGlow === 'dark' ? 'bg-neutral-800 text-white' : 'text-neutral-500'
+                  }`}
+                >
+                  Dark
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setThemeGlow('neoglow')}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                    themeGlow === 'neoglow' ? 'bg-gradient-to-r from-teal-400/20 to-violet-500/20 text-teal-400 border border-teal-500/30' : 'text-neutral-500'
+                  }`}
+                >
+                  Neo Glow
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Action buttons footer */}
+          <div className="flex items-center justify-between pt-6 border-t border-neutral-900/80">
+            <button
+              type="button"
+              onClick={handleResetDefaults}
+              className="rounded-full border border-neutral-800 px-5 py-2.5 text-xs font-bold text-neutral-400 hover:text-white hover:bg-neutral-900 transition-colors"
+            >
+              Reset to Defaults
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex items-center justify-center space-x-2 rounded-full bg-gradient-to-r from-teal-400 to-emerald-400 hover:from-teal-350 hover:to-emerald-450 px-7 py-2.5 text-xs font-extrabold text-black active:scale-95 shadow-lg shadow-teal-500/10 transition-all disabled:opacity-50"
+            >
+              {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+              <span>Save Profile</span>
+            </button>
+          </div>
         </form>
       </section>
 
@@ -196,23 +317,23 @@ export default function SettingsPage() {
       <section className="space-y-4">
         <div className="flex items-center space-x-2 border-b border-neutral-900 pb-2">
           <Key className="h-5 w-5 text-neutral-400" />
-          <h2 className="text-lg font-bold">Security</h2>
+          <h2 className="text-lg font-bold tracking-tight">Security</h2>
         </div>
-        <form onSubmit={handleUpdatePassword} className="glass-panel rounded-xl p-5 space-y-4">
+        <form onSubmit={handleUpdatePassword} className="glass-panel rounded-2xl p-6 space-y-4 border border-neutral-900/50">
           <div className="space-y-2">
-            <label className="text-xs text-neutral-400 block font-semibold">Change Password</label>
+            <label className="text-xs text-neutral-400 block font-bold uppercase tracking-wider">Change Password</label>
             <input
               type="password"
               placeholder="New Secure Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg border border-neutral-855 bg-neutral-955 px-4 py-2 text-sm text-white outline-none focus:border-emerald-500"
+              className="w-full rounded-xl bg-neutral-900/60 border border-neutral-850 px-4.5 py-3 text-sm text-white outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-400/10 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] transition-all"
             />
           </div>
           <button
             type="submit"
             disabled={loading || !password}
-            className="flex items-center justify-center space-x-2 rounded-full bg-neutral-900 border border-neutral-800 px-6 py-2 text-sm font-semibold text-white hover:bg-neutral-800 disabled:opacity-30"
+            className="flex items-center justify-center space-x-2 rounded-full bg-neutral-900 border border-neutral-800 px-6 py-2.5 text-xs font-bold text-white hover:bg-neutral-850 transition-all disabled:opacity-30"
           >
             {loading && <Loader2 className="h-4 w-4 animate-spin" />}
             <span>Change Password</span>

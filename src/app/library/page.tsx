@@ -18,8 +18,13 @@ import {
   Loader2,
   Disc,
   ArrowRight,
+  Music,
+  User,
+  Activity,
+  Cloud
 } from 'lucide-react';
 import Image from 'next/image';
+import { MusicCoverArt } from '@/components/ui/MusicCoverArt';
 
 type TabType = 'playlists' | 'liked' | 'history' | 'cloud';
 
@@ -165,24 +170,24 @@ export default function LibraryPage() {
   };
 
   return (
-    <div className="space-y-8 text-white">
+    <div className="space-y-8 text-white pb-12 text-left">
       {/* Page header title with action button */}
       <div className="flex items-center justify-between border-b border-neutral-900 pb-4">
-        <h1 className="text-3xl font-extrabold tracking-tight">Your Library</h1>
+        <h1 className="text-3xl font-extrabold tracking-tight md:text-5xl">Your Library</h1>
         {activeTab === 'playlists' && (
           <button
             onClick={() => createPlaylistMutation.mutate()}
             disabled={createPlaylistMutation.isPending}
-            className="flex items-center space-x-1.5 rounded-full bg-emerald-500 px-4 py-2 text-xs font-bold text-black hover:opacity-90 disabled:opacity-50"
+            className="flex items-center space-x-1.5 rounded-full bg-gradient-to-r from-teal-400 to-emerald-400 hover:from-teal-350 hover:to-emerald-450 px-5 py-2 text-xs font-bold text-black shadow-lg shadow-teal-500/10 active:scale-95 transition-all"
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-4 w-4 stroke-[2.5]" />
             <span>Create Playlist</span>
           </button>
         )}
       </div>
 
       {/* Tabs list bar */}
-      <div className="flex border-b border-neutral-900">
+      <div className="flex border-b border-neutral-900 overflow-x-auto scrollbar-none">
         {(
           [
             { id: 'playlists', label: 'Playlists', icon: ListMusic },
@@ -197,17 +202,17 @@ export default function LibraryPage() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`relative flex items-center space-x-2 px-4 pb-3.5 text-sm font-semibold transition-all ${
-                isActive ? 'text-white' : 'text-neutral-400 hover:text-white'
+              className={`relative flex items-center space-x-2 px-5 pb-3.5 text-sm font-semibold transition-all flex-shrink-0 ${
+                isActive ? 'text-white font-bold' : 'text-neutral-400 hover:text-white'
               }`}
             >
               {isActive && (
                 <motion.div
                   layoutId="library-tab-indicator"
-                  className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-emerald-500"
+                  className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-teal-400 to-emerald-400"
                 />
               )}
-              <Icon className="h-4 w-4" />
+              <Icon className={`h-4 w-4 ${isActive ? 'text-teal-400' : 'text-neutral-400'}`} />
               <span>{tab.label}</span>
             </button>
           );
@@ -219,35 +224,35 @@ export default function LibraryPage() {
         {/* Playlists View */}
         {activeTab === 'playlists' && (
           playlistsLoading ? (
-            <Disc className="h-8 w-8 animate-spin text-emerald-500 mx-auto" />
+            <div className="flex h-40 items-center justify-center">
+              <Disc className="h-8 w-8 animate-spin text-teal-400" />
+            </div>
           ) : playlists.length === 0 ? (
-            <div className="flex h-48 flex-col items-center justify-center rounded-xl border border-dashed border-neutral-800 bg-neutral-950/20 text-neutral-500">
-              <p>No playlists found.</p>
+            <div className="flex h-48 flex-col items-center justify-center rounded-2xl border border-dashed border-neutral-800 bg-neutral-950/20 text-neutral-400 p-6">
+              <p className="font-semibold text-sm">No playlists found</p>
               <button
                 onClick={() => createPlaylistMutation.mutate()}
-                className="mt-4 rounded-full bg-neutral-900 border border-neutral-800 px-4 py-2 text-xs font-semibold"
+                className="mt-4 rounded-full bg-gradient-to-r from-teal-400 to-emerald-400 px-6 py-2 text-xs font-bold text-black active:scale-95 transition-all shadow-md shadow-teal-500/10"
               >
                 Create your first playlist
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+            <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
               {playlists.map((playlist: any) => (
                 <div
                   key={playlist.id}
                   onClick={() => router.push(`/playlists/${playlist.id}`)}
-                  className="group cursor-pointer rounded-xl bg-neutral-900/40 border border-neutral-800/40 p-4 transition-all hover:bg-neutral-900 hover:scale-[1.02]"
+                  className="liquid-panel liquid-interactive group cursor-pointer rounded-2xl p-4 hover:scale-[1.02] border border-neutral-900/50 hover:border-teal-500/20"
                 >
-                  <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-neutral-800 mb-3 shadow-md">
+                  <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-neutral-800 mb-3 shadow-md">
                     {playlist.cover_url ? (
                       <Image src={playlist.cover_url} alt={playlist.name} fill className="object-cover" />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center text-neutral-500 bg-gradient-to-tr from-neutral-900 to-neutral-800">
-                        <Disc className="h-10 w-10" />
-                      </div>
+                      <MusicCoverArt title={playlist.name} className="h-full w-full" iconClassName="h-10 w-10" />
                     )}
                     <button
-                      className="absolute bottom-2 right-2 flex h-10 w-10 translate-y-2 items-center justify-center rounded-full bg-emerald-500 text-black opacity-0 shadow-lg transition-all group-hover:translate-y-0 group-hover:opacity-100 hover:scale-105 active:scale-95"
+                      className="absolute bottom-2.5 right-2.5 flex h-10 w-10 translate-y-2 items-center justify-center rounded-full bg-gradient-to-r from-teal-400 to-emerald-400 text-black opacity-0 shadow-lg shadow-teal-500/20 transition-all group-hover:translate-y-0 group-hover:opacity-100 hover:scale-105 active:scale-95 duration-300 z-10"
                       onClick={(e) => {
                         e.stopPropagation();
                         router.push(`/playlists/${playlist.id}`);
@@ -256,45 +261,59 @@ export default function LibraryPage() {
                       <Play className="h-4.5 w-4.5 fill-black stroke-black translate-x-[1px]" />
                     </button>
                   </div>
-                  <h3 className="truncate text-sm font-semibold text-white text-left">{playlist.name}</h3>
-                  <p className="truncate text-xs text-neutral-400 text-left">
-                    {playlist.trackCount || 0} tracks
-                  </p>
+                  <h3 className="truncate text-sm font-bold text-white text-left">{playlist.name}</h3>
+                  <div className="flex items-center space-x-2.5 mt-0.5">
+                    <span className="text-[10px] text-neutral-400 font-semibold">{playlist.trackCount || 0} tracks</span>
+                    <span className="text-[10px] text-teal-500 font-extrabold uppercase tracking-wide">Created by You</span>
+                  </div>
                 </div>
               ))}
             </div>
           )
         )}
 
-        {/* Liked Songs Shortcut */}
+        {/* Liked Songs Tab */}
         {activeTab === 'liked' && (
           likedLoading ? (
-            <Disc className="h-8 w-8 animate-spin text-emerald-500 mx-auto" />
+            <div className="flex h-40 items-center justify-center">
+              <Disc className="h-8 w-8 animate-spin text-teal-400" />
+            </div>
           ) : likedTracks.length === 0 ? (
-            <div className="flex h-48 flex-col items-center justify-center rounded-xl border border-dashed border-neutral-800 bg-neutral-950/20 text-neutral-500">
-              <p>You haven&apos;t liked any songs yet.</p>
-              <button
-                onClick={() => router.push('/search')}
-                className="mt-4 rounded-full bg-neutral-900 border border-neutral-800 px-4 py-2 text-xs font-semibold"
-              >
-                Find songs to like
-              </button>
+            <div className="flex h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-neutral-800 bg-neutral-950/20 text-neutral-400 p-8 max-w-lg mx-auto shadow-inner relative overflow-hidden group">
+              <div className="absolute -inset-px bg-gradient-to-br from-pink-500/5 to-purple-500/5 opacity-50 blur-xl" />
+              <div className="relative space-y-4">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-neutral-900 border border-neutral-800 text-pink-500 shadow-[0_0_15px_rgba(236,72,153,0.15)]">
+                  <Heart className="h-6 w-6 fill-pink-500 stroke-pink-500" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-lg font-bold text-white tracking-tight">You haven&apos;t liked any songs yet</h3>
+                  <p className="text-sm text-neutral-400 max-w-xs mx-auto text-center leading-normal font-medium">
+                    Songs you like on Home or Search will appear here for easy playback.
+                  </p>
+                </div>
+                <button
+                  onClick={() => router.push('/search')}
+                  className="rounded-full bg-gradient-to-r from-teal-400 to-emerald-400 px-6 py-2 text-xs font-bold text-black active:scale-95 transition-all shadow-md shadow-teal-500/10"
+                >
+                  Find songs to like
+                </button>
+              </div>
             </div>
           ) : (
             <div
               onClick={() => router.push('/liked')}
-              className="glass-panel max-w-md cursor-pointer rounded-xl p-5 flex items-center justify-between hover:bg-neutral-900/60 transition-colors"
+              className="glass-panel max-w-md cursor-pointer rounded-2xl p-5 flex items-center justify-between hover:border-teal-500/20 hover:bg-neutral-900/40 border border-neutral-900/50 transition-colors shadow-lg shadow-black/10 group"
             >
               <div className="flex items-center space-x-4">
-                <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 text-white">
-                  <Heart className="h-7 w-7 fill-white" />
+                <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-pink-500 to-purple-600 text-white shadow-lg shadow-pink-500/15">
+                  <Heart className="h-7 w-7 fill-white stroke-none" />
                 </div>
                 <div className="text-left">
-                  <h3 className="text-base font-semibold">Liked Songs</h3>
-                  <p className="text-xs text-neutral-400">{likedTracks.length} tracks</p>
+                  <h3 className="text-base font-bold text-white tracking-tight">Liked Songs</h3>
+                  <p className="text-xs text-neutral-400 font-semibold">{likedTracks.length} tracks</p>
                 </div>
               </div>
-              <ArrowRight className="h-5 w-5 text-neutral-400" />
+              <ArrowRight className="h-5 w-5 text-neutral-500 group-hover:text-teal-400 transition-colors" />
             </div>
           )
         )}
@@ -302,35 +321,39 @@ export default function LibraryPage() {
         {/* Recently Played History */}
         {activeTab === 'history' && (
           historyLoading ? (
-            <Disc className="h-8 w-8 animate-spin text-emerald-500 mx-auto" />
+            <div className="flex h-40 items-center justify-center">
+              <Disc className="h-8 w-8 animate-spin text-teal-400" />
+            </div>
           ) : historyTracks.length === 0 ? (
-            <div className="flex h-48 flex-col items-center justify-center rounded-xl border border-dashed border-neutral-800 bg-neutral-950/20 text-neutral-500">
-              <p>Your listening history will appear here once you play music.</p>
+            <div className="flex h-48 flex-col items-center justify-center rounded-2xl border border-dashed border-neutral-800 bg-neutral-950/20 text-neutral-400 p-6">
+              <p className="font-semibold text-sm">Your listening history will appear here once you play music.</p>
             </div>
           ) : (
-            <div className="space-y-2 max-w-3xl">
+            <div className="space-y-2.5 max-w-3xl relative pl-4 border-l border-neutral-900 ml-2">
               {historyTracks.slice(0, 15).map((track: any, idx: number) => (
                 <div
                   key={`${track.id}-${idx}`}
                   onClick={() => playTrack(track, historyTracks)}
-                  className="flex items-center justify-between rounded-lg p-2 hover:bg-neutral-900/40 cursor-pointer"
+                  className="flex items-center justify-between rounded-xl p-2.5 hover:bg-neutral-900/40 cursor-pointer group border border-transparent hover:border-teal-500/15 transition-all"
                 >
-                  <div className="flex items-center space-x-3 truncate">
-                    <div className="relative h-9 w-9 overflow-hidden rounded bg-neutral-800 flex-shrink-0">
+                  <div className="flex items-center space-x-3.5 truncate">
+                    {/* Timestamp Dot */}
+                    <div className="absolute left-[7.5px] h-2.5 w-2.5 rounded-full bg-neutral-800 border-2 border-black group-hover:bg-teal-400 transition-colors" />
+                    
+                    <div className="relative h-10 w-10 overflow-hidden rounded bg-neutral-900 flex-shrink-0 shadow-sm border border-neutral-950">
                       {track.coverUrl ? (
                         <Image src={track.coverUrl} alt={track.title} fill className="object-cover" />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center text-neutral-600">
-                          <Disc className="h-5 w-5" />
-                        </div>
+                        <MusicCoverArt title={track.title} className="h-full w-full" iconClassName="h-4.5 w-4.5" />
                       )}
                     </div>
                     <div className="truncate text-left">
-                      <p className="truncate text-sm font-semibold">{track.title}</p>
-                      <p className="truncate text-xs text-neutral-400">{track.artist.name}</p>
+                      <p className="truncate text-sm font-bold text-white group-hover:text-teal-400 transition-colors">{track.title}</p>
+                      <p className="truncate text-xs text-neutral-400 font-semibold">{track.artist.name}</p>
                     </div>
                   </div>
-                  <span className="text-[10px] text-neutral-500 font-mono">
+                  <span className="text-[10px] text-neutral-500 font-bold font-mono">
+                    {new Date(track.playedAt).toLocaleDateString([], { month: 'short', day: 'numeric' })}{' '}
                     {new Date(track.playedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
@@ -341,22 +364,22 @@ export default function LibraryPage() {
 
         {/* Cloud Uploads Panel */}
         {activeTab === 'cloud' && (
-          <div className="space-y-6">
+          <div className="space-y-8">
             {/* Uploader Block */}
-            <div className="glass-panel flex flex-col items-center justify-center rounded-2xl p-6 border border-dashed border-neutral-800 bg-neutral-950/10 max-w-xl mx-auto">
+            <div className="glass-panel flex flex-col items-center justify-center rounded-2xl p-6 border border-dashed border-teal-500/15 bg-neutral-950/10 max-w-xl mx-auto shadow-[0_0_20px_rgba(20,250,200,0.02)]">
               {uploading ? (
-                <div className="space-y-3 py-4 flex flex-col items-center">
-                  <Loader2 className="h-10 w-10 animate-spin text-emerald-500" />
-                  <p className="text-sm font-semibold text-neutral-300">Uploading to Cloud Storage...</p>
-                  <div className="h-1.5 w-48 rounded bg-neutral-800 overflow-hidden">
-                    <div className="h-full bg-emerald-500 transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+                <div className="space-y-4 py-4 flex flex-col items-center">
+                  <Loader2 className="h-10 w-10 animate-spin text-teal-400" />
+                  <p className="text-sm font-bold text-neutral-300">Uploading to Cloud Storage...</p>
+                  <div className="h-1.5 w-48 rounded bg-neutral-900 overflow-hidden relative">
+                    <div className="h-full bg-gradient-to-r from-teal-400 to-emerald-400 transition-all duration-300 rounded" style={{ width: `${uploadProgress}%` }} />
                   </div>
                 </div>
               ) : (
                 <label className="flex flex-col items-center cursor-pointer py-4 px-8 w-full group">
-                  <UploadCloud className="h-12 w-12 text-neutral-500 group-hover:text-emerald-400 transition-colors" />
-                  <span className="mt-3 text-sm font-semibold">Upload audio files (.mp3, .wav, .m4a)</span>
-                  <span className="text-xs text-neutral-500 mt-1">Direct private storage bucket upload</span>
+                  <UploadCloud className="h-12 w-12 text-neutral-500 group-hover:text-teal-400 transition-colors drop-shadow-[0_0_10px_rgba(0,0,0,0.4)]" />
+                  <span className="mt-3 text-sm font-bold text-white">Upload audio files (.mp3, .wav, .m4a)</span>
+                  <span className="text-xs text-neutral-500 mt-1 font-medium">Direct private storage bucket upload</span>
                   <input
                     type="file"
                     accept="audio/*"
@@ -369,19 +392,22 @@ export default function LibraryPage() {
 
             {/* Cloud Files Listing */}
             {cloudLoading ? (
-              <Disc className="h-8 w-8 animate-spin text-emerald-500 mx-auto" />
+              <div className="flex h-40 items-center justify-center">
+                <Disc className="h-8 w-8 animate-spin text-teal-400" />
+              </div>
             ) : cloudUploads.length === 0 ? (
-              <div className="text-center text-sm text-neutral-500">
-                <p>No files uploaded to your cloud locker yet.</p>
+              <div className="text-center text-sm text-neutral-400 py-10 font-medium">
+                No files uploaded to your cloud locker yet. Upload some files above.
               </div>
             ) : (
-              <div className="space-y-2 max-w-3xl mx-auto">
-                <h3 className="text-left font-bold text-neutral-400 text-xs uppercase tracking-wider mb-3">
-                  Your Cloud locker ({cloudUploads.length} files)
+              <div className="space-y-2.5 max-w-3xl mx-auto">
+                <h3 className="text-left font-bold text-neutral-400 text-xs uppercase tracking-wider mb-4 flex items-center space-x-2">
+                  <Cloud className="h-4.5 w-4.5 text-teal-400" />
+                  <span>Your Cloud locker ({cloudUploads.length} files)</span>
                 </h3>
                 {cloudUploads.map((file: any) => {
                   const trackObj = {
-                    id: `cloud_${new Date(file.created_at).getTime()}`, // matching ID conversion
+                    id: `cloud_${new Date(file.created_at).getTime()}`, 
                     title: file.title,
                     artist: { name: file.artist },
                     album: { name: file.album || 'Single' },
@@ -390,23 +416,52 @@ export default function LibraryPage() {
                     sourceId: file.file_path,
                   };
 
+                  const isAvailable = file.status === 'processed' || !file.status;
+                  const isFailed = file.status === 'failed';
+                  const isPending = file.status === 'pending';
+
                   return (
                     <div
                       key={file.id}
-                      onClick={() => playTrack(trackObj, [trackObj])}
-                      className="flex items-center justify-between rounded-lg p-2.5 hover:bg-neutral-900/40 cursor-pointer border border-neutral-900/50 bg-neutral-950/20"
+                      onClick={() => isAvailable && playTrack(trackObj, [trackObj])}
+                      className={`flex items-center justify-between rounded-xl p-3 border border-neutral-900/50 bg-neutral-950/20 transition-all ${
+                        isAvailable ? 'hover:bg-neutral-900/40 cursor-pointer hover:border-teal-500/15' : 'opacity-70 cursor-not-allowed'
+                      }`}
                     >
                       <div className="flex items-center space-x-3 truncate">
-                        <div className="flex h-9 w-9 items-center justify-center rounded bg-neutral-900 text-emerald-400">
+                        <div className="flex h-9 w-9 items-center justify-center rounded bg-neutral-900 text-teal-400 shadow-inner">
                           <FileAudio className="h-5 w-5" />
                         </div>
                         <div className="truncate text-left">
-                          <p className="truncate text-sm font-semibold">{file.title}</p>
-                          <p className="truncate text-xs text-neutral-400">{file.artist}</p>
+                          <p className="truncate text-sm font-bold text-white">{file.title}</p>
+                          <div className="flex items-center space-x-2 mt-0.5">
+                            <span className="truncate text-xs text-neutral-450 font-semibold">{file.artist}</span>
+                            <span className="text-neutral-600">•</span>
+                            <span className="text-[9px] font-bold font-mono text-neutral-500">
+                              {new Date(file.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                            </span>
+                          </div>
                         </div>
                       </div>
                       <div className="flex items-center space-x-4">
-                        <span className="text-xs text-neutral-500 font-mono">
+                        {/* Status tag */}
+                        {isPending && (
+                          <span className="rounded-full bg-teal-500/10 border border-teal-500/20 px-2 py-0.5 text-[8px] font-bold text-teal-400 uppercase tracking-wide shadow-sm animate-pulse">
+                            Analyzing
+                          </span>
+                        )}
+                        {isFailed && (
+                          <span className="rounded-full bg-red-500/10 border border-red-500/20 px-2 py-0.5 text-[8px] font-bold text-red-400 uppercase tracking-wide shadow-sm">
+                            Failed
+                          </span>
+                        )}
+                        {isAvailable && (
+                          <span className="rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[8px] font-bold text-emerald-400 uppercase tracking-wide shadow-sm">
+                            Available
+                          </span>
+                        )}
+                        
+                        <span className="text-xs text-neutral-450 font-bold font-mono">
                           {Math.floor(file.duration_ms / 60000)}:
                           {Math.floor((file.duration_ms % 60000) / 1000)
                             .toString()

@@ -17,8 +17,10 @@ import {
   Edit2,
   Disc,
   ArrowLeft,
+  Music,
 } from 'lucide-react';
 import Image from 'next/image';
+import { MusicCoverArt } from '@/components/ui/MusicCoverArt';
 
 interface Track {
   id: string;
@@ -180,8 +182,8 @@ export default function PlaylistDetailsPage({
   if (isLoading) {
     return (
       <div className="flex h-[60vh] flex-col items-center justify-center text-white">
-        <Disc className="h-10 w-10 animate-spin text-emerald-500" />
-        <p className="mt-2 text-sm text-neutral-400">Loading playlist details...</p>
+        <Disc className="h-10 w-10 animate-spin text-teal-400" />
+        <p className="mt-2 text-sm text-neutral-400 font-semibold">Loading playlist details...</p>
       </div>
     );
   }
@@ -189,10 +191,10 @@ export default function PlaylistDetailsPage({
   if (!playlist) {
     return (
       <div className="flex h-[60vh] flex-col items-center justify-center text-white">
-        <p className="text-neutral-400">Playlist not found.</p>
+        <p className="text-neutral-400 font-semibold">Playlist not found.</p>
         <button
           onClick={() => router.push('/library')}
-          className="mt-4 rounded-full bg-emerald-500 px-6 py-2 text-sm font-semibold text-black"
+          className="mt-4 rounded-full bg-gradient-to-r from-teal-400 to-emerald-400 px-6 py-2.5 text-xs font-bold text-black active:scale-95 transition-all shadow-md"
         >
           Go Back
         </button>
@@ -203,52 +205,54 @@ export default function PlaylistDetailsPage({
   const tracks = playlist.tracks || [];
 
   return (
-    <div className="space-y-8 text-white">
-      {/* Dynamic Header */}
-      <div className="flex items-center space-x-2">
-        <button
-          onClick={() => router.back()}
-          className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-neutral-900 transition-colors"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </button>
-        <span className="text-sm font-semibold text-neutral-400">Back</span>
+    <div className="space-y-8 text-white pb-12 text-left">
+      {/* Back Button Navigation */}
+      <div className="flex items-center space-x-2 text-neutral-450 hover:text-white cursor-pointer transition-colors" onClick={() => router.back()}>
+        <ArrowLeft className="h-4 w-4" />
+        <span className="text-xs font-bold uppercase tracking-wider">Back</span>
       </div>
 
       {/* Playlist Meta Banner */}
       {!editMode ? (
         <div className="flex flex-col items-center space-y-4 md:flex-row md:space-y-0 md:space-x-6 border-b border-neutral-900 pb-8">
-          <div className="relative h-36 w-36 overflow-hidden rounded-2xl bg-neutral-800 shadow-xl border border-neutral-700">
+          <div className="relative h-36 w-36 overflow-hidden rounded-2xl bg-neutral-800 shadow-xl border border-neutral-800/80 flex-shrink-0">
             {playlist.coverUrl ? (
               <Image src={playlist.coverUrl} alt={playlist.name} fill className="object-cover" />
             ) : (
-              <div className="flex h-full w-full items-center justify-center text-neutral-600 bg-gradient-to-tr from-neutral-900 to-neutral-800">
-                <Disc className="h-16 w-16" />
-              </div>
+              <MusicCoverArt title={playlist.name} className="h-full w-full" iconClassName="h-16 w-16" />
             )}
           </div>
           <div className="text-center md:text-left space-y-2 flex-1">
-            <div className="flex items-center justify-center md:justify-start space-x-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-neutral-400">Playlist</span>
+            <div className="flex items-center justify-center md:justify-start space-x-2.5">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-teal-400">Playlist</span>
               {playlist.is_public ? (
-                <Globe className="h-3.5 w-3.5 text-neutral-400" />
+                <span title="Public Playlist"><Globe className="h-3.5 w-3.5 text-neutral-400" /></span>
               ) : (
-                <Lock className="h-3.5 w-3.5 text-neutral-400" />
+                <span title="Private Playlist"><Lock className="h-3.5 w-3.5 text-neutral-400" /></span>
               )}
-              {playlist.is_collaborative && <Users className="h-3.5 w-3.5 text-emerald-400" />}
+              {playlist.is_collaborative && (
+                <span className="flex items-center space-x-1 rounded bg-teal-500/10 px-1.5 py-0.5 text-[8px] font-bold text-teal-400 border border-teal-500/20 uppercase tracking-wide">
+                  <Users className="h-2.5 w-2.5" />
+                  <span>Collab</span>
+                </span>
+              )}
             </div>
-            <h1 className="text-3xl font-extrabold tracking-tight md:text-5xl">{playlist.name}</h1>
-            <p className="text-sm text-neutral-400 max-w-xl">
+            <h1 className="text-3xl font-extrabold tracking-tight md:text-5xl bg-gradient-to-r from-white to-neutral-350 bg-clip-text text-transparent">
+              {playlist.name}
+            </h1>
+            <p className="text-sm text-neutral-400 max-w-xl font-medium leading-relaxed">
               {playlist.description || 'No description provided.'}
             </p>
-            <p className="text-xs text-neutral-500">
+            <p className="text-xs text-neutral-500 font-semibold">
               {tracks.length} songs • Created by {playlist.user_id ? 'You' : 'Collaborator'}
             </p>
-            <div className="mt-4 flex items-center justify-center md:justify-start space-x-3">
+            
+            {/* Action Row buttons */}
+            <div className="mt-5 flex flex-wrap items-center justify-center md:justify-start gap-3">
               {tracks.length > 0 && (
                 <button
                   onClick={handlePlayAll}
-                  className="flex items-center space-x-2 rounded-full bg-emerald-500 px-6 py-2.5 text-sm font-semibold text-black transition-transform hover:scale-105 active:scale-95"
+                  className="flex items-center space-x-2 rounded-full bg-gradient-to-r from-teal-400 to-emerald-400 hover:from-teal-350 hover:to-emerald-450 px-6 py-2.5 text-xs font-extrabold text-black active:scale-95 transition-all shadow-lg shadow-teal-500/10"
                 >
                   <Play className="h-4.5 w-4.5 fill-black stroke-black" />
                   <span>Play</span>
@@ -262,9 +266,9 @@ export default function PlaylistDetailsPage({
                   setIsCollaborative(playlist.is_collaborative);
                   setEditMode(true);
                 }}
-                className="flex items-center space-x-2 rounded-full bg-neutral-900 border border-neutral-800 px-4 py-2.5 text-sm font-semibold text-white hover:bg-neutral-800 transition-colors"
+                className="flex items-center space-x-2 rounded-full bg-neutral-900 border border-neutral-800 px-5 py-2.5 text-xs font-bold text-neutral-300 hover:text-white hover:bg-neutral-850 transition-all"
               >
-                <Edit2 className="h-4 w-4" />
+                <Edit2 className="h-3.5 w-3.5" />
                 <span>Edit Info</span>
               </button>
               <button
@@ -273,7 +277,7 @@ export default function PlaylistDetailsPage({
                     deletePlaylistMutation.mutate();
                   }
                 }}
-                className="rounded-full bg-red-950/20 border border-red-500/30 px-4 py-2.5 text-sm font-semibold text-red-400 hover:bg-red-900/35 transition-colors"
+                className="rounded-full bg-red-950/20 border border-red-500/30 px-5 py-2.5 text-xs font-bold text-red-400 hover:bg-red-900/35 transition-colors"
               >
                 Delete Playlist
               </button>
@@ -281,59 +285,59 @@ export default function PlaylistDetailsPage({
           </div>
         </div>
       ) : (
-        /* Edit Playlist Metadata Metadata Form */
-        <form onSubmit={handleSaveMetadata} className="glass-panel rounded-2xl p-6 max-w-xl space-y-4">
-          <h2 className="text-lg font-bold">Edit Playlist Details</h2>
+        /* Edit Playlist Metadata Form */
+        <form onSubmit={handleSaveMetadata} className="glass-panel rounded-2xl p-6 max-w-xl space-y-6 border border-neutral-900/50">
+          <h2 className="text-lg font-bold tracking-tight">Edit Playlist Details</h2>
           <div className="space-y-2">
-            <label className="text-xs text-neutral-400 block">Playlist Name</label>
+            <label className="text-xs text-neutral-400 block font-bold uppercase tracking-wider">Playlist Name</label>
             <input
               type="text"
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full rounded-lg border border-neutral-800 bg-neutral-950 px-4 py-2.5 text-sm outline-none focus:border-emerald-500 text-white"
+              className="w-full rounded-xl bg-neutral-900/60 border border-neutral-850 px-4.5 py-3 text-sm text-white outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-400/10 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] transition-all"
             />
           </div>
           <div className="space-y-2">
-            <label className="text-xs text-neutral-400 block">Description (Optional)</label>
+            <label className="text-xs text-neutral-400 block font-bold uppercase tracking-wider">Description (Optional)</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full h-24 rounded-lg border border-neutral-800 bg-neutral-950 px-4 py-2.5 text-sm outline-none focus:border-emerald-500 text-white resize-none"
+              className="w-full h-24 rounded-xl bg-neutral-900/60 border border-neutral-850 px-4.5 py-3 text-sm text-white outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-400/10 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] transition-all resize-none"
             />
           </div>
-          <div className="flex space-x-6 pt-2">
-            <label className="flex items-center space-x-2 text-sm text-neutral-300 cursor-pointer">
+          <div className="flex space-x-6 pt-1">
+            <label className="flex items-center space-x-2 text-sm text-neutral-300 cursor-pointer select-none">
               <input
                 type="checkbox"
                 checked={isPublic}
                 onChange={(e) => setIsPublic(e.target.checked)}
-                className="rounded border-neutral-800 bg-neutral-950 text-emerald-500"
+                className="rounded border-neutral-800 bg-neutral-950 text-teal-450 focus:ring-0 focus:ring-offset-0"
               />
-              <span>Public Playlist</span>
+              <span className="font-semibold text-xs uppercase tracking-wide">Public Playlist</span>
             </label>
-            <label className="flex items-center space-x-2 text-sm text-neutral-300 cursor-pointer">
+            <label className="flex items-center space-x-2 text-sm text-neutral-300 cursor-pointer select-none">
               <input
                 type="checkbox"
                 checked={isCollaborative}
                 onChange={(e) => setIsCollaborative(e.target.checked)}
-                className="rounded border-neutral-800 bg-neutral-950 text-emerald-500"
+                className="rounded border-neutral-800 bg-neutral-950 text-teal-450 focus:ring-0 focus:ring-offset-0"
               />
-              <span>Collaborative Ready</span>
+              <span className="font-semibold text-xs uppercase tracking-wide">Collaborative Ready</span>
             </label>
           </div>
-          <div className="flex space-x-3 pt-4 border-t border-neutral-900">
+          <div className="flex space-x-3 pt-5 border-t border-neutral-900/80">
             <button
               type="submit"
               disabled={updatePlaylistMutation.isPending}
-              className="rounded-full bg-emerald-500 px-6 py-2 text-sm font-semibold text-black hover:opacity-90 disabled:opacity-50"
+              className="rounded-full bg-gradient-to-r from-teal-400 to-emerald-400 px-6 py-2.5 text-xs font-bold text-black active:scale-95 shadow-md transition-all disabled:opacity-50"
             >
               Save Changes
             </button>
             <button
               type="button"
               onClick={() => setEditMode(false)}
-              className="rounded-full bg-neutral-900 border border-neutral-800 px-6 py-2 text-sm font-semibold text-white hover:bg-neutral-800"
+              className="rounded-full bg-neutral-900 border border-neutral-800 px-6 py-2.5 text-xs font-bold text-neutral-300 hover:text-white hover:bg-neutral-850 transition-all"
             >
               Cancel
             </button>
@@ -341,22 +345,33 @@ export default function PlaylistDetailsPage({
         </form>
       )}
 
-      {/* Playlist Tracks list table */}
+      {/* Playlist Tracks List Table */}
       {tracks.length === 0 ? (
-        <div className="flex h-48 flex-col items-center justify-center rounded-xl border border-dashed border-neutral-800 bg-neutral-950/20">
-          <p className="text-sm text-neutral-500">This playlist has no songs yet</p>
-          <button
-            onClick={() => router.push('/search')}
-            className="mt-4 rounded-full bg-neutral-900 border border-neutral-800 px-4 py-2 text-xs font-semibold"
-          >
-            Find Songs to Add
-          </button>
+        <div className="flex h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-neutral-800 bg-neutral-950/20 text-neutral-400 p-8 max-w-lg mx-auto shadow-inner relative overflow-hidden group">
+          <div className="absolute -inset-px bg-gradient-to-br from-teal-500/5 to-violet-500/5 opacity-50 blur-xl" />
+          <div className="relative space-y-4 text-center">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-neutral-900 border border-neutral-800 text-teal-400 shadow-[0_0_15px_rgba(20,250,200,0.1)]">
+              <Music className="h-6 w-6 fill-none stroke-teal-400" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-lg font-bold text-white tracking-tight">This playlist has no songs yet</h3>
+              <p className="text-sm text-neutral-400 max-w-xs mx-auto leading-normal font-medium">
+                Find songs to build your personalized vibe.
+              </p>
+            </div>
+            <button
+              onClick={() => router.push('/search')}
+              className="rounded-full bg-gradient-to-r from-teal-400 to-emerald-400 px-6 py-2 text-xs font-bold text-black active:scale-95 transition-all shadow-md"
+            >
+              Find Songs to Add
+            </button>
+          </div>
         </div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-neutral-900 text-xs font-bold uppercase tracking-wider text-neutral-500">
+              <tr className="border-b border-neutral-900 text-xs font-extrabold uppercase tracking-wider text-neutral-500">
                 <th className="py-3 pl-4 w-12 text-center">#</th>
                 <th className="py-3 px-4">Title</th>
                 <th className="py-3 px-4 hidden md:table-cell">Album</th>
@@ -364,7 +379,7 @@ export default function PlaylistDetailsPage({
                   <Clock className="h-4 w-4 mx-auto" />
                 </th>
                 <th className="py-3 px-2 w-20 text-center">Position</th>
-                <th className="py-3 pr-4 w-16 text-center">Actions</th>
+                <th className="py-3 pr-4 w-16 text-center">Remove</th>
               </tr>
             </thead>
             <tbody>
@@ -375,25 +390,25 @@ export default function PlaylistDetailsPage({
                     key={`${track.id}-${idx}`}
                     onClick={() => handleTrackSelect(track)}
                     className={`group cursor-pointer border-b border-neutral-950 transition-colors hover:bg-neutral-900/40 ${
-                      isCurrent ? 'bg-neutral-900/20' : ''
+                      isCurrent ? 'bg-neutral-900/10' : ''
                     }`}
                   >
-                    {/* Index / Play Icon */}
-                    <td className="py-3.5 pl-4 text-center text-sm font-semibold text-neutral-500">
+                    {/* Index / Play indicator */}
+                    <td className="py-3.5 pl-4 text-center text-sm font-bold text-neutral-500">
                       <span className="group-hover:hidden">{idx + 1}</span>
                       <button className="hidden group-hover:inline-block">
                         {isCurrent && isPlaying ? (
-                          <Pause className="h-4 w-4 text-emerald-400 fill-emerald-400" />
+                          <Pause className="h-4 w-4 text-teal-400 fill-teal-400" />
                         ) : (
-                          <Play className="h-4 w-4 text-emerald-400 fill-emerald-400" />
+                          <Play className="h-4 w-4 text-teal-400 fill-teal-400" />
                         )}
                       </button>
                     </td>
 
                     {/* Album Art & Title */}
                     <td className="py-3.5 px-4">
-                      <div className="flex items-center space-x-3 truncate">
-                        <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded bg-neutral-800">
+                      <div className="flex items-center space-x-3.5 truncate">
+                        <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded bg-neutral-900 shadow-sm border border-neutral-950">
                           {track.coverUrl ? (
                             <Image
                               src={track.coverUrl}
@@ -403,31 +418,29 @@ export default function PlaylistDetailsPage({
                               className="object-cover"
                             />
                           ) : (
-                            <div className="flex h-full w-full items-center justify-center text-neutral-600">
-                              <Disc className="h-5 w-5" />
-                            </div>
+                            <MusicCoverArt title={track.title} className="h-full w-full" iconClassName="h-4.5 w-4.5" />
                           )}
                         </div>
                         <div className="truncate text-left">
-                          <p className={`truncate text-sm font-semibold ${isCurrent ? 'text-emerald-400 animate-pulse' : 'text-white'}`}>
+                          <p className={`truncate text-sm font-bold ${isCurrent ? 'text-teal-400 drop-shadow-[0_0_8px_rgba(20,240,200,0.35)] animate-pulse' : 'text-white'}`}>
                             {track.title}
                           </p>
-                          <p className="truncate text-xs text-neutral-400">{track.artist.name}</p>
+                          <p className="truncate text-xs text-neutral-400 font-semibold">{track.artist.name}</p>
                         </div>
                       </div>
                     </td>
 
                     {/* Album Column */}
-                    <td className="py-3.5 px-4 hidden md:table-cell text-sm text-neutral-400 truncate">
+                    <td className="py-3.5 px-4 hidden md:table-cell text-xs text-neutral-400 font-semibold truncate">
                       {track.album?.name || 'Single'}
                     </td>
 
                     {/* Duration Column */}
-                    <td className="py-3.5 px-4 text-center text-xs font-mono text-neutral-400">
+                    <td className="py-3.5 px-4 text-center text-xs font-bold font-mono text-neutral-400">
                       {formatDuration(track.durationMs)}
                     </td>
 
-                    {/* Position Reordering Controls */}
+                    {/* Position Reordering controls */}
                     <td className="py-3.5 px-2 text-center" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-center space-x-1">
                         <button
@@ -447,7 +460,7 @@ export default function PlaylistDetailsPage({
                       </div>
                     </td>
 
-                    {/* Delete Column */}
+                    {/* Delete Action button */}
                     <td className="py-3.5 pr-4 text-center" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={() => removeTrackMutation.mutate(track.id)}

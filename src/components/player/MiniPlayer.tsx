@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { MusicCoverArt } from '@/components/ui/MusicCoverArt';
 
 export default function MiniPlayer() {
   const router = useRouter();
@@ -134,7 +135,7 @@ export default function MiniPlayer() {
       animate={{ y: 0, opacity: 1 }}
       exit={{ y: 100, opacity: 0 }}
       onClick={() => router.push('/player')}
-      className="liquid-dock fixed bottom-16 left-0 right-0 z-40 flex h-20 cursor-pointer items-center justify-between px-4 transition-all duration-300 md:bottom-0 md:px-6 md:z-50"
+      className="liquid-dock fixed bottom-16 left-0 right-0 z-40 flex h-20 cursor-pointer items-center justify-between px-4 transition-all duration-300 md:bottom-0 md:px-6 md:z-50 border-t border-neutral-900 bg-neutral-950/75 backdrop-blur-xl"
     >
       {/* 1. LEFT COLUMN: Artwork, Title, Artist, Like Action */}
       <div className="flex items-center space-x-3 w-full min-w-0 md:w-[30%]">
@@ -148,26 +149,28 @@ export default function MiniPlayer() {
               className={`object-cover ${isPlaying ? 'animate-spin [animation-duration:20s]' : ''}`}
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center text-neutral-500">
-              <Disc className="h-5 w-5 animate-pulse" />
-            </div>
+            <MusicCoverArt
+              title={currentTrack.title}
+              className="h-full w-full"
+              iconClassName="h-5 w-5"
+            />
           )}
         </div>
         <div className="flex-1 min-w-0 text-left">
-          <h4 className="truncate text-sm font-semibold text-white hover:underline leading-normal">
+          <h4 className="truncate text-sm font-bold text-white hover:underline leading-normal">
             {currentTrack.title}
           </h4>
-          <p className="truncate text-xs text-neutral-400 hover:text-white leading-normal">
+          <p className="truncate text-xs text-neutral-400 hover:text-white leading-normal font-medium">
             {currentTrack.artist.name}
           </p>
         </div>
         <button
           onClick={handleLikeToggle}
           className={`liquid-interactive flex-shrink-0 p-2 transition-colors ${
-            isLiked ? 'text-emerald-500' : 'text-neutral-400 hover:text-white'
+            isLiked ? 'text-teal-400' : 'text-neutral-400 hover:text-white'
           }`}
         >
-          <Heart className={`h-4.5 w-4.5 ${isLiked ? 'fill-emerald-500' : ''}`} />
+          <Heart className={`h-4.5 w-4.5 ${isLiked ? 'fill-teal-400 stroke-teal-400' : ''}`} />
         </button>
       </div>
 
@@ -178,7 +181,7 @@ export default function MiniPlayer() {
           <button
             onClick={handleShuffleToggle}
             className={`liquid-interactive transition-colors ${
-              shuffle ? 'text-emerald-400' : 'text-neutral-400 hover:text-white'
+              shuffle ? 'text-teal-400 drop-shadow-[0_0_8px_rgba(20,240,200,0.4)]' : 'text-neutral-400 hover:text-white'
             }`}
             title="Shuffle"
           >
@@ -193,7 +196,7 @@ export default function MiniPlayer() {
           </button>
           <button
             onClick={handlePlayPause}
-            className="liquid-interactive flex h-8 w-8 items-center justify-center rounded-full bg-white text-black hover:scale-105 active:scale-95"
+            className="liquid-interactive flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-r from-teal-400 to-emerald-400 text-black hover:scale-105 active:scale-95 shadow-md shadow-teal-500/10"
             title={isPlaying ? 'Pause' : 'Play'}
           >
             {isPlaying ? (
@@ -212,13 +215,13 @@ export default function MiniPlayer() {
           <button
             onClick={handleRepeatToggle}
             className={`liquid-interactive relative transition-colors ${
-              repeatMode !== 'off' ? 'text-emerald-400' : 'text-neutral-400 hover:text-white'
+              repeatMode !== 'off' ? 'text-teal-400 drop-shadow-[0_0_8px_rgba(20,240,200,0.4)]' : 'text-neutral-400 hover:text-white'
             }`}
             title={`Repeat: ${repeatMode}`}
           >
             <Repeat className="h-4 w-4" />
             {repeatMode === 'one' && (
-              <span className="absolute -top-1 -right-1.5 flex h-3 w-3 items-center justify-center rounded-full bg-emerald-500 text-[8px] font-bold text-black">
+              <span className="absolute -top-1 -right-1.5 flex h-3 w-3 items-center justify-center rounded-full bg-gradient-to-r from-teal-400 to-emerald-400 text-[8px] font-extrabold text-black">
                 1
               </span>
             )}
@@ -230,10 +233,10 @@ export default function MiniPlayer() {
           <span className="w-8 text-right">{formatTime(progress)}</span>
           <div className="relative flex-1 h-1 flex items-center group/progress">
             {/* Track background */}
-            <div className="absolute inset-0 bg-neutral-800 rounded-full" />
+            <div className="absolute inset-0 bg-neutral-850 rounded-full" />
             {/* Active/Played progress */}
             <div
-              className="absolute left-0 top-0 bottom-0 bg-emerald-500 rounded-full group-hover/progress:bg-emerald-400"
+              className="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-teal-400 to-emerald-400 rounded-full group-hover/progress:from-teal-300 group-hover/progress:to-emerald-300 shadow-[0_0_8px_rgba(0,245,212,0.4)]"
               style={{ width: `${duration > 0 ? (progress / duration) * 100 : 0}%` }}
             />
             {/* The slider thumb, visible on hover */}
@@ -265,7 +268,7 @@ export default function MiniPlayer() {
         <div className="flex items-center space-x-2 md:hidden">
           <button
             onClick={handlePlayPause}
-            className="liquid-interactive flex h-9 w-9 items-center justify-center rounded-full bg-white text-black"
+            className="liquid-interactive flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-r from-teal-400 to-emerald-400 text-black"
           >
             {isPlaying ? (
               <Pause className="h-4.5 w-4.5 fill-black stroke-black" />
@@ -300,10 +303,10 @@ export default function MiniPlayer() {
             </button>
             <div className="relative w-20 h-1 flex items-center group/volume">
               {/* Track background */}
-              <div className="absolute inset-0 bg-neutral-800 rounded-full" />
+              <div className="absolute inset-0 bg-neutral-850 rounded-full" />
               {/* Active volume progress */}
               <div
-                className="absolute left-0 top-0 bottom-0 bg-white rounded-full group-hover/volume:bg-emerald-450"
+                className="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-teal-400 to-emerald-400 rounded-full group-hover/volume:from-teal-300 group-hover/volume:to-emerald-300"
                 style={{ width: `${isMuted ? 0 : volume * 100}%` }}
               />
               {/* Thumb, visible on hover */}
