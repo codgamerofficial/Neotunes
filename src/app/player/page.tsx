@@ -70,12 +70,13 @@ export default function PlayerPage() {
 
   if (!currentTrack) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-black text-white">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-black text-white font-sans">
         <Disc className="h-16 w-16 animate-spin text-neutral-600" />
-        <p className="mt-4 text-neutral-400">No song selected</p>
+        <p className="mt-4 text-neutral-400 font-semibold">No song selected</p>
         <button
+          type="button"
           onClick={() => router.push('/home')}
-          className="mt-6 rounded-full bg-emerald-500 px-6 py-2 text-sm font-semibold text-black"
+          className="mt-6 rounded-full bg-emerald-500 px-6 py-2.5 text-xs font-bold text-black shadow-lg shadow-emerald-500/20 active:scale-95 transition-transform"
         >
           Go Home
         </button>
@@ -83,18 +84,9 @@ export default function PlayerPage() {
     );
   }
 
-  const progressPercent = duration > 0 ? (progress / duration) * 100 : 0;
-
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseFloat(e.target.value);
     setProgress(val);
-    const iframePlayer = (window as any).YT?.Player ? (window as any).YT.Player : null;
-    const playerInstance = document.querySelector('iframe');
-    // If the YT global exists, we can dispatch seek actions
-    if (typeof window !== 'undefined') {
-      const ytPlayerIframe = document.getElementById('yt-player-iframe-root');
-      // Seeking handled directly via the store / window actions
-    }
   };
 
   const handleLikeToggle = async () => {
@@ -118,7 +110,7 @@ export default function PlayerPage() {
   };
 
   const formatTime = (time: number) => {
-    if (isNaN(time)) return '0:00';
+    if (isNaN(time) || time < 0) return '0:00';
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
@@ -128,7 +120,7 @@ export default function PlayerPage() {
     if (navigator.share) {
       navigator.share({
         title: currentTrack.title,
-        text: `Listen to ${currentTrack.title} by ${currentTrack.artist.name} on NeoTunes`,
+        text: `Listen to ${currentTrack.title} on NeoTunes`,
         url: window.location.origin + `/player?trackId=${currentTrack.id}`,
       });
     } else {
@@ -137,260 +129,354 @@ export default function PlayerPage() {
     }
   };
 
+  // Thumbnail fallback helpers
+  const thumbnail = currentTrack.coverUrl || (currentTrack as any).thumbnail;
+  const artistName = currentTrack.artist?.name || (currentTrack as any).channelTitle || (currentTrack as any).artist || 'Unknown Artist';
+
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-between bg-black px-6 py-8 text-white overflow-hidden">
-      {/* Blurred album artwork background glow */}
-      {currentTrack.coverUrl && (
+    <div className="relative flex min-h-screen flex-col items-center justify-between bg-neutral-950 px-6 py-6 text-white overflow-hidden font-sans">
+      
+      {/* Background artwork ambient blur glow */}
+      {thumbnail && (
         <div
-          className="absolute inset-0 -z-10 bg-cover bg-center filter blur-[100px] opacity-30 transition-all duration-1000 scale-110"
-          style={{ backgroundImage: `url(${currentTrack.coverUrl})` }}
+          className="absolute inset-0 -z-10 bg-cover bg-center filter blur-[120px] opacity-25 scale-110 transition-all duration-1000"
+          style={{ backgroundImage: `url(${thumbnail})` }}
         />
       )}
 
-      {/* Header controls */}
-      <header className="flex w-full max-w-4xl items-center justify-between">
-        <button
-          onClick={() => router.back()}
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-neutral-900/60 text-white hover:bg-neutral-800 transition-colors"
-        >
-          <ChevronDown className="h-6 w-6" />
-        </button>
-        <span className="text-xs font-bold uppercase tracking-wider text-neutral-400">Now Playing</span>
-        <button
-          onClick={() => setShowQueue(!showQueue)}
-          className={`flex h-10 w-10 items-center justify-center rounded-full bg-neutral-900/60 transition-colors ${
-            showQueue ? 'text-emerald-400 hover:bg-neutral-800' : 'text-white hover:bg-neutral-800'
-          }`}
-        >
-          <ListMusic className="h-5 w-5" />
-        </button>
-      </header>
+      {/* Main Single Column Container */}
+      <div className="w-full max-w-[440px] flex flex-col justify-between h-full flex-1">
+        
+        {/* TOP BAR */}
+        <header className="flex items-center justify-between w-full pb-2">
+          {/* Collapse button */}
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.05] transition-colors"
+            aria-label="Minimise player"
+          >
+            <ChevronDown className="h-5 w-5 text-white" />
+          </button>
 
-      {/* Main Content Area */}
-      <div className="flex w-full max-w-4xl flex-1 flex-col items-center justify-center md:flex-row md:space-x-12">
-        <AnimatePresence mode="wait">
-          {!showQueue ? (
-            /* Album Artwork Panel */
-            <motion.div
-              key="artwork"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="flex flex-col items-center space-y-6 md:w-1/2"
-            >
-              <div className="relative aspect-square w-64 overflow-hidden rounded-2xl bg-neutral-800 shadow-2xl shadow-black/80 sm:w-80 md:w-96">
-                {currentTrack.coverUrl ? (
-                  <Image
-                    src={currentTrack.coverUrl}
-                    alt={currentTrack.title}
-                    fill
-                    priority
-                    sizes="(max-width: 768px) 320px, 384px"
-                    className={`object-cover ${isPlaying ? 'animate-spin [animation-duration:20s]' : ''}`}
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center text-neutral-600">
-                    <Music className="h-20 w-20" />
-                  </div>
-                )}
-              </div>
-
-              {/* Dynamic Audio Visualizer mock matching plays */}
-              {isPlaying && (
-                <div className="flex h-8 items-end space-x-1">
-                  <div className="visualizer-bar h-8 w-1 bg-emerald-500 rounded-full" />
-                  <div className="visualizer-bar h-8 w-1 bg-emerald-400 rounded-full" />
-                  <div className="visualizer-bar h-8 w-1 bg-teal-400 rounded-full" />
-                  <div className="visualizer-bar h-8 w-1 bg-teal-500 rounded-full" />
-                  <div className="visualizer-bar h-8 w-1 bg-emerald-500 rounded-full" />
-                </div>
-              )}
-            </motion.div>
-          ) : (
-            /* Queue list overlay */
-            <motion.div
-              key="queue"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              className="glass-panel flex h-[400px] w-full flex-col rounded-2xl p-4 md:w-1/2 overflow-y-auto"
-            >
-              <h3 className="mb-4 text-left text-lg font-bold text-white border-b border-neutral-800 pb-2">
-                Play Queue ({queue.length} songs)
-              </h3>
-              <div className="space-y-2">
-                {queue.map((track, idx) => {
-                  const isActive = track.id === currentTrack.id;
-                  return (
-                    <div
-                      key={`${track.id}-${idx}`}
-                      className={`flex items-center justify-between rounded-lg p-2 transition-all ${
-                        isActive ? 'bg-emerald-500/10 border border-emerald-500/20' : 'hover:bg-neutral-900/60'
-                      }`}
-                    >
-                      <div className="flex items-center space-x-3 truncate">
-                        <span className="text-xs text-neutral-500 w-4 text-center">{idx + 1}</span>
-                        <div className="truncate text-left">
-                          <p className={`truncate text-sm font-semibold ${isActive ? 'text-emerald-400' : 'text-white'}`}>
-                            {track.title}
-                          </p>
-                          <p className="truncate text-xs text-neutral-400">{track.artist.name}</p>
-                        </div>
-                      </div>
-                      {isActive && (
-                        <span className="text-xs text-emerald-400 font-bold uppercase tracking-wider animate-pulse">
-                          Now Playing
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
-      {/* Playback Controls Footer */}
-      <footer className="mt-8 flex w-full max-w-2xl flex-col items-center space-y-6">
-        {/* Track Title and Artist details */}
-        <div className="flex w-full items-center justify-between">
-          <div className="text-left max-w-[80%]">
-            <h2 className="text-xl font-bold tracking-tight text-white sm:text-2xl line-clamp-1">{currentTrack.title}</h2>
-            <p className="text-sm text-neutral-400 sm:text-base line-clamp-1">{currentTrack.artist.name}</p>
+          {/* Now Playing label with Equalizer */}
+          <div className="flex items-center gap-2">
+            <div className="flex items-end gap-[3px] h-4">
+              {[8, 14, 10, 16].map((h, i) => (
+                <span
+                  key={i}
+                  className="w-[3px] rounded-full bg-emerald-400"
+                  style={{
+                    height: `${h}px`,
+                    transformOrigin: 'bottom',
+                    animation: isPlaying ? `equalize 0.8s ease-in-out ${i * 0.15}s infinite alternate` : "none",
+                  }}
+                />
+              ))}
+            </div>
+            <span className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-neutral-400">
+              Now Playing
+            </span>
           </div>
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={handleShare}
-              className="text-neutral-400 hover:text-white transition-colors p-2"
-            >
-              <Share2 className="h-5 w-5" />
-            </button>
-            <button
-              onClick={handleLikeToggle}
-              disabled={likeLoading}
-              className={`p-2 transition-transform hover:scale-105 active:scale-95 ${
-                isLiked ? 'text-emerald-400' : 'text-neutral-400 hover:text-white'
-              }`}
-            >
-              <Heart className={`h-6 w-6 ${isLiked ? 'fill-emerald-400' : ''}`} />
-            </button>
-          </div>
-        </div>
 
-        {/* Progress Slider */}
-        <div className="w-full space-y-2">
-          <input
-            type="range"
-            min="0"
-            max={duration || 100}
-            value={progress}
-            onChange={handleSeek}
-            className="w-full h-1 bg-neutral-800 rounded-lg appearance-none cursor-pointer outline-none accent-emerald-500"
-          />
-          <div className="flex justify-between text-xs font-mono text-neutral-400">
-            <span>{formatTime(progress)}</span>
-            <span>{formatTime(duration)}</span>
-          </div>
-        </div>
-
-        {/* Player controls */}
-        <div className="flex w-full items-center justify-between">
-          {/* Shuffle Mode Toggle */}
+          {/* Queue toggle */}
           <button
-            onClick={() => setShuffle(!shuffle)}
-            className={`p-2 transition-colors ${shuffle ? 'text-emerald-400' : 'text-neutral-400 hover:text-white'}`}
-          >
-            <Shuffle className="h-5 w-5" />
-          </button>
-
-          {/* Previous Song */}
-          <button
-            onClick={prevTrack}
-            className="text-neutral-400 hover:text-white transition-transform hover:scale-105 active:scale-95 p-2"
-          >
-            <SkipBack className="h-7 w-7 fill-neutral-400 hover:fill-white stroke-none" />
-          </button>
-
-          {/* Big Play / Pause Button */}
-          <button
-            onClick={() => setPlaying(!isPlaying)}
-            className="flex h-16 w-16 items-center justify-center rounded-full bg-white text-black shadow-lg transition-transform hover:scale-105 active:scale-95"
-          >
-            {isPlaying ? (
-              <Pause className="h-7 w-7 fill-black stroke-black" />
-            ) : (
-              <Play className="h-7 w-7 fill-black stroke-black translate-x-[2px]" />
-            )}
-          </button>
-
-          {/* Next Song */}
-          <button
-            onClick={nextTrack}
-            className="text-neutral-400 hover:text-white transition-transform hover:scale-105 active:scale-95 p-2"
-          >
-            <SkipForward className="h-7 w-7 fill-neutral-400 hover:fill-white stroke-none" />
-          </button>
-
-          {/* Repeat Mode Toggle */}
-          <button
-            onClick={() => {
-              if (repeatMode === 'off') setRepeatMode('all');
-              else if (repeatMode === 'all') setRepeatMode('one');
-              else setRepeatMode('off');
-            }}
-            className={`relative p-2 transition-colors ${
-              repeatMode !== 'off' ? 'text-emerald-400' : 'text-neutral-400 hover:text-white'
+            type="button"
+            onClick={() => setShowQueue(!showQueue)}
+            className={`flex h-9 w-9 items-center justify-center rounded-full border border-white/[0.05] transition-colors ${
+              showQueue ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-white/[0.06] text-white hover:bg-white/[0.1]'
             }`}
+            aria-label="Queue"
           >
-            <Repeat className="h-5 w-5" />
-            {repeatMode === 'one' && (
-              <span className="absolute top-[2px] right-[2px] flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-500 text-[8px] font-black text-black">
-                1
-              </span>
-            )}
+            <ListMusic className="h-4.5 w-4.5" />
           </button>
-        </div>
+        </header>
 
-        {/* Volume & Playback Speed sliders */}
-        <div className="flex w-full flex-col space-y-4 pt-4 border-t border-neutral-900 md:flex-row md:space-y-0 md:space-x-12">
-          {/* Volume */}
-          <div className="flex flex-1 items-center space-x-3">
-            <button
-              onClick={toggleMute}
-              className="text-neutral-400 hover:text-white transition-colors"
-            >
-              {isMuted || volume === 0 ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
-            </button>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.01"
-              value={isMuted ? 0 : volume}
-              onChange={(e) => setVolume(parseFloat(e.target.value))}
-              className="volume-slider h-1 flex-1 appearance-none bg-neutral-800 outline-none"
-            />
-          </div>
-
-          {/* Playback speed selector */}
-          <div className="flex items-center space-x-2 text-xs text-neutral-400 self-center">
-            <Gauge className="h-4 w-4" />
-            <span>Speed:</span>
-            {[0.75, 1, 1.25, 1.5, 2].map((rate) => (
-              <button
-                key={rate}
-                onClick={() => setPlaybackRate(rate)}
-                className={`rounded px-2 py-0.5 font-semibold transition-colors ${
-                  playbackRate === rate ? 'bg-emerald-500 text-black' : 'hover:bg-neutral-800 text-white'
-                }`}
+        {/* MIDDLE CONTENT: ALBUM ART OR QUEUE */}
+        <div className="flex-1 flex flex-col justify-center my-4">
+          <AnimatePresence mode="wait">
+            {!showQueue ? (
+              /* ALBUM ART PANEL */
+              <motion.div
+                key="artwork"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.3 }}
+                className="relative flex flex-col justify-center px-4"
               >
-                {rate}x
-              </button>
-            ))}
-          </div>
+                {/* Ambient glow behind art */}
+                <div className="pointer-events-none absolute inset-0 rounded-3xl bg-emerald-500/15 blur-3xl scale-90" />
+
+                {/* Main artwork container */}
+                <div className="relative w-full aspect-square overflow-hidden rounded-3xl shadow-2xl shadow-black/80 ring-1 ring-white/[0.1] bg-neutral-900">
+                  {thumbnail ? (
+                    <Image
+                      src={thumbnail}
+                      alt={currentTrack.title}
+                      fill
+                      priority
+                      sizes="(max-width: 480px) 380px, 440px"
+                      className="object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-neutral-600">
+                      <Music className="h-20 w-20 stroke-[1.2]" />
+                    </div>
+                  )}
+                  {/* Subtle gradient overlay at bottom */}
+                  <div className="absolute inset-x-0 bottom-0 h-1/4 bg-gradient-to-t from-black/50 to-transparent pointer-events-none" />
+                </div>
+              </motion.div>
+            ) : (
+              /* QUEUE PANEL */
+              <motion.div
+                key="queue"
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                transition={{ duration: 0.25 }}
+                className="flex flex-col h-[340px] rounded-3xl bg-white/[0.03] border border-white/[0.06] p-5 backdrop-blur-md overflow-hidden text-left"
+              >
+                <h3 className="mb-3 text-sm font-bold text-white border-b border-white/[0.05] pb-2 flex items-center justify-between">
+                  <span>Play Queue</span>
+                  <span className="text-xs text-neutral-500 font-semibold">{queue.length} songs</span>
+                </h3>
+                <div className="flex-1 overflow-y-auto space-y-1.5 scrollbar-hide">
+                  {queue.length === 0 ? (
+                    <div className="flex h-full items-center justify-center text-xs text-neutral-500 font-semibold">
+                      Queue is empty
+                    </div>
+                  ) : (
+                    queue.map((track, idx) => {
+                      const isActive = track.id === currentTrack.id;
+                      const trackArtist = track.artist?.name || (track as any).channelTitle || (track as any).artist || 'Unknown';
+                      return (
+                        <div
+                          key={`${track.id}-${idx}`}
+                          onClick={() => {
+                            const { playTrack } = usePlaybackStore.getState();
+                            playTrack(track, queue);
+                          }}
+                          className={`flex items-center justify-between rounded-xl p-2.5 transition-all cursor-pointer ${
+                            isActive ? 'bg-emerald-500/10 border border-emerald-500/20' : 'hover:bg-white/[0.04] border border-transparent'
+                          }`}
+                        >
+                          <div className="flex items-center space-x-3 truncate">
+                            <span className="text-[10px] text-neutral-500 font-bold w-4 text-center">{idx + 1}</span>
+                            <div className="truncate text-left">
+                              <p className={`truncate text-xs font-bold ${isActive ? 'text-emerald-400' : 'text-white'}`}>
+                                {track.title}
+                              </p>
+                              <p className="truncate text-[10px] text-neutral-500 font-medium">{trackArtist}</p>
+                            </div>
+                          </div>
+                          {isActive && (
+                            <span className="text-[9px] text-emerald-400 font-black uppercase tracking-wider animate-pulse">
+                              Playing
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
-      </footer>
+
+        {/* BOTTOM PART: CONTROLS */}
+        <div className="space-y-5">
+          
+          {/* TRACK INFO */}
+          <div className="flex items-center justify-between">
+            <div className="min-w-0 flex-1 pr-4 text-left">
+              <h2 className="text-lg font-black tracking-tight text-white leading-tight line-clamp-1">
+                {currentTrack.title}
+              </h2>
+              <p className="mt-0.5 text-xs text-neutral-400 font-semibold line-clamp-1">
+                {artistName}
+              </p>
+            </div>
+
+            {/* Like + Share Buttons */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <button
+                type="button"
+                onClick={handleLikeToggle}
+                disabled={likeLoading}
+                className={`flex h-9 w-9 items-center justify-center rounded-full transition-all border border-white/[0.05] ${
+                  isLiked
+                    ? "bg-pink-500/10 text-pink-400 border-pink-500/20"
+                    : "bg-white/[0.04] text-neutral-400 hover:text-white hover:bg-white/[0.08]"
+                }`}
+                aria-label="Like song"
+              >
+                <Heart className={`h-4.5 w-4.5 ${isLiked ? 'fill-pink-400 stroke-pink-400' : ''}`} />
+              </button>
+              <button
+                type="button"
+                onClick={handleShare}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-white/[0.04] text-neutral-400 hover:text-white border border-white/[0.05] hover:bg-white/[0.08] transition-all"
+                aria-label="Share song"
+              >
+                <Share2 className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* PROGRESS BAR */}
+          <div className="space-y-1.5">
+            <div className="relative group">
+              <input
+                type="range"
+                min={0}
+                max={duration || 100}
+                value={progress || 0}
+                onChange={handleSeek}
+                className="w-full h-1 appearance-none rounded-full cursor-pointer bg-white/[0.12] outline-none accent-emerald-500
+                  [&::-webkit-slider-thumb]:appearance-none
+                  [&::-webkit-slider-thumb]:h-3.5
+                  [&::-webkit-slider-thumb]:w-3.5
+                  [&::-webkit-slider-thumb]:rounded-full
+                  [&::-webkit-slider-thumb]:bg-white
+                  [&::-webkit-slider-thumb]:shadow-md
+                  [&::-webkit-slider-thumb]:shadow-black/40
+                  [&::-webkit-slider-thumb]:opacity-100
+                  [&::-webkit-slider-thumb]:transition-all"
+              />
+            </div>
+            <div className="flex justify-between text-[10px] font-bold text-neutral-500 tracking-wider">
+              <span>{formatTime(progress)}</span>
+              <span>{formatTime(duration)}</span>
+            </div>
+          </div>
+
+          {/* PLAYBACK CONTROLS ROW */}
+          <div className="flex items-center justify-between px-2">
+            {/* Shuffle Button */}
+            <button
+              type="button"
+              onClick={() => setShuffle(!shuffle)}
+              className={`p-2 transition-colors ${shuffle ? 'text-emerald-400' : 'text-neutral-500 hover:text-white'}`}
+              aria-label="Shuffle"
+            >
+              <Shuffle className="h-4.5 w-4.5" />
+            </button>
+
+            {/* Skip Backward Button */}
+            <button
+              type="button"
+              onClick={prevTrack}
+              className="text-neutral-400 hover:text-white transition-transform hover:scale-105 active:scale-95 p-2"
+              aria-label="Previous song"
+            >
+              <SkipBack className="h-6 w-6 fill-current stroke-none" />
+            </button>
+
+            {/* Big Play / Pause Button with gradient */}
+            <button
+              type="button"
+              onClick={() => setPlaying(!isPlaying)}
+              className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-teal-300 text-black shadow-lg shadow-teal-500/10 transition-all hover:scale-105 active:scale-95"
+              aria-label={isPlaying ? "Pause" : "Play"}
+            >
+              {isPlaying ? (
+                <Pause className="h-6 w-6 fill-black stroke-black" />
+              ) : (
+                <Play className="h-6 w-6 fill-black stroke-black translate-x-[1px]" />
+              )}
+            </button>
+
+            {/* Skip Forward Button */}
+            <button
+              type="button"
+              onClick={nextTrack}
+              className="text-neutral-400 hover:text-white transition-transform hover:scale-105 active:scale-95 p-2"
+              aria-label="Next song"
+            >
+              <SkipForward className="h-6 w-6 fill-current stroke-none" />
+            </button>
+
+            {/* Repeat Button */}
+            <button
+              type="button"
+              onClick={() => {
+                if (repeatMode === 'off') setRepeatMode('all');
+                else if (repeatMode === 'all') setRepeatMode('one');
+                else setRepeatMode('off');
+              }}
+              className={`relative p-2 transition-colors ${
+                repeatMode !== 'off' ? 'text-emerald-400' : 'text-neutral-400 hover:text-white'
+              }`}
+              aria-label="Repeat"
+            >
+              <Repeat className="h-4.5 w-4.5" />
+              {repeatMode === 'one' && (
+                <span className="absolute top-[2px] right-[2px] flex h-3 w-3 items-center justify-center rounded-full bg-emerald-500 text-[7px] font-black text-black">
+                  1
+                </span>
+              )}
+            </button>
+          </div>
+
+          {/* VOLUME & PLAYBACK SPEED CONTROL PANELS */}
+          <div className="pt-4 border-t border-white/[0.05] space-y-4">
+            
+            {/* Volume Panel */}
+            <div className="flex items-center space-x-3">
+              <button
+                type="button"
+                onClick={toggleMute}
+                className="text-neutral-500 hover:text-white transition-colors"
+                aria-label="Mute toggle"
+              >
+                {isMuted || volume === 0 ? <VolumeX className="h-4.5 w-4.5" /> : <Volume2 className="h-4.5 w-4.5" />}
+              </button>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                value={isMuted ? 0 : volume}
+                onChange={(e) => setVolume(parseFloat(e.target.value))}
+                className="h-1 flex-1 appearance-none bg-white/[0.12] rounded-full outline-none accent-emerald-500
+                  [&::-webkit-slider-thumb]:appearance-none
+                  [&::-webkit-slider-thumb]:h-3
+                  [&::-webkit-slider-thumb]:w-3
+                  [&::-webkit-slider-thumb]:rounded-full
+                  [&::-webkit-slider-thumb]:bg-white"
+              />
+            </div>
+
+            {/* Playback Speed Selector */}
+            <div className="flex items-center justify-center space-x-2 text-[10px] text-neutral-500 font-extrabold uppercase tracking-wider">
+              <Gauge className="h-3.5 w-3.5 text-neutral-500" />
+              <span>Speed:</span>
+              <div className="flex gap-1.5">
+                {[0.75, 1, 1.25, 1.5, 2].map((rate) => (
+                  <button
+                    key={rate}
+                    type="button"
+                    onClick={() => setPlaybackRate(rate)}
+                    className={`rounded-full px-2.5 py-1 text-[10px] font-bold tracking-normal transition-colors border ${
+                      playbackRate === rate
+                        ? 'bg-emerald-500 border-emerald-500 text-black shadow-md shadow-emerald-500/20'
+                        : 'border-white/[0.06] hover:bg-white/[0.04] text-neutral-300'
+                    }`}
+                  >
+                    {rate}x
+                  </button>
+                ))}
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
     </div>
   );
 }

@@ -207,3 +207,9 @@ body {
   display: none;
 }
 
+@keyframes equalize {
+  0%   { transform: scaleY(0.4); }
+  100% { transform: scaleY(1); }
+}
+
+
