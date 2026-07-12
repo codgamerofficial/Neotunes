@@ -133,7 +133,7 @@ export default function PlayerPage() {
   const artistName = currentTrack.artist?.name || (currentTrack as any).channelTitle || (currentTrack as any).artist || 'Unknown Artist';
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-between bg-neutral-950 px-6 py-6 text-white overflow-hidden font-sans">
+    <div className="relative flex min-h-screen flex-col items-center justify-between px-6 py-6 text-white overflow-hidden font-sans">
       
       {/* Background artwork ambient blur glow */}
       {thumbnail && (
@@ -208,7 +208,7 @@ export default function PlayerPage() {
                 <div className="pointer-events-none absolute inset-0 rounded-3xl bg-emerald-500/15 blur-3xl scale-90" />
 
                 {/* Main artwork container */}
-                <div className="relative aspect-square w-full max-w-[340px] mx-auto overflow-hidden rounded-2xl bg-neutral-900 shadow-2xl">
+                <div className="relative aspect-square w-full max-w-[340px] mx-auto overflow-hidden rounded-2xl">
                   {thumbnail ? (
                     <img
                       src={thumbnail}
