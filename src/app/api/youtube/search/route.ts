@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { Redis } from '@upstash/redis';
+import { resolveTrack } from '@/services/metadataResolver';
 
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL!,
@@ -17,7 +18,21 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Missing resolve parameters.' }, { status: 400 });
   }
 
-  // Generate cache key
+  // 1. If it is a real Spotify track ID, use the Production Metadata Resolver
+  if (trackId && !trackId.startsWith('yt-') && !trackId.startsWith('pod-') && !trackId.startsWith('mood-') && trackId.length > 5) {
+    try {
+      const resolved = await resolveTrack(trackId);
+      return NextResponse.json({
+        videoId: resolved.sourceId,
+        track: resolved,
+        cached: false, // resolveTrack handles internal database caching
+      });
+    } catch (err: any) {
+      console.warn(`Resolver engine failed for track ${trackId}, falling back to public search:`, err.message);
+    }
+  }
+
+  // 2. Fallback check Redis cache for raw queries or local IDs
   const cacheKey = trackId 
     ? `yt_resolve:${trackId}` 
     : `yt_resolve:${encodeURIComponent(title || '')}:${encodeURIComponent(artist || '')}`;
@@ -31,14 +46,13 @@ export async function GET(request: Request) {
     console.warn('Redis read error for YouTube resolver:', err);
   }
 
+  // 3. Fallback direct YouTube Search API
   const apiKey = process.env.YOUTUBE_API_KEY;
   if (!apiKey) {
     return NextResponse.json({ error: 'YOUTUBE_API_KEY is not configured.' }, { status: 500 });
   }
 
   const searchQuery = rawQuery || `${title} ${artist} audio`;
-  
-  // Try searching in Category 10 (Music) first for official/clean audio
   const ytUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(searchQuery)}&type=video&key=${apiKey}&maxResults=1&videoCategoryId=10`;
 
   try {
@@ -46,7 +60,6 @@ export async function GET(request: Request) {
     let data = await response.json();
     let videoId = data.items?.[0]?.id?.videoId;
 
-    // Fallback if no music category match or API category fails
     if (!videoId) {
       const fallbackUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(searchQuery)}&type=video&key=${apiKey}&maxResults=1`;
       response = await fetch(fallbackUrl);
@@ -58,7 +71,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'No video found on YouTube.' }, { status: 404 });
     }
 
-    // Cache the resolved ID
+    // Cache local/raw query resolutions in Redis
     try {
       await redis.set(cacheKey, videoId);
     } catch (err) {

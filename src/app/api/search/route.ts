@@ -9,28 +9,42 @@ const redis = new Redis({
   token: process.env.UPSTASH_REDIS_REST_TOKEN!,
 });
 
-interface SearchTrack {
-  id: string;
+interface UnifiedSearchTrack {
+  id: string; // Spotify ID or local UUID
   title: string;
   artist: {
     id?: string;
     name: string;
+    avatarUrl?: string; // Official Artist Image
   };
   album?: {
     id?: string;
     name: string;
     coverUrl?: string;
+    releaseDate?: string;
   };
   durationMs: number;
   popularity: number;
   previewUrl: string;
   sourceType: 'youtube' | 'cloud';
-  sourceId?: string;
+  sourceId?: string; // Cached YouTube Video ID
   coverUrl: string;
+  explicit?: boolean;
+  genres?: string[];
   score?: number;
 }
 
-// Normalize strings for matching/deduplication
+interface TopArtist {
+  id: string;
+  name: string;
+  coverUrl: string;
+  followers: number;
+  popularity: number;
+  genres: string[];
+  verified: boolean;
+}
+
+// Normalize strings for matching
 function normalizeString(str: string): string {
   return str
     .toLowerCase()
@@ -47,77 +61,110 @@ export async function GET(request: Request) {
   }
 
   const normalizedQuery = normalizeString(query);
-  const cacheKey = `hybrid_search:${normalizedQuery}`;
+  const cacheKey = `hybrid_search_v2:${normalizedQuery}`;
 
   // 1. Try checking Redis Cache
   try {
-    const cachedResults = await redis.get<SearchTrack[]>(cacheKey);
-    if (cachedResults) {
-      return NextResponse.json({ tracks: cachedResults, cached: true });
+    const cachedData = await redis.get<{ tracks: UnifiedSearchTrack[]; topArtist: TopArtist | null }>(cacheKey);
+    if (cachedData) {
+      return NextResponse.json({ ...cachedData, cached: true });
     }
   } catch (err) {
     console.warn('Redis read error in hybrid search:', err);
   }
 
   try {
-    // 2. Run searches in parallel
-    let [spotifyResults, localResults] = await Promise.all([
+    // 2. Fetch Spotify track/artist details and local db matches in parallel
+    const [spotifyResults, localResults] = await Promise.all([
       searchSpotify(query),
       searchLocalDatabase(query),
     ]);
 
-    if (spotifyResults.length === 0 && localResults.length < 5) {
+    let tracks = spotifyResults.tracks;
+    let topArtist = spotifyResults.topArtist;
+
+    // Fallback if Spotify is down/unsubscribed and returns nothing
+    if (tracks.length === 0 && localResults.length < 5) {
       console.log('Spotify search returned zero results. Running YouTube fallback...');
-      const fallbackResults = await searchYouTubeFallback(query);
-      spotifyResults = fallbackResults;
+      const fallbackTracks = await searchYouTubeFallback(query);
+      tracks = fallbackTracks;
     }
 
     // 3. Merge and Deduplicate results
-    const mergedMap = new Map<string, SearchTrack>();
+    const mergedMap = new Map<string, UnifiedSearchTrack>();
 
-    // Add local results first (user uploads or already saved tracks)
+    // Add local results first
     localResults.forEach((track) => {
       const dedupKey = `${normalizeString(track.title)}::${normalizeString(track.artist.name)}`;
       mergedMap.set(dedupKey, track);
     });
 
-    // Add Spotify results (merging if duplicate matches)
-    spotifyResults.forEach((track) => {
+    // Add Spotify results, merging duplicate tracks
+    tracks.forEach((track) => {
       const dedupKey = `${normalizeString(track.title)}::${normalizeString(track.artist.name)}`;
       if (mergedMap.has(dedupKey)) {
         const existing = mergedMap.get(dedupKey)!;
-        // Merge metadata: keep local source (youtube/cloud) but update description/popularity from Spotify
         mergedMap.set(dedupKey, {
           ...track,
           id: existing.id || track.id,
           sourceType: existing.sourceType || track.sourceType,
           sourceId: existing.sourceId || track.sourceId,
           popularity: Math.max(existing.popularity || 0, track.popularity || 0),
+          artist: {
+            ...track.artist,
+            avatarUrl: existing.artist.avatarUrl || track.artist.avatarUrl,
+          },
         });
       } else {
         mergedMap.set(dedupKey, track);
       }
     });
 
+    // 4. Batch query local DB cache for resolved YouTube video IDs
     const mergedList = Array.from(mergedMap.values());
+    const spotifyIds = mergedList.map(t => t.id).filter(id => !id.startsWith('yt_') && id.length > 5);
 
-    // 4. Rank results
+    if (spotifyIds.length > 0) {
+      try {
+        const resolvedSources = await sql`
+          SELECT track_id, source_id 
+          FROM public.track_sources 
+          WHERE track_id = ANY(${spotifyIds})
+            AND source_type = 'youtube'
+        `;
+
+        const sourceMap = new Map<string, string>();
+        resolvedSources.forEach((row: any) => {
+          sourceMap.set(row.track_id, row.source_id);
+        });
+
+        // Inject cached YouTube IDs directly
+        mergedList.forEach(t => {
+          if (sourceMap.has(t.id)) {
+            t.sourceId = sourceMap.get(t.id);
+          }
+        });
+      } catch (dbErr) {
+        console.warn('Failed to query batch track sources:', dbErr);
+      }
+    }
+
+    // 5. Rank results
     const rankedList = mergedList.map((track) => {
-      let score = (track.popularity || 0) * 0.15; // base score from popularity
-
+      let score = (track.popularity || 0) * 0.15;
       const normTitle = normalizeString(track.title);
       const normArtist = normalizeString(track.artist.name);
 
       if (normTitle === normalizedQuery) {
-        score += 100; // exact title match
+        score += 100;
       } else if (normTitle.startsWith(normalizedQuery)) {
-        score += 50; // starts with title match
+        score += 50;
       } else if (normTitle.includes(normalizedQuery)) {
-        score += 20; // contains title match
+        score += 20;
       }
 
       if (normArtist === normalizedQuery) {
-        score += 80; // exact artist match
+        score += 80;
       } else if (normArtist.startsWith(normalizedQuery)) {
         score += 40;
       }
@@ -128,31 +175,30 @@ export async function GET(request: Request) {
       };
     });
 
-    // Sort by score descending
     rankedList.sort((a, b) => b.score! - a.score!);
-
-    // Remove temporary scoring fields before returning/caching
     const finalTracks = rankedList.map(({ score, ...track }) => track);
 
-    // 5. Cache result in Redis for 10 minutes (600s)
+    const responsePayload = { tracks: finalTracks, topArtist, cached: false };
+
+    // 6. Cache result in Redis for 10 minutes
     try {
-      await redis.set(cacheKey, finalTracks, { ex: 600 });
+      await redis.set(cacheKey, responsePayload, { ex: 600 });
     } catch (err) {
       console.warn('Redis write error in hybrid search:', err);
     }
 
-    return NextResponse.json({ tracks: finalTracks, cached: false });
+    return NextResponse.json(responsePayload);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
-// Helper to query Spotify Search API
-async function searchSpotify(query: string): Promise<SearchTrack[]> {
+// Helper to query Spotify Search (tracks + artists)
+async function searchSpotify(query: string): Promise<{ tracks: UnifiedSearchTrack[]; topArtist: TopArtist | null }> {
   try {
     const token = await getSpotifyAccessToken();
     const response = await fetch(
-      `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=25`,
+      `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track,artist&limit=20`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -162,36 +208,97 @@ async function searchSpotify(query: string): Promise<SearchTrack[]> {
 
     if (!response.ok) {
       console.error('Spotify API failed in hybrid search:', response.statusText);
-      return [];
+      return { tracks: [], topArtist: null };
     }
 
     const data = await response.json();
-    return data.tracks?.items?.map((item: any) => ({
-      id: item.id,
-      title: item.name,
-      artist: {
-        id: item.artists[0]?.id,
-        name: item.artists[0]?.name,
-      },
-      album: {
-        id: item.album?.id,
-        name: item.album?.name,
+    
+    // Parse Top Artist Match
+    let topArtist: TopArtist | null = null;
+    const spotifyArtists = data.artists?.items || [];
+    if (spotifyArtists.length > 0) {
+      const bestArtist = spotifyArtists[0];
+      // If the artist name is highly similar to the query, promote it
+      if (normalizeString(bestArtist.name).includes(normalizeString(query)) || normalizeString(query).includes(normalizeString(bestArtist.name))) {
+        topArtist = {
+          id: bestArtist.id,
+          name: bestArtist.name,
+          coverUrl: bestArtist.images?.[0]?.url || '',
+          followers: bestArtist.followers?.total || 0,
+          popularity: bestArtist.popularity || 0,
+          genres: bestArtist.genres || [],
+          verified: true,
+        };
+      }
+    }
+
+    const spotifyTracks = data.tracks?.items || [];
+
+    // Optimization: Batch fetch artist avatars/images to avoid N requests
+    const artistIds = Array.from(new Set<string>(
+      spotifyTracks.map((item: any) => item.artists[0]?.id).filter(Boolean)
+    ));
+
+    const artistDetailsMap = new Map<string, { avatarUrl: string; genres: string[] }>();
+    if (artistIds.length > 0) {
+      try {
+        const batchArtistsRes = await fetch(
+          `https://api.spotify.com/v1/artists?ids=${artistIds.slice(0, 50).join(',')}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (batchArtistsRes.ok) {
+          const batchData = await batchArtistsRes.json();
+          batchData.artists?.forEach((art: any) => {
+            if (art) {
+              artistDetailsMap.set(art.id, {
+                avatarUrl: art.images?.[0]?.url || '',
+                genres: art.genres || [],
+              });
+            }
+          });
+        }
+      } catch (batchErr) {
+        console.warn('Failed to batch resolve Spotify artists details:', batchErr);
+      }
+    }
+
+    const tracks: UnifiedSearchTrack[] = spotifyTracks.map((item: any) => {
+      const artId = item.artists[0]?.id;
+      const details = artistDetailsMap.get(artId);
+
+      return {
+        id: item.id,
+        title: item.name,
+        artist: {
+          id: artId,
+          name: item.artists[0]?.name,
+          avatarUrl: details?.avatarUrl || '',
+        },
+        album: {
+          id: item.album?.id,
+          name: item.album?.name,
+          coverUrl: item.album?.images?.[0]?.url || '',
+          releaseDate: item.album?.release_date || '',
+        },
+        durationMs: item.duration_ms,
+        popularity: item.popularity || 0,
+        previewUrl: item.preview_url || '',
+        sourceType: 'youtube',
         coverUrl: item.album?.images?.[0]?.url || '',
-      },
-      durationMs: item.duration_ms,
-      popularity: item.popularity || 0,
-      previewUrl: item.preview_url || '',
-      sourceType: 'youtube',
-      coverUrl: item.album?.images?.[0]?.url || '',
-    })) || [];
+        explicit: item.explicit || false,
+        genres: details?.genres || [],
+      };
+    });
+
+    return { tracks, topArtist };
   } catch (error) {
     console.error('Error searching Spotify:', error);
-    return [];
+    return { tracks: [], topArtist: null };
   }
 }
 
 // Helper to query local database with Trigram fuzzy match
-async function searchLocalDatabase(query: string): Promise<SearchTrack[]> {
+async function searchLocalDatabase(query: string): Promise<UnifiedSearchTrack[]> {
   try {
     const results = await sql`
       SELECT 
@@ -202,9 +309,12 @@ async function searchLocalDatabase(query: string): Promise<SearchTrack[]> {
         t.preview_url as "previewUrl",
         a.id as artist_id,
         a.name as artist_name,
+        a.images as artist_images,
+        a.genres as artist_genres,
         al.id as album_id,
         al.name as album_name,
         al.images as album_images,
+        al.release_date as album_release,
         ts.source_type as "sourceType",
         ts.source_id as "sourceId"
       FROM public.tracks t
@@ -214,7 +324,7 @@ async function searchLocalDatabase(query: string): Promise<SearchTrack[]> {
       WHERE similarity(t.title, ${query}) > 0.15 
          OR similarity(a.name, ${query}) > 0.15
       ORDER BY similarity(t.title, ${query}) DESC
-      LIMIT 15
+      LIMIT 10
     `;
 
     return results.map((row: any) => {
@@ -223,9 +333,15 @@ async function searchLocalDatabase(query: string): Promise<SearchTrack[]> {
         try {
           const imgs = typeof row.album_images === 'string' ? JSON.parse(row.album_images) : row.album_images;
           coverUrl = imgs?.[0]?.url || '';
-        } catch {
-          // ignore parsing error
-        }
+        } catch {}
+      }
+
+      let avatarUrl = '';
+      if (row.artist_images) {
+        try {
+          const imgs = typeof row.artist_images === 'string' ? JSON.parse(row.artist_images) : row.artist_images;
+          avatarUrl = imgs?.[0]?.url || '';
+        } catch {}
       }
 
       return {
@@ -234,11 +350,13 @@ async function searchLocalDatabase(query: string): Promise<SearchTrack[]> {
         artist: {
           id: row.artist_id,
           name: row.artist_name,
+          avatarUrl,
         },
         album: {
           id: row.album_id,
           name: row.album_name,
           coverUrl,
+          releaseDate: row.album_release,
         },
         durationMs: row.durationMs || 0,
         popularity: row.popularity || 0,
@@ -246,6 +364,7 @@ async function searchLocalDatabase(query: string): Promise<SearchTrack[]> {
         sourceType: (row.sourceType as 'youtube' | 'cloud') || 'youtube',
         sourceId: row.sourceId || undefined,
         coverUrl,
+        genres: row.artist_genres || [],
       };
     });
   } catch (error) {
@@ -254,38 +373,31 @@ async function searchLocalDatabase(query: string): Promise<SearchTrack[]> {
   }
 }
 
-// Helper to search YouTube API directly as a fallback if Spotify fails
-async function searchYouTubeFallback(query: string): Promise<SearchTrack[]> {
+// Fallback search to YouTube directly if Spotify is down
+async function searchYouTubeFallback(query: string): Promise<UnifiedSearchTrack[]> {
   const apiKey = process.env.YOUTUBE_API_KEY;
-  if (!apiKey) {
-    console.warn('YouTube API Key missing, cannot run fallback search.');
-    return [];
-  }
+  if (!apiKey) return [];
 
   try {
-    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&key=${apiKey}&maxResults=15&videoCategoryId=10`;
+    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&key=${apiKey}&maxResults=10&videoCategoryId=10`;
     let response = await fetch(url);
     if (!response.ok) {
-      // Try search query without category restriction (CategoryId 10 is music)
-      const fallbackUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&key=${apiKey}&maxResults=15`;
+      const fallbackUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&key=${apiKey}&maxResults=10`;
       response = await fetch(fallbackUrl);
-      if (!response.ok) {
-        console.error('YouTube search fallback API failed:', response.statusText);
-        return [];
-      }
     }
 
     const data = await response.json();
     return data.items?.map((item: any) => {
       const bestThumbnail = getBestYouTubeThumbnail(item.snippet?.thumbnails);
       return {
-        id: item.id?.videoId || `yt_${Date.now()}_${Math.random()}`,
+        id: item.id?.videoId || '',
         title: item.snippet?.title || 'Unknown Video',
         artist: {
           name: item.snippet?.channelTitle || 'Unknown Artist',
+          avatarUrl: '',
         },
         album: {
-          name: 'YouTube Video',
+          name: 'YouTube Vibe',
           coverUrl: bestThumbnail,
         },
         durationMs: 180000,
@@ -294,6 +406,7 @@ async function searchYouTubeFallback(query: string): Promise<SearchTrack[]> {
         sourceType: 'youtube' as const,
         sourceId: item.id?.videoId,
         coverUrl: bestThumbnail,
+        genres: [],
       };
     }) || [];
   } catch (error) {

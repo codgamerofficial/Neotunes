@@ -9,7 +9,7 @@ export default function NeoTuneLogo({ className = "h-9 w-9", showText = true }: 
   return (
     <div className="flex items-center space-x-3 select-none">
       {/* Logomark */}
-      <div className={`relative flex items-center justify-center rounded-xl bg-gradient-to-br from-neutral-900 to-black p-[1px] shadow-lg shadow-teal-500/10 border border-white/10 ${className}`}>
+      <div className={`relative flex items-center justify-center rounded-xl bg-gradient-to-br from-neutral-900 to-black p-[1px] shadow-lg shadow-cyan-500/10 border border-white/10 ${className}`}>
         <svg
           viewBox="0 0 32 32"
           fill="none"
@@ -18,9 +18,9 @@ export default function NeoTuneLogo({ className = "h-9 w-9", showText = true }: 
         >
           <defs>
             <linearGradient id="neotune-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#00f5d4" /> {/* Neon Teal */}
-              <stop offset="50%" stopColor="#39ff14" /> {/* Electric Green */}
-              <stop offset="100%" stopColor="#8b5cf6" /> {/* Soft Violet */}
+              <stop offset="0%" stopColor="#00F5FF" /> {/* Neon Cyan */}
+              <stop offset="60%" stopColor="#7B61FF" /> {/* Purple */}
+              <stop offset="100%" stopColor="#9d8bff" /> {/* Lighter Purple */}
             </linearGradient>
           </defs>
           {/* Backing N waveform */}
@@ -39,7 +39,7 @@ export default function NeoTuneLogo({ className = "h-9 w-9", showText = true }: 
       </div>
       {showText && (
         <span className="text-xl font-black tracking-wider text-white">
-          Neo<span className="bg-gradient-to-r from-teal-400 to-emerald-400 bg-clip-text text-transparent">Tune</span>
+          Neo<span className="bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">Tune</span>
         </span>
       )}
     </div>

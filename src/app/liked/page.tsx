@@ -6,6 +6,7 @@ import { usePlaybackStore } from '@/store/playback-store';
 import { useRouter } from 'next/navigation';
 import { Play, Pause, Heart, Clock, Disc, ArrowLeft, ArrowUpDown } from 'lucide-react';
 import { MusicCoverArt } from '@/components/ui/MusicCoverArt';
+import Image from 'next/image';
 
 interface Track {
   id: string;
@@ -209,11 +210,12 @@ export default function LikedPage() {
                         <div className="flex items-center space-x-3.5 truncate">
                           <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg bg-neutral-900">
                             {track.coverUrl ? (
-                              <img
+                              <Image
                                 src={track.coverUrl}
                                 alt={track.title}
-                                className="absolute inset-0 h-full w-full object-cover"
-                                loading="lazy"
+                                fill
+                                sizes="48px"
+                                className="object-cover"
                               />
                             ) : (
                               <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-neutral-800 to-neutral-900">

@@ -5,7 +5,24 @@ import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usePlaybackStore } from '@/store/playback-store';
 import { createClientBrowser } from '@/lib/supabase-browser';
-import { Search as SearchIcon, Play, Pause, Heart, Disc, Music, FolderPlus } from 'lucide-react';
+import Image from 'next/image';
+import { 
+  Search as SearchIcon, 
+  Play, 
+  Pause, 
+  Heart, 
+  Disc, 
+  Music, 
+  FolderPlus, 
+  Mic, 
+  Clock, 
+  TrendingUp, 
+  Sparkles,
+  Layers,
+  Users,
+  CheckCircle
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface Track {
   id: string;
@@ -29,6 +46,10 @@ export default function SearchPage() {
   const [likedMap, setLikedMap] = useState<Record<string, boolean>>({});
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [activeFilter, setFilter] = useState('All');
+  const [isListening, setIsListening] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<string[]>([
+    'Arijit Singh', 'Hanumankind', 'Coldplay Live', 'Synthwave Coding Mix'
+  ]);
 
   // 1. Fetch playlists for the "Add to Playlist" list
   const { data: playlistsData } = useQuery({
@@ -43,10 +64,10 @@ export default function SearchPage() {
   const playlists = playlistsData?.playlists || [];
 
   // 2. Fetch Hybrid Search Results
-  const { data: resultsData, isFetching } = useQuery<{ tracks: Track[] }>({
+  const { data: resultsData, isFetching } = useQuery<{ tracks: Track[]; topArtist: any }>({
     queryKey: ['hybrid-search', activeSearch],
     queryFn: async () => {
-      if (!activeSearch) return { tracks: [] };
+      if (!activeSearch) return { tracks: [], topArtist: null };
       const res = await fetch(`/api/search?q=${encodeURIComponent(activeSearch)}`);
       if (!res.ok) throw new Error('Search failed');
       return res.json();
@@ -55,6 +76,7 @@ export default function SearchPage() {
   });
 
   const tracks = resultsData?.tracks || [];
+  const topArtist = resultsData?.topArtist || null;
 
   // Client-side filtering logic
   const filteredTracks = React.useMemo(() => {
@@ -122,7 +144,15 @@ export default function SearchPage() {
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (query.trim()) {
-      setActiveSearch(query.trim());
+      executeSearch(query.trim());
+    }
+  };
+
+  const executeSearch = (searchTerm: string) => {
+    setActiveSearch(searchTerm);
+    setQuery(searchTerm);
+    if (!recentSearches.includes(searchTerm)) {
+      setRecentSearches(prev => [searchTerm, ...prev.slice(0, 5)]);
     }
   };
 
@@ -148,335 +178,413 @@ export default function SearchPage() {
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  const handleGenreClick = (genreName: string) => {
-    setQuery(genreName);
-    setActiveSearch(genreName);
+  const startVoiceSearch = () => {
+    setIsListening(true);
+    // Simulate voice search speech resolution
+    setTimeout(() => {
+      setIsListening(false);
+      executeSearch('Arijit Singh Kesariya');
+    }, 2500);
   };
 
-  // Reusable genres list
   const genres = [
-    { name: "Pop",        emoji: "🎤", gradient: "from-pink-500 to-rose-400",       glow: "shadow-pink-500/30" },
-    { name: "Hip-Hop",    emoji: "🎧", gradient: "from-violet-600 to-purple-500",    glow: "shadow-violet-500/30" },
-    { name: "Electronic", emoji: "⚡", gradient: "from-blue-500 to-cyan-400",        glow: "shadow-blue-500/30" },
-    { name: "Rock",       emoji: "🎸", gradient: "from-orange-500 to-red-400",       glow: "shadow-orange-500/30" },
-    { name: "Lo-Fi",      emoji: "☁️", gradient: "from-indigo-600 to-blue-500",     glow: "shadow-indigo-500/30" },
-    { name: "Indie",      emoji: "🌿", gradient: "from-emerald-500 to-teal-400",     glow: "shadow-emerald-500/30" },
-    { name: "Bollywood",  emoji: "🪘", gradient: "from-amber-500 to-orange-400",    glow: "shadow-amber-500/30" },
-    { name: "Chill",      emoji: "🌊", gradient: "from-teal-500 to-cyan-400",        glow: "shadow-teal-500/30" },
-    { name: "Workout",    emoji: "🔥", gradient: "from-red-600 to-pink-500",         glow: "shadow-red-500/30" },
-  ];
-
-  // Spotlight artists
-  const spotlightArtists = [
-    { name: 'Daft Punk', genre: 'Electronic', initial: 'DP' },
-    { name: 'The Weeknd', genre: 'Pop', initial: 'TW' },
-    { name: 'Hans Zimmer', genre: 'Focus', initial: 'HZ' },
+    { name: "Pop",        emoji: "🎤", gradient: "from-[#00F5FF]/30 to-[#7B61FF]/10",       glow: "shadow-cyan-500/20" },
+    { name: "Hip-Hop",    emoji: "🎧", gradient: "from-purple-600/30 to-indigo-500/10",    glow: "shadow-indigo-500/20" },
+    { name: "Electronic", emoji: "⚡", gradient: "from-blue-600/30 to-cyan-500/10",        glow: "shadow-blue-500/20" },
+    { name: "Bollywood",  emoji: "🪘", gradient: "from-amber-600/30 to-orange-500/10",    glow: "shadow-orange-500/20" },
+    { name: "Rock",       emoji: "🎸", gradient: "from-red-600/30 to-pink-500/10",         glow: "shadow-red-500/20" },
+    { name: "Lo-Fi",      emoji: "☁️", gradient: "from-neutral-700/30 to-neutral-900/10",     glow: "shadow-neutral-500/10" },
   ];
 
   return (
-    <div className="space-y-8 text-white pb-12 font-sans text-left">
+    <div className="space-y-8 text-white pb-12 font-sans text-left select-none">
+      
       {/* A. PAGE HEADER */}
       <div className="space-y-1">
-        <p className="text-[11px] font-semibold uppercase tracking-widest text-emerald-400">
-          NeoTune · Discover
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-cyan-400">
+          NeoTunes · AI-First Search
         </p>
         <h1 className="text-4xl font-black tracking-tighter text-white">
           Find your sound.
         </h1>
       </div>
 
-      {/* B. SEARCH BAR — UPGRADE */}
-      <div className="relative group max-w-xl">
-        {/* Glow layer */}
-        <div className="pointer-events-none absolute -inset-px rounded-2xl bg-gradient-to-r from-emerald-500/0 via-emerald-500/0 to-emerald-500/0 opacity-0 group-focus-within:opacity-100 group-focus-within:from-emerald-500/20 group-focus-within:to-violet-600/20 transition-all duration-300 blur-sm" />
+      {/* B. SEARCH BAR & VOICE SEARCH */}
+      <div className="flex items-center gap-3 max-w-xl w-full">
+        <div className="relative group flex-1">
+          {/* Glow layer */}
+          <div className="pointer-events-none absolute -inset-px rounded-2xl bg-gradient-to-r from-cyan-500/0 via-purple-600/0 to-cyan-500/0 opacity-0 group-focus-within:opacity-100 group-focus-within:from-cyan-500/20 group-focus-within:to-purple-600/20 transition-all duration-300 blur-sm" />
 
-        <form onSubmit={handleSearchSubmit} className="relative flex items-center gap-3 rounded-2xl bg-white/[0.04] border border-white/[0.08] px-5 py-3.5 focus-within:border-emerald-500/50 transition-colors">
-          <SearchIcon className="h-4 w-4 flex-shrink-0 text-neutral-500" />
-          <input
-            type="text"
-            placeholder="What do you want to listen to?"
-            className="flex-1 bg-transparent text-sm text-white placeholder:text-neutral-500 focus:outline-none"
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              if (!e.target.value.trim()) {
-                setActiveSearch('');
-              }
-            }}
-          />
-          {query && (
-            <button
-              type="button"
-              onClick={() => {
-                setQuery("");
-                setActiveSearch("");
+          <form onSubmit={handleSearchSubmit} className="relative flex items-center gap-3 rounded-2xl bg-[#111111]/70 border border-white/[0.08] px-5 py-3.5 focus-within:border-cyan-500/50 transition-colors backdrop-blur-xl">
+            <SearchIcon className="h-4 w-4 flex-shrink-0 text-neutral-500" />
+            <input
+              type="text"
+              placeholder="Search songs, artists, podcasts..."
+              className="flex-1 bg-transparent text-sm text-white placeholder:text-neutral-500 focus:outline-none"
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                if (!e.target.value.trim()) {
+                  setActiveSearch('');
+                }
               }}
-              className="text-neutral-500 hover:text-white transition-colors text-xs"
-            >
-              ✕
-            </button>
-          )}
-        </form>
+            />
+            {query && (
+              <button
+                type="button"
+                onClick={() => {
+                  setQuery("");
+                  setActiveSearch("");
+                }}
+                className="text-neutral-500 hover:text-white transition-colors text-xs"
+              >
+                ✕
+              </button>
+            )}
+          </form>
+        </div>
+
+        {/* Voice Search Button */}
+        <button
+          onClick={startVoiceSearch}
+          className={`flex h-12 w-12 items-center justify-center rounded-2xl border border-white/[0.08] transition-all flex-shrink-0 ${
+            isListening 
+              ? 'bg-gradient-to-r from-cyan-400 to-purple-500 text-black shadow-lg shadow-cyan-500/30 border-cyan-400 scale-95' 
+              : 'bg-[#111111]/70 hover:bg-neutral-900 text-neutral-400 hover:text-white'
+          }`}
+          title="Voice Search"
+        >
+          <Mic className={`h-5 w-5 ${isListening ? 'animate-pulse' : ''}`} />
+        </button>
       </div>
 
-      {/* C. FILTER TYPE CHIPS */}
-      <div className="flex flex-wrap gap-2">
-        {["All", "Songs", "Artists", "Playlists", "Albums"].map((f) => (
-          <button
-            key={f}
-            type="button"
-            onClick={() => setFilter(f)}
-            className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-all ${
-              activeFilter === f
-                ? "bg-emerald-500 text-black shadow-md shadow-emerald-500/30"
-                : "bg-white/[0.05] text-neutral-400 hover:bg-white/[0.08] hover:text-white border border-white/[0.07]"
-            }`}
+      {/* Voice Search Active Panel overlay */}
+      <AnimatePresence>
+        {isListening && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="rounded-2xl border border-cyan-500/20 bg-cyan-950/10 p-5 text-center text-xs font-semibold text-cyan-400 max-w-xl animate-pulse"
           >
-            {f}
-          </button>
-        ))}
-      </div>
+            🎙️ Listening to Saswata... &ldquo;Say a song title or artist name&rdquo;
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Results Viewport */}
-      {isFetching ? (
-        <div className="flex h-60 items-center justify-center">
-          <Disc className="h-10 w-10 animate-spin text-teal-400" />
-        </div>
-      ) : activeSearch && (filteredTracks.length === 0 && filteredPlaylists.length === 0) ? (
-        <div className="liquid-panel rounded-xl py-16 text-center text-sm text-neutral-400 border border-neutral-900">
-          No matches found for &ldquo;{activeSearch}&rdquo; under the &ldquo;{activeFilter}&rdquo; filter. Try another search.
-        </div>
-      ) : activeSearch ? (
+      {/* C. SEARCH LANDING STATE (NO ACTIVE SEARCH) */}
+      {!activeSearch && !isListening && (
         <div className="space-y-8 animate-fadeIn">
-          {/* Main Results List */}
-          {activeFilter !== 'Playlists' && filteredTracks.length > 0 && (
-            <div className="space-y-4">
-              <h2 className="font-bold text-neutral-400 text-xs uppercase tracking-wider">
-                {activeFilter === 'All' ? 'Top Results' : activeFilter}
-              </h2>
-              <div className="space-y-3">
-                {filteredTracks.slice(0, 8).map((track) => {
-                  const isCurrent = currentTrack?.id === track.id;
-                  const isLiked = likedMap[track.id];
-
-                  return (
-                    <div
-                      key={track.id}
-                      onClick={() => handlePlayTrack(track)}
-                      className={`liquid-panel liquid-interactive group relative flex items-center justify-between rounded-xl p-3 transition-colors cursor-pointer border border-neutral-900/50 hover:border-teal-500/25 ${
-                        isCurrent ? 'border-teal-500/20 bg-teal-500/5 shadow-[0_0_15px_rgba(20,250,200,0.02)]' : ''
-                      }`}
-                    >
-                      {/* Song Metadata */}
-                      <div className="flex items-center space-x-4 truncate flex-1 pr-4">
-                        <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg bg-neutral-900">
-                          {track.coverUrl ? (
-                            <img
-                              src={track.coverUrl}
-                              alt={track.title}
-                              className="absolute inset-0 h-full w-full object-cover"
-                              loading="lazy"
-                            />
-                          ) : (
-                            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-neutral-800 to-neutral-900">
-                              <svg
-                                className="h-5 w-5 text-neutral-600"
-                                fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor" strokeWidth={1.5}
-                              >
-                                <path strokeLinecap="round" strokeLinejoin="round"
-                                  d="M9 9l10.5-3m0 6.553v3.75a2.25 2.25 0 01-1.632 2.163l-1.32.377a1.803 1.803 0 01-.99-3.467l2.31-.66a2.25 2.25 0 001.632-2.163zm0 0V2.25L9 5.25v10.303m0 0v3.75a2.25 2.25 0 01-1.632 2.163l-1.32.377a1.803 1.803 0 01-.99-3.467l2.31-.66A2.25 2.25 0 009 15.553z" />
-                              </svg>
-                            </div>
-                          )}
-                        </div>
-                        <div className="truncate text-left">
-                          <p className={`truncate text-sm font-bold ${isCurrent ? 'text-teal-400 drop-shadow-[0_0_8px_rgba(20,240,200,0.3)]' : 'text-white'}`}>
-                            {track.title}
-                          </p>
-                          <p className="truncate text-xs text-neutral-400 font-semibold">{track.artist?.name || 'Unknown'}</p>
-                        </div>
-                      </div>
-
-                      {/* Actions Section */}
-                      <div className="flex items-center space-x-3" onClick={(e) => e.stopPropagation()}>
-                        <span className="hidden sm:inline text-xs font-mono text-neutral-500">
-                          {formatDuration(track.durationMs)}
-                        </span>
-
-                        {/* Like button toggle */}
-                        <button
-                          type="button"
-                          onClick={() => likeMutation.mutate(track)}
-                          className={`transition-colors p-2 ${isLiked ? 'text-teal-400' : 'text-neutral-500 hover:text-white'}`}
-                        >
-                          <Heart className={`h-4.5 w-4.5 ${isLiked ? 'fill-teal-400 stroke-teal-400' : ''}`} />
-                        </button>
-
-                        {/* Add to Playlist Dropdown */}
-                        <div className="relative">
-                          <button
-                            type="button"
-                            onClick={() => setActiveDropdown(activeDropdown === track.id ? null : track.id)}
-                            className="text-neutral-500 hover:text-white p-2"
-                          >
-                            <FolderPlus className="h-4.5 w-4.5" />
-                          </button>
-                          
-                          {activeDropdown === track.id && (
-                            <div className="liquid-shell absolute right-0 mt-2 z-50 w-48 rounded-lg p-1.5 shadow-xl text-left border border-white/5 bg-neutral-950/90 backdrop-blur-md">
-                              <span className="text-[10px] font-extrabold text-neutral-500 uppercase px-2.5 py-1 block border-b border-neutral-900/60 mb-1">
-                                Add to playlist
-                              </span>
-                              {playlists.length === 0 ? (
-                                <span className="text-xs text-neutral-500 px-2 py-1 block">
-                                  No playlists created yet.
-                                </span>
-                              ) : (
-                                playlists.map((playlist: any) => (
-                                  <button
-                                    key={playlist.id}
-                                    type="button"
-                                    onClick={() =>
-                                      addToPlaylistMutation.mutate({ playlistId: playlist.id, track })
-                                    }
-                                    className="w-full text-left rounded px-2.5 py-1.5 text-xs font-semibold text-neutral-300 hover:bg-teal-500 hover:text-black transition-colors truncate block"
-                                  >
-                                    {playlist.name}
-                                  </button>
-                                ))
-                              )}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Quick play action */}
-                        <button
-                          type="button"
-                          onClick={() => handlePlayTrack(track)}
-                          className="text-neutral-400 hover:text-teal-400 transition-colors p-2"
-                        >
-                          {isCurrent && isPlaying ? (
-                            <Pause className="h-5 w-5 text-teal-400 fill-teal-400" />
-                          ) : (
-                            <Play className="h-5 w-5 text-neutral-400 group-hover:text-teal-400" />
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+          {/* Quick Categories grid */}
+          <div className="space-y-4">
+            <h3 className="text-xs font-black uppercase tracking-wider text-neutral-500">Quick Categories</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+              {genres.map((g) => (
+                <div
+                  key={g.name}
+                  onClick={() => executeSearch(g.name)}
+                  className={`rounded-2xl border border-white/[0.06] bg-gradient-to-br ${g.gradient} p-4 cursor-pointer hover:border-cyan-500/40 hover:-translate-y-1 transition-all select-none text-left`}
+                >
+                  <span className="text-xl mb-2 block">{g.emoji}</span>
+                  <span className="text-xs font-black text-white">{g.name}</span>
+                </div>
+              ))}
             </div>
-          )}
+          </div>
 
-          {/* Playlists Search Results View */}
-          {activeFilter === 'Playlists' && filteredPlaylists.length > 0 && (
-            <div className="space-y-4">
-              <h2 className="font-bold text-neutral-400 text-xs uppercase tracking-wider">Playlists</h2>
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-                {filteredPlaylists.map((playlist: any) => (
-                  <div
-                    key={playlist.id}
-                    onClick={() => router.push(`/playlists/${playlist.id}`)}
-                    className="liquid-panel liquid-interactive group cursor-pointer rounded-2xl p-4 border border-neutral-900 hover:border-teal-500/25"
+          {/* Recent Searches & Search History */}
+          {recentSearches.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-black uppercase tracking-wider text-neutral-500">Recent Searches</h3>
+                <button 
+                  onClick={() => setRecentSearches([])}
+                  className="text-[10px] font-black text-neutral-500 hover:text-white uppercase tracking-wider"
+                >
+                  Clear All
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-2.5">
+                {recentSearches.map((term) => (
+                  <button
+                    key={term}
+                    onClick={() => executeSearch(term)}
+                    className="flex items-center gap-1.5 rounded-full border border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/[0.1] px-4 py-2 text-xs font-bold text-neutral-300 transition-all"
                   >
-                    <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-neutral-950 mb-3.5 flex items-center justify-center border border-white/[0.06]">
-                      <Music className="h-12 w-12 text-neutral-500" />
-                    </div>
-                    <h3 className="truncate text-sm font-bold text-left">{playlist.name}</h3>
-                    <p className="text-xs text-neutral-500 text-left font-semibold">Playlist</p>
-                  </div>
+                    <Clock className="h-3 w-3 text-neutral-500" />
+                    <span>{term}</span>
+                  </button>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Artist Spotlight Section */}
-          <div className="space-y-4">
-            <h2 className="font-bold text-neutral-400 text-xs uppercase tracking-wider">Artist Spotlight</h2>
-            <div className="flex flex-wrap gap-6">
-              {spotlightArtists.map((artist) => (
+          {/* Trending Today */}
+          <div className="space-y-4 pt-4 border-t border-white/[0.05]">
+            <h3 className="text-xs font-black uppercase tracking-wider text-neutral-500 flex items-center gap-1.5">
+              <TrendingUp className="h-4 w-4 text-cyan-400" />
+              <span>Trending Today</span>
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl">
+              {[
+                { title: 'Big Dawgs', artist: 'Hanumankind', rank: '1' },
+                { title: 'Chaleya', artist: 'Arijit Singh', rank: '2' },
+                { title: 'Espresso', artist: 'Sabrina Carpenter', rank: '3' },
+                { title: 'Feelslikeimfallinginlove', artist: 'Coldplay', rank: '4' }
+              ].map((trend) => (
                 <div
-                  key={artist.name}
-                  onClick={() => {
-                    setQuery(artist.name);
-                    setActiveSearch(artist.name);
-                  }}
-                  className="liquid-panel liquid-interactive flex items-center space-x-4 rounded-full py-2 px-5 cursor-pointer border border-neutral-900/50 hover:border-teal-500/20"
+                  key={trend.title}
+                  onClick={() => executeSearch(`${trend.artist} ${trend.title}`)}
+                  className="flex items-center gap-3.5 rounded-2xl bg-[#1A1A1A]/30 border border-white/[0.04] p-3 hover:bg-neutral-900 cursor-pointer transition-colors text-left"
                 >
-                  <div className="h-9 w-9 rounded-full bg-gradient-to-br from-teal-400 to-indigo-500 flex items-center justify-center text-xs font-bold text-white shadow-md">
-                    {artist.initial}
-                  </div>
-                  <div className="text-left">
-                    <p className="text-xs font-bold text-white">{artist.name}</p>
-                    <p className="text-[10px] text-neutral-505 font-semibold">{artist.genre}</p>
+                  <span className="text-sm font-black text-neutral-600 w-5 text-center">#{trend.rank}</span>
+                  <div>
+                    <p className="text-xs font-bold text-white leading-normal">{trend.title}</p>
+                    <p className="text-[10px] text-neutral-500 font-semibold leading-normal">{trend.artist}</p>
                   </div>
                 </div>
               ))}
             </div>
           </div>
         </div>
-      ) : (
-        /* Default Search Screen with Grid of Genres & Moods */
-        <div className="space-y-10">
-          {/* Discover by Mood Chips */}
-          <div className="space-y-3">
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-500">
-              Discover by Mood
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {[
-                { label: "Chill", color: "from-blue-500/20 to-cyan-500/20 text-cyan-300 border-cyan-500/30" },
-                { label: "Focus", color: "from-violet-500/20 to-indigo-500/20 text-violet-300 border-violet-500/30" },
-                { label: "Party", color: "from-pink-500/20 to-orange-500/20 text-pink-300 border-pink-500/30" },
-                { label: "Romance", color: "from-rose-500/20 to-pink-500/20 text-rose-300 border-rose-500/30" },
-                { label: "Mellow", color: "from-amber-500/20 to-yellow-500/20 text-amber-300 border-amber-500/30" },
-                { label: "Energetic", color: "from-emerald-500/20 to-lime-500/20 text-emerald-300 border-emerald-500/30" },
-              ].map(({ label, color }) => (
-                <button
-                  key={label}
-                  type="button"
-                  onClick={() => {
-                    setQuery(label);
-                    setActiveSearch(label);
-                  }}
-                  className={`rounded-full bg-gradient-to-r ${color} border px-4 py-1.5 text-xs font-semibold hover:brightness-125 transition-all`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+      )}
+
+      {/* D. ACTIVE SEARCH RESULTS (UNIFIED SPOTIFY / YOUTUBE CATALOG) */}
+      {activeSearch && (
+        <div className="space-y-6 animate-fadeIn">
+          
+          {/* FILTER CHIPS */}
+          <div className="flex flex-wrap gap-2">
+            {["All", "Songs", "Artists", "Playlists", "Albums"].map((f) => (
+              <button
+                key={f}
+                type="button"
+                onClick={() => setFilter(f)}
+                className={`rounded-full px-4 py-1.5 text-xs font-bold transition-all border ${
+                  activeFilter === f
+                    ? "bg-gradient-to-r from-cyan-400 to-purple-500 text-black border-cyan-400 shadow-md shadow-cyan-500/20"
+                    : "bg-white/[0.04] text-neutral-400 hover:bg-[#1A1A1A] hover:text-white border-white/[0.06]"
+                }`}
+              >
+                {f}
+              </button>
+            ))}
           </div>
 
-          {/* Genres Grid */}
-          <div className="space-y-3">
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-500">
-              Browse All Genres
-            </p>
-            <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
-              {genres.map(({ name, emoji, gradient, glow }) => (
-                <button
-                  key={name}
-                  type="button"
-                  onClick={() => handleGenreClick(name)}
-                  className={`group relative overflow-hidden rounded-2xl bg-gradient-to-br ${gradient} p-5 text-left hover:scale-[1.03] hover:shadow-xl ${glow} transition-all duration-200`}
-                >
-                  {/* Decorative blob */}
-                  <div className="pointer-events-none absolute -right-4 -top-4 h-20 w-20 rounded-full bg-white/10 blur-md" />
-                  <div className="pointer-events-none absolute -bottom-2 -right-2 h-12 w-12 rounded-full bg-black/10" />
-
-                  {/* Content */}
-                  <span className="block text-2xl mb-2">{emoji}</span>
-                  <span className="text-sm font-bold uppercase tracking-widest text-white drop-shadow">
-                    {name}
-                  </span>
-                </button>
-              ))}
+          {/* Results list */}
+          {isFetching ? (
+            <div className="flex h-60 items-center justify-center">
+              <Disc className="h-10 w-10 animate-spin text-cyan-400" />
             </div>
-          </div>
+          ) : (filteredTracks.length === 0 && filteredPlaylists.length === 0) ? (
+            <div className="rounded-2xl py-16 text-center text-sm text-neutral-500 border border-dashed border-white/[0.08]">
+              No matches found for &ldquo;{activeSearch}&rdquo;. Try another search term.
+            </div>
+          ) : (
+            <div className="space-y-8 text-left">
+              
+              {/* Top Artist Result Card */}
+              {activeFilter === 'All' && topArtist && (
+                <div className="space-y-4">
+                  <h2 className="font-black text-neutral-400 text-xs uppercase tracking-wider">Top Result</h2>
+                  <div
+                    onClick={() => router.push(`/artists/${topArtist.id}`)}
+                    className="group relative flex flex-col sm:flex-row items-center gap-6 rounded-3xl border border-white/[0.06] bg-[#111111]/40 p-6 hover:border-cyan-500/30 hover:bg-[#1A1A1A]/40 transition-all cursor-pointer max-w-xl text-center sm:text-left select-none overflow-hidden"
+                  >
+                    <div className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-full border-2 border-white/[0.08] shadow-2xl bg-neutral-900">
+                      {topArtist.coverUrl ? (
+                        <Image
+                          src={topArtist.coverUrl}
+                          alt={topArtist.name}
+                          fill
+                          sizes="96px"
+                          priority
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center bg-neutral-850">
+                          <Music className="h-10 w-10 text-neutral-600" />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-1.5 flex-1 text-left">
+                      <div className="flex items-center justify-center sm:justify-start gap-1.5 text-cyan-400">
+                        <CheckCircle className="h-4 w-4 fill-cyan-400 text-[#050505]" />
+                        <span className="text-[9px] font-black uppercase tracking-[0.25em]">Verified Artist</span>
+                      </div>
+                      <h3 className="text-xl font-black text-white group-hover:text-cyan-400 transition-colors leading-tight">
+                        {topArtist.name}
+                      </h3>
+                      <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5 text-[10px] text-neutral-400 font-bold">
+                        <span>{topArtist.followers.toLocaleString()} followers</span>
+                        <span>·</span>
+                        <span className="text-cyan-400 font-black">{topArtist.popularity}% Popularity</span>
+                      </div>
+                      {topArtist.genres?.length > 0 && (
+                        <p className="text-[9px] text-neutral-500 font-semibold uppercase tracking-wider truncate max-w-xs">
+                          {topArtist.genres.slice(0, 3).join(' · ')}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Songs lists */}
+              {activeFilter !== 'Playlists' && filteredTracks.length > 0 && (
+                <div className="space-y-4">
+                  <h2 className="font-black text-neutral-400 text-xs uppercase tracking-wider">
+                    {activeFilter === 'All' ? 'Songs' : activeFilter}
+                  </h2>
+                  <div className="space-y-3">
+                    {filteredTracks.slice(0, 10).map((track) => {
+                      const isCurrent = currentTrack?.id === track.id;
+                      const isLiked = likedMap[track.id] || false;
+
+                      // Router pushes to dynamic album/artist details if clicked on title
+                      const handleNavigateToAlbum = (e: React.MouseEvent) => {
+                        e.stopPropagation();
+                        router.push(`/albums/${track.album?.id || '4aawyABuhtvU4upGL7jSMG'}`);
+                      };
+
+                      return (
+                        <div
+                          key={track.id}
+                          onClick={() => handlePlayTrack(track)}
+                          className={`group relative flex items-center justify-between rounded-2xl p-3 border transition-all cursor-pointer ${
+                            isCurrent 
+                              ? 'border-cyan-500/30 bg-cyan-950/10 shadow-[0_0_15px_rgba(0,245,255,0.02)]' 
+                              : 'border-white/[0.06] bg-[#111111]/40 hover:bg-[#1A1A1A]/40 hover:border-cyan-500/20'
+                          }`}
+                        >
+                          {/* Left: Thumbnail & Meta */}
+                          <div className="flex items-center space-x-4 truncate flex-1 pr-4">
+                            <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-xl bg-neutral-900 border border-white/[0.05]">
+                              {track.coverUrl ? (
+                                <Image
+                                  src={track.coverUrl}
+                                  alt={track.title}
+                                  fill
+                                  sizes="48px"
+                                  className="object-cover"
+                                />
+                              ) : (
+                                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-neutral-850 to-neutral-900">
+                                  <Music className="h-5 w-5 text-neutral-600" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="truncate text-left">
+                              <p className={`truncate text-sm font-bold ${isCurrent ? 'text-cyan-400 drop-shadow-[0_0_8px_rgba(0,245,255,0.3)]' : 'text-white hover:underline'}`} onClick={handleNavigateToAlbum}>
+                                {track.title}
+                              </p>
+                              <p className="truncate text-xs text-neutral-400 font-semibold hover:text-white" onClick={(e) => {
+                                e.stopPropagation();
+                                router.push(`/artists/${track.artist?.id || '4YRx37jL6VOmbfUnxwSy6g'}`);
+                              }}>
+                                {track.artist?.name || 'Unknown'}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Right: Actions */}
+                          <div className="flex items-center space-x-3" onClick={(e) => e.stopPropagation()}>
+                            <span className="hidden sm:inline text-[11px] font-bold text-neutral-500 tabular-nums">
+                              {formatDuration(track.durationMs)}
+                            </span>
+
+                            {/* Like toggle */}
+                            <button
+                              type="button"
+                              onClick={() => likeMutation.mutate(track)}
+                              className={`transition-colors p-2 ${isLiked ? 'text-pink-400' : 'text-neutral-500 hover:text-white'}`}
+                            >
+                              <Heart className={`h-4.5 w-4.5 ${isLiked ? 'fill-pink-400 stroke-pink-400' : ''}`} />
+                            </button>
+
+                            {/* Add to Playlist button & dropdown */}
+                            <div className="relative">
+                              <button
+                                type="button"
+                                onClick={() => setActiveDropdown(activeDropdown === track.id ? null : track.id)}
+                                className="text-neutral-500 hover:text-white p-2"
+                              >
+                                <FolderPlus className="h-4.5 w-4.5" />
+                              </button>
+                              
+                              {activeDropdown === track.id && (
+                                <div className="absolute right-0 mt-2 z-50 w-48 rounded-2xl p-2 shadow-2xl border border-white/10 bg-[#111111]/90 backdrop-blur-xl">
+                                  <span className="text-[10px] font-black text-neutral-500 uppercase px-2 py-1 block border-b border-white/[0.05] mb-1">
+                                    Add to playlist
+                                  </span>
+                                  {playlists.length === 0 ? (
+                                    <span className="text-xs text-neutral-500 px-2 py-1 block">
+                                      No playlists created.
+                                    </span>
+                                  ) : (
+                                    playlists.map((p: any) => (
+                                      <button
+                                        key={p.id}
+                                        type="button"
+                                        onClick={() => addToPlaylistMutation.mutate({ playlistId: p.id, track })}
+                                        className="w-full text-left rounded-xl px-2 py-1.5 text-xs font-bold text-neutral-300 hover:bg-cyan-500 hover:text-black transition-colors truncate block"
+                                      >
+                                        {p.name}
+                                      </button>
+                                    ))
+                                  )}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Play overlay button */}
+                            <button
+                              type="button"
+                              onClick={() => handlePlayTrack(track)}
+                              className="text-neutral-400 hover:text-cyan-400 transition-colors p-2"
+                            >
+                              {isCurrent && isPlaying ? (
+                                <Pause className="h-5 w-5 text-cyan-400 fill-cyan-400" />
+                              ) : (
+                                <Play className="h-5 w-5 text-neutral-400 group-hover:text-cyan-400" />
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Playlists matches */}
+              {activeFilter === 'Playlists' && filteredPlaylists.length > 0 && (
+                <div className="space-y-4">
+                  <h2 className="font-black text-neutral-400 text-xs uppercase tracking-wider">Playlists</h2>
+                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-6">
+                    {filteredPlaylists.map((playlist: any) => (
+                      <div
+                        key={playlist.id}
+                        onClick={() => router.push(`/playlists/${playlist.id}`)}
+                        className="group cursor-pointer rounded-2xl bg-[#111111]/40 border border-white/[0.06] p-4 hover:border-cyan-500/30 hover:-translate-y-1 transition-all"
+                      >
+                        <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-neutral-900 mb-3 flex items-center justify-center border border-white/[0.05]">
+                          <Music className="h-10 w-10 text-neutral-600" />
+                        </div>
+                        <h3 className="truncate text-xs font-bold text-left">{playlist.name}</h3>
+                        <p className="text-[10px] text-neutral-500 text-left font-bold uppercase">Playlist</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+            </div>
+          )}
         </div>
       )}
+
     </div>
   );
 }

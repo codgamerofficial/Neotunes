@@ -3,6 +3,7 @@
 import React from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { usePlaybackStore } from '@/store/playback-store';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Play,
@@ -139,11 +140,12 @@ export default function MiniPlayer() {
       <div className="flex items-center space-x-3 w-full min-w-0 md:w-[30%]">
         <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg bg-neutral-900">
           {currentTrack.coverUrl ? (
-            <img
+            <Image
               src={currentTrack.coverUrl}
               alt={currentTrack.title}
-              className="absolute inset-0 h-full w-full object-cover"
-              loading="lazy"
+              fill
+              sizes="48px"
+              className="object-cover"
             />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-neutral-800 to-neutral-900">
@@ -169,10 +171,10 @@ export default function MiniPlayer() {
         <button
           onClick={handleLikeToggle}
           className={`liquid-interactive flex-shrink-0 p-2 transition-colors ${
-            isLiked ? 'text-teal-400' : 'text-neutral-400 hover:text-white'
+            isLiked ? 'text-cyan-400' : 'text-neutral-400 hover:text-white'
           }`}
         >
-          <Heart className={`h-4.5 w-4.5 ${isLiked ? 'fill-teal-400 stroke-teal-400' : ''}`} />
+          <Heart className={`h-4.5 w-4.5 ${isLiked ? 'fill-cyan-400 stroke-cyan-400' : ''}`} />
         </button>
       </div>
 
@@ -183,7 +185,7 @@ export default function MiniPlayer() {
           <button
             onClick={handleShuffleToggle}
             className={`liquid-interactive transition-colors ${
-              shuffle ? 'text-teal-400 drop-shadow-[0_0_8px_rgba(20,240,200,0.4)]' : 'text-neutral-400 hover:text-white'
+              shuffle ? 'text-cyan-400 drop-shadow-[0_0_8px_rgba(0,245,255,0.4)]' : 'text-neutral-400 hover:text-white'
             }`}
             title="Shuffle"
           >
@@ -198,7 +200,7 @@ export default function MiniPlayer() {
           </button>
           <button
             onClick={handlePlayPause}
-            className="liquid-interactive flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-r from-teal-400 to-emerald-400 text-black hover:scale-105 active:scale-95 shadow-md shadow-teal-500/10"
+            className="liquid-interactive flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-r from-cyan-400 to-purple-500 text-black hover:scale-105 active:scale-95 shadow-md shadow-cyan-500/10"
             title={isPlaying ? 'Pause' : 'Play'}
           >
             {isPlaying ? (
@@ -217,13 +219,13 @@ export default function MiniPlayer() {
           <button
             onClick={handleRepeatToggle}
             className={`liquid-interactive relative transition-colors ${
-              repeatMode !== 'off' ? 'text-teal-400 drop-shadow-[0_0_8px_rgba(20,240,200,0.4)]' : 'text-neutral-400 hover:text-white'
+              repeatMode !== 'off' ? 'text-cyan-400 drop-shadow-[0_0_8px_rgba(0,245,255,0.4)]' : 'text-neutral-400 hover:text-white'
             }`}
             title={`Repeat: ${repeatMode}`}
           >
             <Repeat className="h-4 w-4" />
             {repeatMode === 'one' && (
-              <span className="absolute -top-1 -right-1.5 flex h-3 w-3 items-center justify-center rounded-full bg-gradient-to-r from-teal-400 to-emerald-400 text-[8px] font-extrabold text-black">
+              <span className="absolute -top-1 -right-1.5 flex h-3 w-3 items-center justify-center rounded-full bg-gradient-to-r from-cyan-400 to-purple-500 text-[8px] font-extrabold text-black">
                 1
               </span>
             )}
@@ -238,7 +240,7 @@ export default function MiniPlayer() {
             <div className="absolute inset-0 bg-neutral-850 rounded-full" />
             {/* Active/Played progress */}
             <div
-              className="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-teal-400 to-emerald-400 rounded-full group-hover/progress:from-teal-300 group-hover/progress:to-emerald-300 shadow-[0_0_8px_rgba(0,245,212,0.4)]"
+              className="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-cyan-400 to-purple-500 rounded-full group-hover/progress:from-cyan-350 group-hover/progress:to-purple-400 shadow-[0_0_8px_rgba(0,245,255,0.4)]"
               style={{ width: `${duration > 0 ? (progress / duration) * 100 : 0}%` }}
             />
             {/* The slider thumb, visible on hover */}
@@ -270,7 +272,7 @@ export default function MiniPlayer() {
         <div className="flex items-center space-x-2 md:hidden">
           <button
             onClick={handlePlayPause}
-            className="liquid-interactive flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-r from-teal-400 to-emerald-400 text-black"
+            className="liquid-interactive flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-r from-cyan-400 to-purple-500 text-black"
           >
             {isPlaying ? (
               <Pause className="h-4.5 w-4.5 fill-black stroke-black" />
@@ -308,7 +310,7 @@ export default function MiniPlayer() {
               <div className="absolute inset-0 bg-neutral-850 rounded-full" />
               {/* Active volume progress */}
               <div
-                className="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-teal-400 to-emerald-400 rounded-full group-hover/volume:from-teal-300 group-hover/volume:to-emerald-300"
+                className="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-cyan-400 to-purple-500 rounded-full group-hover/volume:from-cyan-350 group-hover/volume:to-purple-400"
                 style={{ width: `${isMuted ? 0 : volume * 100}%` }}
               />
               {/* Thumb, visible on hover */}

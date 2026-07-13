@@ -4,6 +4,7 @@ import React, { use, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usePlaybackStore } from '@/store/playback-store';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import {
   Play,
   Pause,
@@ -215,11 +216,13 @@ export default function PlaylistDetailsPage({
         <div className="flex flex-col items-center space-y-4 md:flex-row md:space-y-0 md:space-x-6 border-b border-neutral-900 pb-8">
           <div className="relative h-36 w-36 overflow-hidden rounded-2xl bg-neutral-900 shadow-xl flex-shrink-0">
             {playlist.coverUrl ? (
-              <img
+              <Image
                 src={playlist.coverUrl}
                 alt={playlist.name}
-                className="absolute inset-0 h-full w-full object-cover"
-                loading="lazy"
+                fill
+                sizes="144px"
+                priority
+                className="object-cover"
               />
             ) : (
               <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-neutral-800 to-neutral-900">
@@ -422,11 +425,12 @@ export default function PlaylistDetailsPage({
                       <div className="flex items-center space-x-3.5 truncate">
                         <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg bg-neutral-900">
                           {track.coverUrl ? (
-                            <img
+                            <Image
                               src={track.coverUrl}
                               alt={track.title}
-                              className="absolute inset-0 h-full w-full object-cover"
-                              loading="lazy"
+                              fill
+                              sizes="48px"
+                              className="object-cover"
                             />
                           ) : (
                             <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-neutral-800 to-neutral-900">

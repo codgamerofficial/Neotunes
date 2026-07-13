@@ -194,6 +194,7 @@ export default function ProfilePage() {
                               alt={track.title}
                               className="absolute inset-0 h-full w-full object-cover"
                               loading="lazy"
+                              referrerPolicy="no-referrer"
                             />
                           ) : (
                             <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-neutral-800 to-neutral-900">

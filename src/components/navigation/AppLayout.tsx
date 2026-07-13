@@ -79,7 +79,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex min-h-screen bg-black text-white">
+    <div className="flex min-h-screen bg-[#050505] text-white">
       {/* 1. Desktop Sidebar (Hidden on Mobile) */}
       <aside className="liquid-shell hidden w-64 flex-shrink-0 p-6 pb-28 md:flex md:flex-col md:justify-between border-r border-neutral-900">
         <div className="space-y-8">
@@ -104,11 +104,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   {isActive && (
                     <motion.div
                       layoutId="sidebar-active-indicator"
-                      className="absolute inset-0 rounded-lg bg-gradient-to-r from-teal-500/10 to-emerald-500/5 border border-teal-500/30 shadow-[0_0_15px_rgba(20,250,200,0.08)]"
+                      className="absolute inset-0 rounded-lg bg-gradient-to-r from-cyan-500/10 to-purple-500/5 border border-cyan-500/30 shadow-[0_0_15px_rgba(0,245,255,0.08)]"
                       transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                     />
                   )}
-                  <Icon className={`h-5 w-5 transition-transform group-hover:scale-105 ${isActive ? 'text-teal-400' : 'text-neutral-400 group-hover:text-white'}`} />
+                  <Icon className={`h-5 w-5 transition-transform group-hover:scale-105 ${isActive ? 'text-cyan-400' : 'text-neutral-400 group-hover:text-white'}`} />
                   <span className="relative z-10">{item.label}</span>
                 </Link>
               );
@@ -122,7 +122,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             {/* Create Playlist Button - Filled Accent Gradient Pill */}
             <button
               onClick={handleCreatePlaylist}
-              className="liquid-interactive flex w-full items-center justify-center space-x-2 rounded-full bg-gradient-to-r from-teal-400 to-emerald-500 hover:from-teal-350 hover:to-emerald-450 px-4 py-2.5 text-xs font-extrabold text-black shadow-lg shadow-teal-500/10 active:scale-95 transition-all"
+              className="liquid-interactive flex w-full items-center justify-center space-x-2 rounded-full bg-gradient-to-r from-cyan-400 to-purple-500 hover:from-cyan-350 hover:to-purple-450 px-4 py-2.5 text-xs font-extrabold text-black shadow-lg shadow-cyan-500/10 active:scale-95 transition-all"
             >
               <Plus className="h-4 w-4 stroke-[2.5]" />
               <span>Create Playlist</span>
@@ -131,7 +131,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             {/* Liked Songs Shortcut - Heart Icon, Glowing outline, Mini gradient badge */}
             <Link
               href="/liked"
-              className="liquid-interactive flex w-full items-center justify-between rounded-lg border border-teal-500/25 bg-teal-950/10 px-4 py-2 text-xs font-bold text-neutral-300 hover:text-white transition-all shadow-[0_0_12px_rgba(20,240,200,0.03)] hover:shadow-[0_0_16px_rgba(20,240,200,0.08)]"
+              className="liquid-interactive flex w-full items-center justify-between rounded-lg border border-cyan-500/25 bg-cyan-950/10 px-4 py-2 text-xs font-bold text-neutral-300 hover:text-white transition-all shadow-[0_0_12px_rgba(0,245,255,0.03)] hover:shadow-[0_0_16px_rgba(0,245,255,0.08)]"
             >
               <div className="flex items-center space-x-3">
                 <div className="flex h-5 w-5 items-center justify-center rounded bg-gradient-to-br from-pink-500 to-purple-500 text-white">
@@ -150,12 +150,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="space-y-5 pt-6 border-t border-neutral-900">
           <div className="flex items-center space-x-3 px-2">
             {/* User Avatar with Glowing Ring */}
-            <div className="relative h-10 w-10 overflow-hidden rounded-full bg-gradient-to-br from-teal-500/30 to-violet-500/30 border border-teal-500/40 p-[1.5px] shadow-[0_0_15px_rgba(20,250,200,0.15)] flex-shrink-0">
+            <div className="relative h-10 w-10 overflow-hidden rounded-full bg-gradient-to-br from-cyan-500/30 to-purple-500/30 border border-cyan-500/40 p-[1.5px] shadow-[0_0_15px_rgba(0,245,255,0.15)] flex-shrink-0">
               <div className="h-full w-full rounded-full bg-neutral-950 flex items-center justify-center relative overflow-hidden">
                 {userProfile?.avatarUrl ? (
                   <Image src={userProfile.avatarUrl} alt="Avatar" fill className="object-cover rounded-full" />
                 ) : (
-                  <span className="font-extrabold bg-gradient-to-br from-teal-400 to-violet-400 bg-clip-text text-transparent text-xs">
+                  <span className="font-extrabold bg-gradient-to-br from-cyan-400 to-purple-400 bg-clip-text text-transparent text-xs">
                     {userProfile?.displayName.slice(0, 2).toUpperCase() || 'SD'}
                   </span>
                 )}
@@ -163,7 +163,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
             <div className="truncate text-left text-xs">
               <p className="font-bold text-white truncate">{userProfile?.displayName || 'Saswata Dey'}</p>
-              <p className="font-semibold text-[9px] tracking-wide uppercase bg-gradient-to-r from-teal-400 to-emerald-400 bg-clip-text text-transparent">Premium Member</p>
+              <p className="font-semibold text-[9px] tracking-wide uppercase bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">Premium Member</p>
             </div>
           </div>
           <button
@@ -193,7 +193,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               key={item.href}
               href={item.href}
               className={`flex flex-col items-center justify-center flex-1 py-1 text-[10px] font-bold transition-colors ${
-                isActive ? 'text-teal-400' : 'text-neutral-400'
+                isActive ? 'text-cyan-400' : 'text-neutral-400'
               }`}
             >
               <Icon className="h-5.5 w-5.5 mb-0.5" />
