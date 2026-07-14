@@ -18,13 +18,16 @@ import {
   Shuffle,
   Repeat,
   ListMusic,
+  Sliders,
 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useLayoutStore } from '@/store/layout-store';
 
 export default function MiniPlayer() {
   const router = useRouter();
   const pathname = usePathname();
   const queryClient = useQueryClient();
+  const { isRightPanelOpen, toggleRightPanel } = useLayoutStore();
   const {
     isPlaying,
     currentTrack,
@@ -296,6 +299,18 @@ export default function MiniPlayer() {
             title="Queue / Library"
           >
             <ListMusic className="h-4.5 w-4.5" />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleRightPanel();
+            }}
+            className={`liquid-interactive transition-colors p-1 ${
+              isRightPanelOpen ? 'text-cyan-400 drop-shadow-[0_0_8px_rgba(0,245,255,0.4)]' : 'text-neutral-400 hover:text-white'
+            }`}
+            title="Equalizer, Visualizer & Lyrics"
+          >
+            <Sliders className="h-4.5 w-4.5" />
           </button>
           <div className="flex items-center space-x-2">
             <button

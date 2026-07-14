@@ -101,6 +101,8 @@ export default function PlayerPage() {
   const [showQueue, setShowQueue] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [likeLoading, setLikeLoading] = useState(false);
+  const [dynamicLyrics, setDynamicLyrics] = useState<LyricLine[] | null>(null);
+  const [lyricsLoading, setLyricsLoading] = useState(false);
   
   // Audio effects state
   const [audioEffects, setAudioEffects] = useState<Record<string, boolean>>({
@@ -130,6 +132,44 @@ export default function PlayerPage() {
       }
     };
     checkLiked();
+  }, [currentTrack?.id]);
+
+  // Fetch Synced Lyrics from LRCLIB
+  useEffect(() => {
+    if (!currentTrack) {
+      setDynamicLyrics(null);
+      return;
+    }
+
+    setDynamicLyrics(null);
+    setLyricsLoading(true);
+
+    const fetchLyrics = async () => {
+      try {
+        const titleQuery = currentTrack.title;
+        const artistQuery = currentTrack.artist?.name || 'Unknown';
+        const duration = currentTrack.durationMs || 0;
+
+        const res = await fetch(
+          `/api/lyrics?title=${encodeURIComponent(titleQuery)}&artist=${encodeURIComponent(
+            artistQuery
+          )}&durationMs=${duration}`
+        );
+        if (res.ok) {
+          const data = await res.json();
+          if (data.lyrics && data.lyrics.length > 0) {
+            setDynamicLyrics(data.lyrics);
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to fetch dynamic lyrics:', err);
+      } finally {
+        setLyricsLoading(false);
+      }
+    };
+
+    fetchLyrics();
   }, [currentTrack?.id]);
 
   // Audio Reactive Visualizer simulation
@@ -191,7 +231,7 @@ export default function PlayerPage() {
     return genericLyrics;
   };
 
-  const activeLyrics = getLyrics();
+  const activeLyrics = dynamicLyrics || getLyrics();
 
   // Find active lyric index based on track progress
   const getActiveLyricIndex = () => {
@@ -414,25 +454,38 @@ export default function PlayerPage() {
                     ref={lyricsContainerRef} 
                     className="h-full overflow-y-auto space-y-4 pr-2 scrollbar-hide mask-fade pb-20 text-left"
                   >
-                    {activeLyrics.map((line, idx) => {
-                      const isActive = idx === activeLyricIdx;
-                      return (
-                        <div
-                          key={idx}
-                          className={`text-sm font-black transition-all duration-300 py-1.5 cursor-pointer origin-left ${
-                            isActive 
-                              ? 'text-cyan-400 scale-105 drop-shadow-[0_0_10px_rgba(0,245,255,0.4)]' 
-                              : 'text-neutral-550 hover:text-white'
-                          }`}
-                          onClick={() => {
-                            setProgress(line.time);
-                            window.dispatchEvent(new CustomEvent('seek-track', { detail: { time: line.time } }));
-                          }}
-                        >
-                          {line.text}
-                        </div>
-                      );
-                    })}
+                    {lyricsLoading ? (
+                      <div className="flex flex-col items-center justify-center h-[280px] space-y-3">
+                        <Disc className="h-8 w-8 animate-spin text-cyan-400" />
+                        <span className="text-[10px] font-black text-neutral-500 uppercase tracking-widest animate-pulse">Syncing Original Lyrics...</span>
+                      </div>
+                    ) : activeLyrics.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center h-[280px] space-y-2 text-center text-neutral-500 py-10">
+                        <Music className="h-8 w-8 text-neutral-600 mb-2" />
+                        <p className="text-xs font-bold uppercase tracking-wider">No Lyrics Found</p>
+                        <p className="text-[10px]">Could not retrieve synced lyrics for this track</p>
+                      </div>
+                    ) : (
+                      activeLyrics.map((line, idx) => {
+                        const isActive = idx === activeLyricIdx;
+                        return (
+                          <div
+                            key={idx}
+                            className={`text-sm font-black transition-all duration-300 py-1.5 cursor-pointer origin-left ${
+                              isActive 
+                                ? 'text-cyan-400 scale-105 drop-shadow-[0_0_10px_rgba(0,245,255,0.4)]' 
+                                : 'text-neutral-400 hover:text-white'
+                            }`}
+                            onClick={() => {
+                              setProgress(line.time);
+                              window.dispatchEvent(new CustomEvent('seek-track', { detail: { time: line.time } }));
+                            }}
+                          >
+                            {line.text}
+                          </div>
+                        );
+                      })
+                    )}
                   </div>
                 )}
 

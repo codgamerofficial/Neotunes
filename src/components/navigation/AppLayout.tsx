@@ -4,10 +4,13 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { createClientBrowser } from '@/lib/supabase-browser';
-import { Home, Search, Library, User, Settings, LogOut, Music, Plus, Heart } from 'lucide-react';
+import { Home, Search, Library, User, Settings, LogOut, Music, Plus, Heart, Sliders } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import NeoTuneLogo from './NeoTuneLogo';
+import { useLayoutStore } from '@/store/layout-store';
+import RightContextPanel from './RightContextPanel';
+
 
 interface NavigationItem {
   label: string;
@@ -19,6 +22,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClientBrowser();
+  const { isRightPanelOpen, toggleRightPanel } = useLayoutStore();
   
   const [userProfile, setUserProfile] = useState<{ displayName: string; avatarUrl: string } | null>(null);
 
@@ -177,13 +181,31 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* 2. Main Content viewport */}
-      <main className="flex-1 flex min-w-0 flex-col overflow-y-auto pb-40 md:pb-28">
-        <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto w-full">
+      <main className="flex-1 flex min-w-0 flex-col overflow-y-auto pb-40 md:pb-28 relative">
+        {/* Top-Right Toggle Bar */}
+        <div className="absolute top-4 right-4 z-20 hidden md:block">
+          <button
+            onClick={() => toggleRightPanel()}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-black uppercase tracking-wider transition-all backdrop-blur-md ${
+              isRightPanelOpen 
+                ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400' 
+                : 'bg-neutral-900/60 border-white/[0.04] text-neutral-400 hover:text-white'
+            }`}
+          >
+            <Sliders className="h-3.5 w-3.5" />
+            <span>FX & Lyrics</span>
+          </button>
+        </div>
+
+        <div className="p-4 sm:p-6 md:p-8 w-full max-w-none">
           {children}
         </div>
       </main>
 
-      {/* 3. Mobile Navigation Bottom Bar (Hidden on Desktop) */}
+      {/* 3. Collapsible Right Side Context Panel (Desktop Only) */}
+      <RightContextPanel />
+
+      {/* 4. Mobile Navigation Bottom Bar (Hidden on Desktop) */}
       <nav className="liquid-dock fixed bottom-0 left-0 right-0 z-40 flex h-16 px-2 py-1 md:hidden justify-around items-center">
         {navItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + '/');

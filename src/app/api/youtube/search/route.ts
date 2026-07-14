@@ -18,10 +18,10 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Missing resolve parameters.' }, { status: 400 });
   }
 
-  // 1. If it is a real Spotify track ID, use the Production Metadata Resolver
-  if (trackId && !trackId.startsWith('yt-') && !trackId.startsWith('pod-') && !trackId.startsWith('mood-') && trackId.length > 5) {
+  // 1. If it is a real Spotify/Deezer track ID, use the Production Metadata Resolver
+  if (trackId && !trackId.startsWith('yt-') && !trackId.startsWith('pod-') && !trackId.startsWith('mood-')) {
     try {
-      const resolved = await resolveTrack(trackId);
+      const resolved = await resolveTrack(trackId, title || undefined, artist || undefined);
       return NextResponse.json({
         videoId: resolved.sourceId,
         track: resolved,

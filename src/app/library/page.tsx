@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { usePlaybackStore } from '@/store/playback-store';
 import { createClientBrowser } from '@/lib/supabase-browser';
 import { motion, AnimatePresence } from 'framer-motion';
+import ImageWithFallback from '@/components/ui/ImageWithFallback';
 import {
   ListMusic,
   Heart,
@@ -28,7 +29,16 @@ import {
   Mic,
   GripVertical,
   Check,
-  Trash2
+  Trash2,
+  Sparkles,
+  PlayCircle,
+  Clock,
+  Layers,
+  LayoutGrid,
+  List,
+  Calendar,
+  AreaChart,
+  Grid
 } from 'lucide-react';
 
 type LibraryCollectionId = 
@@ -41,7 +51,8 @@ type LibraryCollectionId =
   | 'podcasts' 
   | 'cloud' 
   | 'folders' 
-  | 'pinned';
+  | 'pinned'
+  | 'ai-mixes';
 
 interface CollectionItem {
   id: LibraryCollectionId;
@@ -51,32 +62,91 @@ interface CollectionItem {
   isPinned?: boolean;
 }
 
+interface Track {
+  id: string;
+  title: string;
+  artist: { name: string; id?: string };
+  album?: { id?: string; name: string; coverUrl?: string };
+  durationMs: number;
+  coverUrl?: string;
+  sourceType: 'youtube' | 'cloud';
+  sourceId?: string;
+}
+
+const openDB = (): Promise<IDBDatabase> => {
+  return new Promise((resolve, reject) => {
+    if (typeof window === 'undefined') return reject(new Error('Window is not defined'));
+    const req = window.indexedDB.open('neotunes-offline', 1);
+    req.onupgradeneeded = () => {
+      req.result.createObjectStore('songs', { keyPath: 'id' });
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+};
+
 export default function LibraryPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { playTrack } = usePlaybackStore();
+  const { currentTrack, isPlaying, playTrack, setPlaying } = usePlaybackStore();
   const supabase = createClientBrowser();
 
   const [activeTab, setActiveTab] = useState<LibraryCollectionId>('playlists');
+  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'timeline'>('grid');
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
+  
+  const [localOfflineUploads, setLocalOfflineUploads] = useState<any[]>([]);
+  const [infoMessage, setInfoMessage] = useState<{ type: 'info' | 'success' | 'error'; text: string } | null>(null);
 
-  // Collection ordering state for drag-and-drop visual representation
+  // Load offline local storage tracks on mount
+  useEffect(() => {
+    const loadOfflineSongs = async () => {
+      try {
+        const db = await openDB();
+        const tx = db.transaction('songs', 'readonly');
+        const store = tx.objectStore('songs');
+        const req = store.getAll();
+        req.onsuccess = () => {
+          const songs = req.result || [];
+          setLocalOfflineUploads(songs.map(s => {
+            const objectUrl = URL.createObjectURL(s.blob);
+            return {
+              id: s.id,
+              title: s.title,
+              artist: s.artist,
+              album: s.album,
+              duration_ms: s.durationMs,
+              file_path: objectUrl,
+              isLocalOffline: true
+            };
+          }));
+        };
+      } catch (err) {
+        console.warn('Failed to load offline songs:', err);
+      }
+    };
+    loadOfflineSongs();
+  }, []);
+
+  // Collections list with custom visual configuration
   const [collections, setCollections] = useState<CollectionItem[]>([
-    { id: 'pinned', label: 'Pinned Collections', icon: Pin, isPinned: true },
-    { id: 'liked', label: 'Liked Songs', icon: Heart, count: 0 },
-    { id: 'playlists', label: 'Playlists', icon: ListMusic, count: 0 },
-    { id: 'cloud', label: 'Cloud Uploads', icon: CloudLightning, count: 0 },
+    { id: 'pinned', label: 'Pinned Items', icon: Pin, isPinned: true },
+    { id: 'playlists', label: 'Playlists', icon: ListMusic },
+    { id: 'liked', label: 'Liked Songs', icon: Heart },
+    { id: 'cloud', label: 'Cloud Uploads', icon: CloudLightning },
     { id: 'history', label: 'Recently Played', icon: History },
-    { id: 'downloaded', label: 'Downloaded', icon: Download, count: 0 },
-    { id: 'albums', label: 'Albums', icon: Disc, count: 4 },
-    { id: 'artists', label: 'Artists', icon: User, count: 8 },
-    { id: 'podcasts', label: 'Podcasts', icon: Mic, count: 2 },
-    { id: 'folders', label: 'Folders', icon: Folder, count: 1 }
+    { id: 'downloaded', label: 'Downloads', icon: Download },
+    { id: 'albums', label: 'Albums', icon: Disc },
+    { id: 'artists', label: 'Artists', icon: User },
+    { id: 'podcasts', label: 'Podcasts', icon: Mic },
+    { id: 'folders', label: 'Folders', icon: Folder },
+    { id: 'ai-mixes', label: 'AI Collections', icon: Sparkles }
   ]);
 
-  // 1. Fetch Playlists
-  const { data: playlistsData, isLoading: playlistsLoading } = useQuery({
+  // Fetch Playlists
+  const { data: playlistsData } = useQuery({
     queryKey: ['playlists'],
     queryFn: async () => {
       const res = await fetch('/api/playlists');
@@ -85,8 +155,8 @@ export default function LibraryPage() {
     },
   });
 
-  // 2. Fetch Liked Tracks
-  const { data: likedData, isLoading: likedLoading } = useQuery({
+  // Fetch Liked Tracks
+  const { data: likedData } = useQuery({
     queryKey: ['liked-songs'],
     queryFn: async () => {
       const res = await fetch('/api/liked');
@@ -95,8 +165,8 @@ export default function LibraryPage() {
     },
   });
 
-  // 3. Fetch Listening History
-  const { data: historyData, isLoading: historyLoading } = useQuery({
+  // Fetch Listening History
+  const { data: historyData } = useQuery({
     queryKey: ['history'],
     queryFn: async () => {
       const res = await fetch('/api/history');
@@ -105,8 +175,8 @@ export default function LibraryPage() {
     },
   });
 
-  // 4. Fetch Cloud Uploads
-  const { data: cloudData, isLoading: cloudLoading } = useQuery({
+  // Fetch Cloud Uploads
+  const { data: cloudData } = useQuery({
     queryKey: ['cloud-uploads'],
     queryFn: async () => {
       const res = await fetch('/api/cloud');
@@ -119,14 +189,32 @@ export default function LibraryPage() {
   const likedTracks = likedData?.tracks || [];
   const historyTracks = historyData?.history || [];
   const cloudUploads = cloudData?.uploads || [];
+  const allUploads = [...localOfflineUploads, ...cloudUploads];
 
-  // Create Playlist mutation
+  // Update count indicators dynamically
+  useEffect(() => {
+    setCollections(prev => prev.map(c => {
+      if (c.id === 'playlists') return { ...c, count: playlists.length };
+      if (c.id === 'liked') return { ...c, count: likedTracks.length };
+      if (c.id === 'cloud') return { ...c, count: allUploads.length };
+      if (c.id === 'history') return { ...c, count: historyTracks.length };
+      if (c.id === 'downloaded') return { ...c, count: 6 };
+      if (c.id === 'albums') return { ...c, count: 4 };
+      if (c.id === 'artists') return { ...c, count: 12 };
+      if (c.id === 'podcasts') return { ...c, count: 3 };
+      if (c.id === 'folders') return { ...c, count: 2 };
+      if (c.id === 'ai-mixes') return { ...c, count: 5 };
+      return c;
+    }));
+  }, [playlists.length, likedTracks.length, allUploads.length, historyTracks.length]);
+
+  // Create Playlist Mutation
   const createPlaylistMutation = useMutation({
     mutationFn: async () => {
       const res = await fetch('/api/playlists', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: `My Playlist #${playlists.length + 1}`, description: 'Created from your library' }),
+        body: JSON.stringify({ name: `AI Mix Playlist #${playlists.length + 1}`, description: 'Created inside your premium Library workspace' }),
       });
       if (!res.ok) throw new Error('Failed to create playlist');
       return res.json();
@@ -137,514 +225,598 @@ export default function LibraryPage() {
     },
   });
 
-  // Handle Cloud MP3 Uploads
+  // Handle Cloud Audio Uploads
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
     const file = files[0];
 
-    // Restrict size and audio mime types
     if (!file.type.startsWith('audio/')) {
-      alert('Please upload an audio file (MP3, WAV, M4A)');
+      setInfoMessage({ type: 'error', text: 'Please upload a valid audio file.' });
       return;
     }
 
     setUploading(true);
-    setUploadProgress(10);
+    setUploadProgress(20);
+    setInfoMessage(null);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User session not active');
+      let user = null;
+      try {
+        const { data } = await supabase.auth.getUser();
+        user = data?.user;
+      } catch (authErr) {
+        console.warn('Auth check failed:', authErr);
+      }
+
+      if (!user) {
+        // Guest mode fallback - save in IndexedDB
+        setInfoMessage({ type: 'info', text: 'Storing track in local offline workspace...' });
+        setUploadProgress(40);
+        
+        const db = await openDB();
+        const tx = db.transaction('songs', 'readwrite');
+        const store = tx.objectStore('songs');
+        const localId = `local_${Date.now()}`;
+        const title = file.name.replace(/\.[^/.]+$/, '');
+        
+        setUploadProgress(70);
+        
+        await new Promise<void>((resolve, reject) => {
+          const putReq = store.put({
+            id: localId,
+            title,
+            artist: 'Offline Workspace',
+            album: 'Local Cache',
+            durationMs: 180000,
+            blob: file
+          });
+          putReq.onsuccess = () => resolve();
+          putReq.onerror = () => reject(putReq.error);
+        });
+
+        const objectUrl = URL.createObjectURL(file);
+        setLocalOfflineUploads(prev => [
+          {
+            id: localId,
+            title,
+            artist: 'Offline Workspace',
+            album: 'Local Cache',
+            duration_ms: 180000,
+            file_path: objectUrl,
+            isLocalOffline: true
+          },
+          ...prev
+        ]);
+        
+        setUploadProgress(100);
+        setInfoMessage({ type: 'success', text: `Successfully saved "${title}" locally!` });
+        return;
+      }
 
       const fileName = `${user.id}/${Date.now()}-${file.name.replace(/[^\w.-]/g, '_')}`;
-      setUploadProgress(30);
+      setUploadProgress(40);
 
-      // 1. Upload to Supabase Storage Bucket
-      const { data, error } = await supabase.storage
+      const { data: storageData, error: storageError } = await supabase.storage
         .from('cloud_songs')
         .upload(fileName, file, { cacheControl: '3600', upsert: true });
 
-      if (error) throw error;
-
+      if (storageError) throw storageError;
       setUploadProgress(70);
 
-      // Parse metadata dynamically in the browser
-      let durationMs = 180000; 
-      try {
-        const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-        const arrayBuffer = await file.arrayBuffer();
-        const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-        durationMs = Math.round(audioBuffer.duration * 1000);
-      } catch {
-        // fallback
-      }
-
-      // 2. Save reference in DB
+      // Save upload reference
       const res = await fetch('/api/cloud', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: file.name.replace(/\.[^/.]+$/, ''), 
           artist: 'My Uploads',
-          album: 'Cloud Library',
-          durationMs,
+          album: 'Cloud Workspace',
+          durationMs: 180000,
           filePath: fileName,
         }),
       });
 
-      if (!res.ok) throw new Error('Failed to process upload reference');
+      if (!res.ok) throw new Error('Could not persist upload record');
 
       setUploadProgress(100);
+      setInfoMessage({ type: 'success', text: `Successfully uploaded "${file.name.replace(/\.[^/.]+$/, '')}" to cloud!` });
       queryClient.invalidateQueries({ queryKey: ['cloud-uploads'] });
     } catch (err: any) {
-      alert(err.message || 'Failed to complete cloud upload');
+      console.warn('Cloud upload failed, falling back to local storage:', err);
+      try {
+        setInfoMessage({ type: 'info', text: 'Cloud upload failed. Storing track locally instead...' });
+        const db = await openDB();
+        const tx = db.transaction('songs', 'readwrite');
+        const store = tx.objectStore('songs');
+        const localId = `local_${Date.now()}`;
+        const title = file.name.replace(/\.[^/.]+$/, '');
+        
+        await new Promise<void>((resolve, reject) => {
+          const putReq = store.put({
+            id: localId,
+            title,
+            artist: 'Offline Workspace',
+            album: 'Local Cache',
+            durationMs: 180000,
+            blob: file
+          });
+          putReq.onsuccess = () => resolve();
+          putReq.onerror = () => reject(putReq.error);
+        });
+
+        const objectUrl = URL.createObjectURL(file);
+        setLocalOfflineUploads(prev => [
+          {
+            id: localId,
+            title,
+            artist: 'Offline Workspace',
+            album: 'Local Cache',
+            duration_ms: 180000,
+            file_path: objectUrl,
+            isLocalOffline: true
+          },
+          ...prev
+        ]);
+        
+        setUploadProgress(100);
+        setInfoMessage({ type: 'success', text: `Successfully saved "${title}" locally!` });
+      } catch (fallbackErr: any) {
+        setInfoMessage({ type: 'error', text: `Upload failed: ${err.message}` });
+      }
     } finally {
       setTimeout(() => {
         setUploading(false);
         setUploadProgress(0);
-      }, 1000);
+      }, 3000);
     }
   };
 
-  // Reorder collections visually
-  const moveCollectionItem = (fromIdx: number, toIdx: number) => {
-    if (toIdx < 0 || toIdx >= collections.length) return;
-    const updated = [...collections];
-    const [moved] = updated.splice(fromIdx, 1);
-    updated.splice(toIdx, 0, moved);
-    setCollections(updated);
+  // Drag and Drop implementation
+  const handleDragStart = (e: React.DragEvent, track: Track) => {
+    e.dataTransfer.setData('text/plain', JSON.stringify(track));
+  };
+
+  const handleDragOver = (e: React.DragEvent, folderId: string) => {
+    e.preventDefault();
+    setDragOverFolderId(folderId);
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetPlaylistId: string) => {
+    e.preventDefault();
+    setDragOverFolderId(null);
+    try {
+      const trackData = e.dataTransfer.getData('text/plain');
+      if (!trackData) return;
+      const track = JSON.parse(trackData) as Track;
+      
+      const res = await fetch(`/api/playlists/${targetPlaylistId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'add_track', track }),
+      });
+      if (!res.ok) throw new Error('Failed to drop track');
+      
+      alert(`Successfully added "${track.title}" to your playlist!`);
+      queryClient.invalidateQueries({ queryKey: ['playlists'] });
+    } catch (err: any) {
+      alert(`Could not drop track: ${err.message}`);
+    }
+  };
+
+  const handlePlayTrack = (track: Track, tracksList: Track[]) => {
+    if (currentTrack?.id === track.id) {
+      setPlaying(!isPlaying);
+    } else {
+      playTrack(track, tracksList);
+      
+      // Log to database listening history
+      fetch('/api/history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trackId: track.id, track }),
+      }).catch((err) => console.warn('Failed to log history:', err));
+    }
   };
 
   return (
-    <div className="space-y-8 text-white pb-12 text-left select-none font-sans">
+    <div className="space-y-8 text-white pb-20 font-sans text-left select-none w-full relative">
       
-      {/* HEADER SECTION */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/[0.05] pb-5">
-        <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-cyan-400">Your Universe</p>
-          <h1 className="text-4xl font-black tracking-tighter">NeoTunes Locker</h1>
+      {/* 1. LIBRARY PAGE HEADER */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <p className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.25em] text-cyan-400 bg-cyan-500/10 px-3 py-1 rounded-full border border-cyan-500/20">
+            <Layers className="h-3 w-3" />
+            <span>Workspace</span>
+          </p>
+          <h1 className="text-4xl font-black tracking-tight">Your Library</h1>
         </div>
-        <div className="flex gap-3">
+
+        <div className="flex items-center gap-2">
+          {/* File input trigger */}
+          <label className="flex items-center gap-2 cursor-pointer rounded-xl bg-neutral-900/60 border border-white/[0.08] hover:border-cyan-400/40 px-4 py-2.5 text-xs font-black transition-all">
+            <UploadCloud className="h-4 w-4" />
+            <span>Upload Track</span>
+            <input type="file" accept="audio/*" onChange={handleFileUpload} className="hidden" />
+          </label>
+
           <button
             onClick={() => createPlaylistMutation.mutate()}
-            disabled={createPlaylistMutation.isPending}
-            className="flex items-center space-x-1.5 rounded-full bg-gradient-to-r from-cyan-400 to-purple-500 hover:from-cyan-350 hover:to-purple-450 px-5 py-2.5 text-xs font-black text-black shadow-lg shadow-cyan-500/10 active:scale-95 transition-all"
+            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 to-purple-500 hover:from-cyan-350 hover:to-purple-450 px-5 py-2.5 text-xs font-black text-black shadow-md"
           >
-            <Plus className="h-4 w-4 stroke-[2.5]" />
-            <span>Create Playlist</span>
+            <Plus className="h-4 w-4 stroke-[3px]" />
+            <span>New Playlist</span>
           </button>
         </div>
       </div>
 
-      {/* TWO COLUMN GRID: Left Collections Sidebar, Right Collection Viewport */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        
-        {/* LEFT COLUMN: 10 Collections List with drag handles */}
-        <div className="lg:col-span-4 space-y-4 bg-[#111111]/40 border border-white/[0.05] p-4 rounded-3xl backdrop-blur-xl">
-          <div className="flex items-center justify-between border-b border-white/[0.05] pb-2 mb-2">
-            <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500">Collections Panel</span>
-            <span className="text-[9px] text-cyan-400 font-bold">DRAG OR ORDER VIA ARROWS</span>
+      {/* INFO/SUCCESS MESSAGE BANNER */}
+      <AnimatePresence>
+        {infoMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            className={`rounded-2xl p-4 text-xs font-black border transition-all ${
+              infoMessage.type === 'success'
+                ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20'
+                : infoMessage.type === 'error'
+                ? 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                : 'bg-purple-500/10 text-purple-400 border-purple-500/20'
+            }`}
+          >
+            {infoMessage.text}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* UPLOAD STATUS PANEL */}
+      <AnimatePresence>
+        {uploading && (
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 15 }}
+            className="rounded-2xl border border-cyan-500/30 bg-neutral-950/80 p-4 flex items-center justify-between gap-4"
+          >
+            <div className="flex items-center gap-3">
+              <Loader2 className="h-5 w-5 animate-spin text-cyan-400" />
+              <span className="text-xs font-bold text-neutral-300">Uploading track references to cloud bucket...</span>
+            </div>
+            <div className="w-40 h-2 bg-neutral-800 rounded-full overflow-hidden">
+              <div className="h-full bg-cyan-400 transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 2. COLLECTION ANALYTICS BLOCK */}
+      <section className="grid grid-cols-2 md:grid-cols-4 gap-5">
+        {[
+          { label: "Total Music Listening", value: "48.2 Hours", desc: "Across 242 plays" },
+          { label: "Liked Songs", value: `${likedTracks.length} Tracks`, desc: "In local library" },
+          { label: "Offline Cache", value: "2.4 GB", desc: "6 downloaded tracks" },
+          { label: "User Playlists", value: `${playlists.length} Playlists`, desc: "Active collections" }
+        ].map((stat, i) => (
+          <div key={i} className="rounded-2xl border border-white/[0.05] bg-gradient-to-br from-neutral-900/30 to-neutral-950/20 p-5 text-left space-y-1">
+            <span className="text-[10px] font-black text-neutral-500 uppercase tracking-wider">{stat.label}</span>
+            <p className="text-2xl font-black text-white">{stat.value}</p>
+            <p className="text-[10px] text-neutral-450 font-semibold">{stat.desc}</p>
           </div>
+        ))}
+      </section>
 
-          <div className="space-y-1">
-            {collections.map((item, idx) => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
+      {/* 3. DUAL-PANEL WORKSPACE CONTENT */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        
+        {/* LEFT PANEL: COLLECTIONS NAV */}
+        <div className="space-y-4">
+          <h3 className="text-xs font-black uppercase tracking-wider text-neutral-500 border-b border-white/[0.04] pb-2">Collections</h3>
+          <div className="flex flex-col gap-1">
+            {collections.map((col) => {
+              const Icon = col.icon;
+              const isActive = activeTab === col.id;
               
-              // Get item counts dynamically
-              let displayCount = item.count;
-              if (item.id === 'liked') displayCount = likedTracks.length;
-              if (item.id === 'playlists') displayCount = playlists.length;
-              if (item.id === 'cloud') displayCount = cloudUploads.length;
-
               return (
-                <div
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id)}
-                  className={`group relative flex items-center justify-between rounded-2xl px-4 py-3 cursor-pointer border transition-all ${
-                    isActive
-                      ? 'border-cyan-500/20 bg-cyan-950/10 text-white font-bold'
+                <button
+                  key={col.id}
+                  onClick={() => setActiveTab(col.id)}
+                  className={`flex items-center justify-between rounded-xl px-4.5 py-3 text-xs font-black uppercase tracking-wider transition-all border ${
+                    isActive 
+                      ? 'bg-gradient-to-r from-cyan-500/10 via-purple-600/10 to-transparent border-cyan-500/35 text-cyan-400' 
                       : 'border-transparent text-neutral-400 hover:text-white hover:bg-white/[0.02]'
                   }`}
                 >
-                  <div className="flex items-center space-x-3.5 min-w-0">
-                    {/* Drag handle */}
-                    <div className="flex flex-col gap-0.5 text-neutral-600 group-hover:text-neutral-400 transition-colors">
-                      <button onClick={(e) => { e.stopPropagation(); moveCollectionItem(idx, idx - 1); }} className="text-[9px] leading-none hover:text-white">▲</button>
-                      <button onClick={(e) => { e.stopPropagation(); moveCollectionItem(idx, idx + 1); }} className="text-[9px] leading-none hover:text-white">▼</button>
-                    </div>
-
-                    <Icon className={`h-4.5 w-4.5 flex-shrink-0 ${isActive ? 'text-cyan-400' : 'text-neutral-500'}`} />
-                    <span className="text-xs font-bold truncate">{item.label}</span>
+                  <div className="flex items-center gap-3">
+                    <Icon className="h-4 w-4" />
+                    <span>{col.label}</span>
                   </div>
-
-                  <div className="flex items-center space-x-2">
-                    {displayCount !== undefined && (
-                      <span className="text-[10px] font-mono bg-white/[0.04] text-neutral-500 rounded-full px-2 py-0.5">
-                        {displayCount}
-                      </span>
-                    )}
-                    {item.isPinned && (
-                      <Pin className="h-3 w-3 text-purple-400 fill-purple-400" />
-                    )}
-                  </div>
-                </div>
+                  {col.count !== undefined && (
+                    <span className="text-[10px] bg-neutral-800 text-neutral-400 px-2 py-0.5 rounded font-mono">
+                      {col.count}
+                    </span>
+                  )}
+                </button>
               );
             })}
           </div>
         </div>
 
-        {/* RIGHT COLUMN: Collection Contents Detail Viewport */}
-        <div className="lg:col-span-8 bg-[#111111]/10 border border-white/[0.05] p-6 rounded-3xl min-h-[460px] backdrop-blur-xl">
+        {/* RIGHT PANEL: MAIN VIEWPORT */}
+        <div className="lg:col-span-3 space-y-6">
           
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeTab}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
-            >
-              
-              {/* PLAYLISTS ACTIVE TAB */}
-              {activeTab === 'playlists' && (
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between border-b border-white/[0.05] pb-3">
-                    <h3 className="text-base font-black">My Playlists</h3>
-                    <span className="text-[10px] font-bold text-neutral-500 tracking-wider">{playlists.length} Lists</span>
-                  </div>
+          {/* VIEWPORT CONTROLS */}
+          <div className="flex items-center justify-between border-b border-white/[0.04] pb-4">
+            <h2 className="text-lg font-black text-white">
+              {collections.find(c => c.id === activeTab)?.label}
+            </h2>
 
-                  {playlistsLoading ? (
-                    <div className="flex h-40 items-center justify-center">
-                      <Disc className="h-8 w-8 animate-spin text-cyan-400" />
-                    </div>
-                  ) : playlists.length === 0 ? (
-                    <div className="flex h-48 flex-col items-center justify-center rounded-2xl border border-dashed border-white/[0.08] text-neutral-400 p-6 text-center">
-                      <p className="text-xs font-bold text-neutral-500">No playlists found. Create one to begin organizing.</p>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                      {playlists.map((playlist: any) => (
-                        <div
-                          key={playlist.id}
-                          onClick={() => router.push(`/playlists/${playlist.id}`)}
-                          className="group cursor-pointer rounded-2xl bg-[#1A1A1A]/40 border border-white/[0.06] p-4 hover:border-cyan-500/30 hover:-translate-y-0.5 transition-all text-left"
-                        >
-                          <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-neutral-900 mb-3.5 flex items-center justify-center">
-                            {playlist.cover_url ? (
-                              <img src={playlist.cover_url} className="absolute inset-0 h-full w-full object-cover" alt="" referrerPolicy="no-referrer" />
-                            ) : (
-                              <Music className="h-10 w-10 text-neutral-600" />
-                            )}
-                            <button
-                              onClick={(e) => { e.stopPropagation(); router.push(`/playlists/${playlist.id}`); }}
-                              className="absolute bottom-2 right-2 flex h-9 w-9 items-center justify-center rounded-full bg-cyan-400 text-black shadow-lg shadow-cyan-500/20 opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              <Play className="h-4 w-4 fill-black stroke-black translate-x-[0.5px]" />
-                            </button>
-                          </div>
-                          <h4 className="truncate text-xs font-bold text-white leading-normal">{playlist.name}</h4>
-                          <span className="text-[10px] text-neutral-500 font-semibold">{playlist.trackCount || 0} tracks</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+            <div className="flex items-center gap-1 bg-[#111]/60 p-0.5 border border-white/[0.06] rounded-xl">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-neutral-800 text-cyan-400' : 'text-neutral-550 hover:text-white'}`}
+                title="Grid View"
+              >
+                <LayoutGrid className="h-4.5 w-4.5" />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-neutral-800 text-cyan-400' : 'text-neutral-550 hover:text-white'}`}
+                title="List View"
+              >
+                <List className="h-4.5 w-4.5" />
+              </button>
+              <button
+                onClick={() => setViewMode('timeline')}
+                className={`p-2 rounded-lg transition-colors ${viewMode === 'timeline' ? 'bg-neutral-800 text-cyan-400' : 'text-neutral-550 hover:text-white'}`}
+                title="Timeline View"
+              >
+                <Calendar className="h-4.5 w-4.5" />
+              </button>
+            </div>
+          </div>
+
+          {/* DYNAMIC LIST/GRID CONTENT */}
+          <div className="min-h-[300px]">
+            
+            {/* PLAYLISTS COLLECTION */}
+            {activeTab === 'playlists' && (
+              playlists.length === 0 ? (
+                <div className="rounded-3xl border border-dashed border-white/[0.08] p-12 text-center text-sm text-neutral-500">
+                  You haven't created any playlists yet. Click "New Playlist" to start.
                 </div>
-              )}
-
-              {/* LIKED SONGS ACTIVE TAB */}
-              {activeTab === 'liked' && (
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between border-b border-white/[0.05] pb-3">
-                    <h3 className="text-base font-black">Liked Songs Locker</h3>
-                    <span className="text-[10px] font-bold text-pink-400 tracking-wider">{likedTracks.length} Songs</span>
-                  </div>
-
-                  {likedLoading ? (
-                    <div className="flex h-40 items-center justify-center">
-                      <Disc className="h-8 w-8 animate-spin text-cyan-400" />
-                    </div>
-                  ) : likedTracks.length === 0 ? (
-                    <div className="flex h-48 flex-col items-center justify-center rounded-2xl border border-dashed border-white/[0.08] text-neutral-400 p-6 text-center">
-                      <Heart className="h-8 w-8 text-neutral-700 mb-2 fill-none" />
-                      <p className="text-xs font-bold text-neutral-500">Your liked songs will show up here</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {likedTracks.map((track: any, idx: number) => (
-                        <div
-                          key={track.id}
-                          onClick={() => playTrack(track, likedTracks)}
-                          className="flex items-center justify-between rounded-xl bg-[#1A1A1A]/30 border border-white/[0.04] p-3 hover:bg-neutral-900/40 cursor-pointer hover:border-cyan-500/10 transition-all text-left"
-                        >
-                          <div className="flex items-center space-x-3.5 truncate">
-                            <span className="text-[10px] font-bold text-neutral-600 w-5 text-center">{idx + 1}</span>
-                            <img src={track.coverUrl} className="h-10 w-10 rounded-lg object-cover" alt="" referrerPolicy="no-referrer" />
-                            <div className="truncate">
-                              <p className="text-xs font-bold text-white truncate leading-normal">{track.title}</p>
-                              <p className="text-[10px] text-neutral-500 font-semibold truncate leading-normal">{track.artist?.name || 'Unknown'}</p>
-                            </div>
-                          </div>
-                          <span className="text-[10px] text-neutral-500 font-bold font-mono">
-                            {Math.floor(track.durationMs / 60000)}:
-                            {Math.floor((track.durationMs % 60000) / 1000).toString().padStart(2, '0')}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* RECENTLY PLAYED ACTIVE TAB */}
-              {activeTab === 'history' && (
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between border-b border-white/[0.05] pb-3">
-                    <h3 className="text-base font-black">Recently Played Session</h3>
-                  </div>
-
-                  {historyLoading ? (
-                    <div className="flex h-40 items-center justify-center">
-                      <Disc className="h-8 w-8 animate-spin text-cyan-400" />
-                    </div>
-                  ) : historyTracks.length === 0 ? (
-                    <p className="text-xs text-neutral-500 text-center py-10 font-bold">Your listening history is empty.</p>
-                  ) : (
-                    <div className="space-y-2.5">
-                      {historyTracks.slice(0, 15).map((track: any, idx: number) => (
-                        <div
-                          key={`${track.id}-${idx}`}
-                          onClick={() => playTrack(track, historyTracks)}
-                          className="flex items-center justify-between rounded-xl bg-[#1A1A1A]/30 border border-white/[0.04] p-3 hover:bg-neutral-900/40 cursor-pointer hover:border-cyan-500/10 transition-all text-left"
-                        >
-                          <div className="flex items-center space-x-3.5 truncate">
-                            <img src={track.coverUrl} className="h-10 w-10 rounded-lg object-cover" alt="" referrerPolicy="no-referrer" />
-                            <div className="truncate">
-                              <p className="text-xs font-bold text-white truncate leading-normal">{track.title}</p>
-                              <p className="text-[10px] text-neutral-500 font-semibold truncate leading-normal">{track.artist?.name}</p>
-                            </div>
-                          </div>
-                          <span className="text-[10px] text-neutral-500 font-bold font-mono">
-                            {new Date(track.playedAt).toLocaleDateString([], { month: 'short', day: 'numeric' })}{' '}
-                            {new Date(track.playedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* CLOUD UPLOADS ACTIVE TAB */}
-              {activeTab === 'cloud' && (
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between border-b border-white/[0.05] pb-3">
-                    <h3 className="text-base font-black">Cloud locker Locker</h3>
-                    <span className="text-[10px] font-bold text-cyan-400 tracking-wider">{cloudUploads.length} MP3/WAV</span>
-                  </div>
-
-                  {/* Drag-Drop Uploader Block */}
-                  <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-cyan-500/20 bg-neutral-950/20 p-6 max-w-xl mx-auto shadow-inner">
-                    {uploading ? (
-                      <div className="space-y-4 py-4 flex flex-col items-center">
-                        <Loader2 className="h-10 w-10 animate-spin text-cyan-400" />
-                        <p className="text-xs font-bold text-neutral-300">Uploading file to your cloud locker...</p>
-                        <div className="h-1.5 w-48 rounded bg-neutral-900 overflow-hidden relative">
-                          <div className="h-full bg-gradient-to-r from-cyan-400 to-purple-500 transition-all duration-300 rounded" style={{ width: `${uploadProgress}%` }} />
-                        </div>
-                      </div>
-                    ) : (
-                      <label className="flex flex-col items-center cursor-pointer py-4 px-8 w-full group">
-                        <UploadCloud className="h-12 w-12 text-neutral-500 group-hover:text-cyan-400 transition-colors" />
-                        <span className="mt-3 text-xs font-black text-white">Upload audio files (.mp3, .flac, .wav)</span>
-                        <span className="text-[10px] text-neutral-500 mt-1 font-semibold">Direct private storage locker uploads</span>
-                        <input type="file" accept="audio/*" onChange={handleFileUpload} className="hidden" />
-                      </label>
-                    )}
-                  </div>
-
-                  {/* Cloud Files Locker */}
-                  {cloudLoading ? (
-                    <div className="flex h-40 items-center justify-center">
-                      <Disc className="h-8 w-8 animate-spin text-cyan-400" />
-                    </div>
-                  ) : cloudUploads.length === 0 ? (
-                    <p className="text-xs text-neutral-500 text-center py-6 font-bold">Your cloud locker is empty.</p>
-                  ) : (
-                    <div className="space-y-2.5">
-                      {cloudUploads.map((file: any) => {
-                        const trackObj = {
-                          id: `cloud_${new Date(file.created_at).getTime()}`, 
-                          title: file.title,
-                          artist: { name: file.artist },
-                          album: { name: file.album || 'Single' },
-                          durationMs: file.duration_ms,
-                          sourceType: 'cloud' as const,
-                          sourceId: file.file_path,
-                        };
-                        return (
-                          <div
-                            key={file.id}
-                            onClick={() => playTrack(trackObj, [trackObj])}
-                            className="flex items-center justify-between rounded-xl bg-[#1A1A1A]/30 border border-white/[0.04] p-3 hover:bg-neutral-900/40 cursor-pointer hover:border-cyan-500/10 transition-all text-left"
-                          >
-                            <div className="flex items-center space-x-3 truncate">
-                              <div className="flex h-8 w-8 items-center justify-center rounded bg-neutral-900 text-cyan-400">
-                                <FileAudio className="h-4.5 w-4.5" />
-                              </div>
-                              <div className="truncate">
-                                <p className="truncate text-xs font-bold text-white leading-normal">{file.title}</p>
-                                <p className="truncate text-[10px] text-neutral-500 font-semibold leading-normal">{file.artist}</p>
-                              </div>
-                            </div>
-                            <span className="text-[10px] text-neutral-500 font-bold font-mono">
-                              {Math.floor(file.duration_ms / 60000)}:
-                              {Math.floor((file.duration_ms % 60000) / 1000).toString().padStart(2, '0')}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* DOWNLOADED ACTIVE TAB (MOCK VISUAL ONLY) */}
-              {activeTab === 'downloaded' && (
-                <div className="space-y-6 text-center py-10">
-                  <Download className="h-10 w-10 text-neutral-700 mx-auto mb-2" />
-                  <h3 className="text-base font-black">Smart Cache / Downloaded</h3>
-                  <p className="text-xs text-neutral-500 max-w-xs mx-auto leading-relaxed">
-                    NeoTunes offline smart cache downloads and stores audio locally inside your app bundle. Cache size: 0.0 MB
-                  </p>
-                </div>
-              )}
-
-              {/* ALBUMS ACTIVE TAB (MOCK VISUAL ONLY) */}
-              {activeTab === 'albums' && (
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between border-b border-white/[0.05] pb-3">
-                    <h3 className="text-base font-black">Saved Albums</h3>
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-left">
-                    {[
-                      { name: 'HIT ME HARD AND SOFT', artist: 'Billie Eilish', year: '2024', cover: 'https://images.unsplash.com/photo-1528605248644-14dd04022da1?w=500&auto=format&fit=crop&q=80' },
-                      { name: 'After Hours', artist: 'The Weeknd', year: '2020', cover: 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=500&auto=format&fit=crop&q=80' },
-                      { name: 'Moon Music', artist: 'Coldplay', year: '2024', cover: 'https://img.youtube.com/vi/W7lT4HlY82M/mqdefault.jpg' }
-                    ].map((item) => (
+              ) : (
+                viewMode === 'grid' ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-5">
+                    {playlists.map((playlist: any) => (
                       <div
-                        key={item.name}
-                        onClick={() => router.push(`/albums/4aawyABuhtvU4upGL7jSMG`)}
-                        className="group cursor-pointer rounded-2xl bg-[#1A1A1A]/40 border border-white/[0.06] p-4 hover:border-cyan-500/30 transition-all"
+                        key={playlist.id}
+                        onClick={() => router.push(`/playlists/${playlist.id}`)}
+                        onDragOver={(e) => handleDragOver(e, playlist.id)}
+                        onDrop={(e) => handleDrop(e, playlist.id)}
+                        className={`group relative rounded-2xl border bg-neutral-900/20 p-5 cursor-pointer hover:scale-102 transition-all text-left ${
+                          dragOverFolderId === playlist.id ? 'border-cyan-400 bg-cyan-950/10' : 'border-white/[0.04] hover:border-cyan-500/20'
+                        }`}
                       >
-                        <img src={item.cover} className="aspect-square w-full rounded-xl object-cover mb-3" alt="" referrerPolicy="no-referrer" />
-                        <h4 className="truncate text-xs font-bold leading-normal">{item.name}</h4>
-                        <p className="text-[10px] text-neutral-500 font-semibold leading-normal">{item.artist} · {item.year}</p>
+                        <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-neutral-950 border border-white/[0.06] mb-3.5 flex items-center justify-center">
+                          <Music className="h-10 w-10 text-neutral-600 group-hover:text-cyan-400 transition-colors" />
+                        </div>
+                        <h4 className="text-xs font-extrabold text-white truncate group-hover:text-cyan-400 transition-colors leading-tight">
+                          {playlist.name}
+                        </h4>
+                        <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider mt-1.5">
+                          Playlist · {playlist.description || 'Personal Mix'}
+                        </p>
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
-
-              {/* ARTISTS ACTIVE TAB (MOCK VISUAL ONLY) */}
-              {activeTab === 'artists' && (
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between border-b border-white/[0.05] pb-3">
-                    <h3 className="text-base font-black">Artists Locker</h3>
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-left">
-                    {[
-                      { name: 'Arijit Singh', genre: 'Bollywood', id: '4YRx37jL6VOmbfUnxwSy6g', img: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=500&auto=format&fit=crop&q=80' },
-                      { name: 'Daft Punk', genre: 'Electronic', id: '4tZ1zfvKLIxsHjJ7t0OI6Q', img: 'https://images.unsplash.com/photo-1487180142328-0c4e37023af5?w=500&auto=format&fit=crop&q=80' },
-                      { name: 'The Weeknd', genre: 'Pop', id: '1XyoP13t12wR6hR6hR6hR6', img: 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=500&auto=format&fit=crop&q=80' }
-                    ].map((item) => (
+                ) : (
+                  <div className="space-y-2">
+                    {playlists.map((playlist: any) => (
                       <div
-                        key={item.name}
-                        onClick={() => router.push(`/artists/${item.id}`)}
-                        className="group cursor-pointer rounded-2xl bg-[#1A1A1A]/40 border border-white/[0.06] p-4 hover:border-cyan-500/30 transition-all text-center"
+                        key={playlist.id}
+                        onClick={() => router.push(`/playlists/${playlist.id}`)}
+                        onDragOver={(e) => handleDragOver(e, playlist.id)}
+                        onDrop={(e) => handleDrop(e, playlist.id)}
+                        className={`flex items-center justify-between rounded-xl p-3 border transition-colors cursor-pointer ${
+                          dragOverFolderId === playlist.id ? 'border-cyan-400 bg-cyan-950/10' : 'border-white/[0.04] bg-neutral-900/10 hover:bg-neutral-850'
+                        }`}
                       >
-                        <img src={item.img} className="h-20 w-20 rounded-full mx-auto object-cover mb-3" alt="" referrerPolicy="no-referrer" />
-                        <h4 className="truncate text-xs font-bold leading-normal">{item.name}</h4>
-                        <p className="text-[10px] text-neutral-500 font-semibold">{item.genre}</p>
+                        <div className="flex items-center space-x-3.5 truncate">
+                          <Music className="h-4.5 w-4.5 text-neutral-500" />
+                          <p className="text-xs font-bold text-white truncate">{playlist.name}</p>
+                        </div>
+                        <ChevronRightIcon className="h-4 w-4 text-neutral-650" />
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
+                )
+              )
+            )}
 
-              {/* PODCASTS ACTIVE TAB (MOCK VISUAL ONLY) */}
-              {activeTab === 'podcasts' && (
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between border-b border-white/[0.05] pb-3">
-                    <h3 className="text-base font-black">Saved Podcasts</h3>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 text-left">
-                    {[
-                      { title: 'The Joe Rogan Experience', publisher: 'Spotify', img: 'https://images.unsplash.com/photo-1590602847861-f357a9332bbc?w=500&auto=format&fit=crop&q=80' },
-                      { title: 'Lex Fridman Podcast', publisher: 'Lex Fridman', img: 'https://images.unsplash.com/photo-1589903308904-1010c2294adc?w=500&auto=format&fit=crop&q=80' }
-                    ].map((item) => (
+            {/* LIKED SONGS COLLECTION */}
+            {activeTab === 'liked' && (
+              likedTracks.length === 0 ? (
+                <div className="rounded-3xl border border-dashed border-white/[0.08] p-12 text-center text-sm text-neutral-500">
+                  No liked songs found. Hit the heart on any track to save it here!
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {likedTracks.map((track: Track, idx: number) => {
+                    const isCurrent = currentTrack?.id === track.id;
+                    return (
                       <div
-                        key={item.title}
-                        className="group rounded-2xl bg-[#1A1A1A]/40 border border-white/[0.06] p-4 hover:border-cyan-500/30 transition-all flex items-center space-x-3.5"
+                        key={track.id}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, track)}
+                        onClick={() => handlePlayTrack(track, likedTracks)}
+                        className={`group relative flex items-center justify-between rounded-2xl p-3 border transition-all cursor-grab active:cursor-grabbing ${
+                          isCurrent 
+                            ? 'border-cyan-500/30 bg-cyan-950/10' 
+                            : 'border-white/[0.04] bg-neutral-900/15 hover:bg-[#1A1A1A]/40'
+                        }`}
                       >
-                        <img src={item.img} className="h-12 w-12 rounded-xl object-cover" alt="" referrerPolicy="no-referrer" />
-                        <div className="truncate">
-                          <h4 className="truncate text-xs font-bold leading-normal text-white">{item.title}</h4>
-                          <p className="text-[10px] text-neutral-500 font-semibold leading-normal">{item.publisher}</p>
+                        <div className="flex items-center space-x-4 truncate flex-1 pr-4">
+                          <span className="text-xs font-black text-neutral-500 w-5 text-center">{idx + 1}</span>
+                          <div className="relative h-11 w-11 flex-shrink-0 overflow-hidden rounded-xl bg-neutral-950 border border-white/[0.06]">
+                            <ImageWithFallback src={track.coverUrl || ''} alt={track.title} fill sizes="44px" />
+                          </div>
+                          <div className="truncate text-left">
+                            <p className={`truncate text-sm font-bold ${isCurrent ? 'text-cyan-400' : 'text-white'}`}>
+                              {track.title}
+                            </p>
+                            <p className="truncate text-xs text-neutral-405 font-semibold mt-0.5">{track.artist?.name}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-3.5" onClick={e => e.stopPropagation()}>
+                          <button onClick={() => handlePlayTrack(track, likedTracks)} className="h-8.5 w-8.5 rounded-full bg-neutral-950 border border-white/[0.06] flex items-center justify-center text-neutral-400 hover:text-cyan-400">
+                            <Play className="h-3.5 w-3.5 fill-current translate-x-[0.5px]" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )
+            )}
+
+            {/* CLOUD UPLOADS */}
+            {activeTab === 'cloud' && (
+              allUploads.length === 0 ? (
+                <div className="rounded-3xl border border-dashed border-white/[0.08] p-12 text-center text-sm text-neutral-500">
+                  Drag and drop local MP3/audio files to back up your tracks to the cloud database.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {allUploads.map((upload: any) => {
+                    const trackObj: Track = {
+                      id: upload.isLocalOffline ? upload.id : `cloud_${upload.id}`,
+                      title: upload.title,
+                      artist: { name: upload.artist || 'My Uploads' },
+                      durationMs: upload.duration_ms || 180000,
+                      sourceType: 'cloud',
+                      sourceId: upload.file_path,
+                    };
+                    const isCurrent = currentTrack?.id === trackObj.id;
+                    return (
+                      <div
+                        key={upload.id}
+                        onClick={() => handlePlayTrack(trackObj, [trackObj])}
+                        className={`group relative flex items-center justify-between rounded-2xl p-3 border transition-colors cursor-pointer ${
+                          isCurrent ? 'border-cyan-500/35 bg-cyan-950/10' : 'border-white/[0.04] bg-neutral-900/15 hover:bg-neutral-850'
+                        }`}
+                      >
+                        <div className="flex items-center space-x-3.5 truncate">
+                          <FileAudio className="h-5 w-5 text-cyan-400" />
+                          <div className="truncate text-left">
+                            <p className="text-xs font-bold text-white truncate">{upload.title}</p>
+                            <p className="text-[10px] text-neutral-500 font-semibold truncate mt-0.5">
+                              {upload.isLocalOffline ? 'Offline Guest Locker' : 'Cloud Storage Audio File'}
+                            </p>
+                          </div>
+                        </div>
+                        <PlayCircle className="h-5 w-5 text-neutral-500 group-hover:text-cyan-400 transition-colors" />
+                      </div>
+                    );
+                  })}
+                </div>
+              )
+            )}
+
+            {/* RECENTLY PLAYED HISTORY / TIMELINE VIEW */}
+            {activeTab === 'history' && (
+              historyTracks.length === 0 ? (
+                <div className="rounded-3xl border border-dashed border-white/[0.08] p-12 text-center text-sm text-neutral-500">
+                  Your listening history will display here. Play some tracks first!
+                </div>
+              ) : (
+                viewMode === 'timeline' ? (
+                  <div className="relative border-l border-white/[0.08] ml-4 pl-6 space-y-6 text-left">
+                    {historyTracks.slice(0, 8).map((track: Track, i: number) => (
+                      <div key={i} className="relative">
+                        {/* Dot indicator on timeline */}
+                        <div className="absolute -left-[31px] top-1.5 h-3.5 w-3.5 rounded-full bg-cyan-400 border border-neutral-950 flex items-center justify-center">
+                          <div className="h-1.5 w-1.5 rounded-full bg-neutral-950" />
+                        </div>
+                        <div className="space-y-1 bg-neutral-900/10 border border-white/[0.03] p-3.5 rounded-xl">
+                          <p className="text-[9px] text-neutral-500 font-bold uppercase tracking-wider">Today, 2 hours ago</p>
+                          <div className="flex items-center gap-3">
+                            <div className="h-9 w-9 relative rounded overflow-hidden flex-shrink-0 bg-neutral-950 border border-white/[0.04]">
+                              <ImageWithFallback src={track.coverUrl || ''} alt={track.title} fill sizes="36px" />
+                            </div>
+                            <div>
+                              <p className="text-xs font-bold text-white leading-normal hover:text-cyan-400 cursor-pointer" onClick={() => handlePlayTrack(track, historyTracks)}>{track.title}</p>
+                              <p className="text-[10px] text-neutral-455 font-semibold leading-normal">{track.artist?.name}</p>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
-
-              {/* FOLDERS TAB */}
-              {activeTab === 'folders' && (
-                <div className="space-y-6 text-center py-10">
-                  <Folder className="h-10 w-10 text-neutral-700 mx-auto mb-2" />
-                  <h3 className="text-base font-black">Folders Locker</h3>
-                  <p className="text-xs text-neutral-500 max-w-xs mx-auto leading-relaxed">
-                    Create nested music folders to organize your custom playlists and albums.
-                  </p>
-                </div>
-              )}
-
-              {/* PINNED COLLECTIONS TAB */}
-              {activeTab === 'pinned' && (
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between border-b border-white/[0.05] pb-3">
-                    <h3 className="text-base font-black">Pinned Collections</h3>
+                ) : (
+                  <div className="space-y-3">
+                    {historyTracks.map((track: Track, idx: number) => (
+                      <div
+                        key={track.id}
+                        onClick={() => handlePlayTrack(track, historyTracks)}
+                        className="group flex items-center justify-between rounded-xl bg-neutral-900/10 p-3 border border-white/[0.04] hover:bg-neutral-850 cursor-pointer"
+                      >
+                        <div className="flex items-center space-x-3.5 truncate">
+                          <Clock className="h-4.5 w-4.5 text-neutral-500" />
+                          <div className="truncate text-left">
+                            <p className="text-xs font-bold text-white truncate">{track.title}</p>
+                            <p className="text-[10px] text-neutral-500 font-semibold truncate mt-0.5">{track.artist?.name}</p>
+                          </div>
+                        </div>
+                        <Play className="h-4 w-4 text-neutral-500 group-hover:text-cyan-400" />
+                      </div>
+                    ))}
                   </div>
-                  <div className="grid grid-cols-2 gap-4 text-left">
+                )
+              )
+            )}
+
+            {/* MOCK AI COLLECTIONS */}
+            {activeTab === 'ai-mixes' && (
+              <div className="space-y-4 text-left">
+                <p className="text-xs text-neutral-400 font-semibold leading-normal">
+                  Our system synthesizes real-time behavior mixes based on your listening habits and mood tags.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {[
+                    { title: "Lofi Focus Beats", tags: "Coding · Ambient", bg: "from-cyan-500/10 to-transparent border-cyan-500/20" },
+                    { title: "Late Night Drive Synth", tags: "Retro · Synthwave", bg: "from-purple-500/10 to-transparent border-purple-500/20" },
+                    { title: "Acoustic Rain Moods", tags: "Calm · Acoustic", bg: "from-teal-500/10 to-transparent border-teal-500/20" },
+                    { title: "Gym & Workout Booster", tags: "High Tempo · Bass Boosted", bg: "from-rose-500/10 to-transparent border-rose-500/20" }
+                  ].map(mix => (
                     <div
-                      onClick={() => setActiveTab('liked')}
-                      className="group cursor-pointer rounded-2xl bg-[#1A1A1A]/40 border border-white/[0.06] p-5 hover:border-cyan-500/25 transition-all relative overflow-hidden"
+                      key={mix.title}
+                      onClick={() => alert(`Generating fresh tracks for "${mix.title}" mix...`)}
+                      className={`p-5 rounded-2xl border bg-gradient-to-br ${mix.bg} hover:scale-102 transition-transform cursor-pointer space-y-2`}
                     >
-                      <Pin className="absolute top-4 right-4 h-3.5 w-3.5 text-purple-400 fill-purple-400" />
-                      <Heart className="h-8 w-8 text-pink-500 fill-pink-500 mb-3" />
-                      <h4 className="text-xs font-black text-white">Liked Songs</h4>
-                      <p className="text-[10px] text-neutral-500 mt-1 font-semibold">Pinned Playlist</p>
+                      <Sparkles className="h-5 w-5 text-cyan-400" />
+                      <h4 className="text-sm font-black text-white">{mix.title}</h4>
+                      <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider">{mix.tags}</p>
                     </div>
-
-                    <div
-                      onClick={() => setActiveTab('cloud')}
-                      className="group cursor-pointer rounded-2xl bg-[#1A1A1A]/40 border border-white/[0.06] p-5 hover:border-cyan-500/25 transition-all relative overflow-hidden"
-                    >
-                      <Pin className="absolute top-4 right-4 h-3.5 w-3.5 text-purple-400 fill-purple-400" />
-                      <CloudLightning className="h-8 w-8 text-cyan-400 mb-3" />
-                      <h4 className="text-xs font-black text-white">Cloud Locker</h4>
-                      <p className="text-[10px] text-neutral-500 mt-1 font-semibold">Private MP3 Uploads</p>
-                    </div>
-                  </div>
+                  ))}
                 </div>
-              )}
+              </div>
+            )}
 
-            </motion.div>
-          </AnimatePresence>
+          </div>
 
         </div>
+
       </div>
-      
+
     </div>
+  );
+}
+
+function ChevronRightIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} xmlns="http://www.w3.org/255/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m9 18 6-6-6-6"/>
+    </svg>
   );
 }

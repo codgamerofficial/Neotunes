@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { usePlaybackStore } from '@/store/playback-store';
 import { createClientBrowser } from '@/lib/supabase-browser';
+import ImageWithFallback from '@/components/ui/ImageWithFallback';
 import { 
   Play, 
   Pause, 
@@ -14,13 +15,17 @@ import {
   Compass, 
   TrendingUp, 
   Radio, 
-  Volume2, 
-  VolumeX, 
   ListMusic, 
   Cloud,
   ChevronRight,
   Disc,
-  Info
+  Info,
+  Heart,
+  Grid,
+  Headphones,
+  Sliders,
+  Calendar,
+  Volume2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -43,25 +48,46 @@ export default function HomePage() {
   const [userProfile, setUserProfile] = useState<{ displayName: string } | null>(null);
   const [selectedMood, setSelectedMood] = useState('Coding');
   const [showAiDJDetail, setShowAiDJDetail] = useState(false);
+  const [activeCategory, setActiveCategory] = useState<'home' | 'foryou' | 'explore'>('home');
+
+  // Stats for Hero Section
+  const [stats, setStats] = useState({ likedCount: 0, cloudCount: 0, historyCount: 0 });
 
   // Sync user profile name
   useEffect(() => {
-    const fetchProfile = async () => {
+    const fetchProfileAndStats = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data } = await supabase
+        // Fetch Display Name
+        const { data: profile } = await supabase
           .from('profiles')
           .select('display_name')
           .eq('id', user.id)
           .single();
-        if (data) {
+        if (profile) {
           setUserProfile({
-            displayName: data.display_name || user.email?.split('@')[0] || 'Saswata',
+            displayName: profile.display_name || user.email?.split('@')[0] || 'Saswata',
           });
+        }
+
+        // Fetch User Stats
+        try {
+          const [likedRes, cloudRes, historyRes] = await Promise.all([
+            supabase.from('liked_tracks').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
+            supabase.from('cloud_uploads').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
+            supabase.from('listening_history').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
+          ]);
+          setStats({
+            likedCount: likedRes.count || 0,
+            cloudCount: cloudRes.count || 0,
+            historyCount: historyRes.count || 0
+          });
+        } catch (err) {
+          console.warn('Failed to fetch stats for hero:', err);
         }
       }
     };
-    fetchProfile();
+    fetchProfileAndStats();
   }, []);
 
   // Fetch Discover Mix recommendations
@@ -122,32 +148,32 @@ export default function HomePage() {
     }
   };
 
-  // Curated Lists matching the 18 user requirements
+  // Official resolved tracks using Deezer/iTunes metadata
   const arijitSongs: Track[] = [
-    { id: 'kesariya', title: 'Kesariya', artist: { name: 'Arijit Singh', id: '4YRx37jL6VOmbfUnxwSy6g' }, album: { name: 'Brahmastra' }, coverUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&auto=format&fit=crop&q=80', durationMs: 268000, sourceType: 'youtube' },
-    { id: 'tum-hi-ho', title: 'Tum Hi Ho', artist: { name: 'Arijit Singh', id: '4YRx37jL6VOmbfUnxwSy6g' }, album: { name: 'Aashiqui 2' }, coverUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&auto=format&fit=crop&q=80', durationMs: 262000, sourceType: 'youtube' },
-    { id: 'chaleya', title: 'Chaleya', artist: { name: 'Arijit Singh', id: '4YRx37jL6VOmbfUnxwSy6g' }, album: { name: 'Jawan' }, coverUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&auto=format&fit=crop&q=80', durationMs: 200000, sourceType: 'youtube' },
-    { id: 'apna-bana-le', title: 'Apna Bana Le', artist: { name: 'Arijit Singh', id: '4YRx37jL6VOmbfUnxwSy6g' }, album: { name: 'Bhediya' }, coverUrl: 'https://images.unsplash.com/photo-1506157786151-b8491531f063?w=500&auto=format&fit=crop&q=80', durationMs: 264000, sourceType: 'youtube' },
-    { id: 'heeriye', title: 'Heeriye (feat. Arijit Singh)', artist: { name: 'Jasleen Royal', id: '3448f76d4' }, album: { name: 'Heeriye Single' }, coverUrl: 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=500&auto=format&fit=crop&q=80', durationMs: 198000, sourceType: 'youtube' }
+    { id: '6iBjgI6c7Bnt78v38e4a9v', title: 'Kesariya (From "Brahmastra")', artist: { name: 'Pritam, Arijit Singh & Amitabh Bhattacharya', id: '4YRx37jL6VOmbfUnxwSy6g' }, album: { name: 'Kesariya - Single', coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music112/v4/9f/13/ca/9f13ca3b-e533-03e0-f19a-f0aaa774581d/196589311191.jpg/600x600bb.jpg' }, coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music112/v4/9f/13/ca/9f13ca3b-e533-03e0-f19a-f0aaa774581d/196589311191.jpg/600x600bb.jpg', durationMs: 268165, sourceType: 'youtube' },
+    { id: '56MuuL29m1338x6j3n3R0e', title: 'Tum Hi Ho', artist: { name: 'Mithoon & Arijit Singh', id: '4YRx37jL6VOmbfUnxwSy6g' }, album: { name: 'Aashiqui 2 Soundtrack', coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/bb/23/ee/bb23eeed-0c35-4f1d-2b11-485622777ae4/8902894353007_cover.jpg/600x600bb.jpg' }, coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/bb/23/ee/bb23eeed-0c35-4f1d-2b11-485622777ae4/8902894353007_cover.jpg/600x600bb.jpg', durationMs: 261974, sourceType: 'youtube' },
+    { id: '3y7tEszcskWw1q7UpxjPZ7', title: 'Chaleya (From "Jawan")', artist: { name: 'Anirudh Ravichander, Arijit Singh & Shilpa Rao', id: '4YRx37jL6VOmbfUnxwSy6g' }, album: { name: 'Chaleya - Single', coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/1e/ff/32/1eff3216-190d-6fd9-8f68-acbba846e6ee/8903431956026_cover.jpg/600x600bb.jpg' }, coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/1e/ff/32/1eff3216-190d-6fd9-8f68-acbba846e6ee/8903431956026_cover.jpg/600x600bb.jpg', durationMs: 200374, sourceType: 'youtube' },
+    { id: '3y4oF6ZfP0sX7zE5p8v6nN', title: 'Apna Bana Le (From "Bhediya")', artist: { name: 'Arijit Singh & Sachin-Jigar', id: '4YRx37jL6VOmbfUnxwSy6g' }, album: { name: 'Apna Bana Le - Single', coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music122/v4/2e/0b/c0/2e0bc070-112f-a827-6ad8-6bc64f7caaff/840214460180.png/600x600bb.jpg' }, coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music122/v4/2e/0b/c0/2e0bc070-112f-a827-6ad8-6bc64f7caaff/840214460180.png/600x600bb.jpg', durationMs: 261702, sourceType: 'youtube' },
+    { id: '5NX1aRjZ0K5Jp7f8p8v6nN', title: 'Heeriye', artist: { name: 'Jasleen Royal & Arijit Singh', id: '3448f76d4' }, album: { name: 'Heeriye - Single', coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/f0/8c/2a/f08c2aeb-3903-8738-d0a5-8c2e4547eed7/5054197711039.jpg/600x600bb.jpg' }, coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/f0/8c/2a/f08c2aeb-3903-8738-d0a5-8c2e4547eed7/5054197711039.jpg/600x600bb.jpg', durationMs: 194857, sourceType: 'youtube' }
   ];
 
   const globalHits: Track[] = [
-    { id: 'flowers', title: 'Flowers', artist: { name: 'Miley Cyrus' }, album: { name: 'Endless Summer Vacation' }, coverUrl: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=500&auto=format&fit=crop&q=80', durationMs: 200000, sourceType: 'youtube' },
-    { id: 'blinding-lights', title: 'Blinding Lights', artist: { name: 'The Weeknd' }, album: { name: 'After Hours' }, coverUrl: 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=500&auto=format&fit=crop&q=80', durationMs: 200000, sourceType: 'youtube' },
-    { id: 'as-it-was', title: 'As It Was', artist: { name: 'Harry Styles' }, album: { name: "Harry's House" }, coverUrl: 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=500&auto=format&fit=crop&q=80', durationMs: 167000, sourceType: 'youtube' },
-    { id: 'espresso', title: 'Espresso', artist: { name: 'Sabrina Carpenter' }, album: { name: 'Espresso Single' }, coverUrl: 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=500&auto=format&fit=crop&q=80', durationMs: 175000, sourceType: 'youtube' },
-    { id: 'lunch', title: 'LUNCH', artist: { name: 'Billie Eilish' }, album: { name: 'HIT ME HARD AND SOFT' }, coverUrl: 'https://images.unsplash.com/photo-1528605248644-14dd04022da1?w=500&auto=format&fit=crop&q=80', durationMs: 180000, sourceType: 'youtube' }
+    { id: 'it_1674691586', title: 'Flowers', artist: { name: 'Miley Cyrus' }, album: { name: 'Endless Summer Vacation', coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/8c/67/ff/8c67ff91-31c3-3fef-1884-ce3ec89f3af4/196589946874.jpg/600x600bb.jpg' }, coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/8c/67/ff/8c67ff91-31c3-3fef-1884-ce3ec89f3af4/196589946874.jpg/600x600bb.jpg', durationMs: 200600, sourceType: 'youtube' },
+    { id: '0VjIjW4GlUZAMYd2vXMi3b', title: 'Blinding Lights', artist: { name: 'The Weeknd' }, album: { name: 'Blinding Lights - Single', coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/a6/6e/bf/a66ebf79-5008-8948-b352-a790fc87446b/19UM1IM04638.rgb.jpg/600x600bb.jpg' }, coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/a6/6e/bf/a66ebf79-5008-8948-b352-a790fc87446b/19UM1IM04638.rgb.jpg/600x600bb.jpg', durationMs: 201570, sourceType: 'youtube' },
+    { id: '4D7tIB1C03sfw5k049URrw', title: 'As It Was', artist: { name: 'Harry Styles' }, album: { name: "Harry's House", coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/2a/19/fb/2a19fb85-2f70-9e44-f2a9-82abe679b88e/886449990061.jpg/600x600bb.jpg' }, coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/2a/19/fb/2a19fb85-2f70-9e44-f2a9-82abe679b88e/886449990061.jpg/600x600bb.jpg', durationMs: 167303, sourceType: 'youtube' },
+    { id: 'it_1746801012', title: 'Espresso', artist: { name: 'Sabrina Carpenter' }, album: { name: 'Espresso - Single', coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/57/e8/7b/57e87ba0-5057-9bb9-c247-ce7dbe426e89/24UMGIM55213.rgb.jpg/600x600bb.jpg' }, coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/57/e8/7b/57e87ba0-5057-9bb9-c247-ce7dbe426e89/24UMGIM55213.rgb.jpg/600x600bb.jpg', durationMs: 175459, sourceType: 'youtube' },
+    { id: 'it_1739659140', title: 'LUNCH', artist: { name: 'Billie Eilish' }, album: { name: 'HIT ME HARD AND SOFT', coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/92/9f/69/929f69f1-9977-3a44-d674-11f70c852d1b/24UMGIM36186.rgb.jpg/600x600bb.jpg' }, coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/92/9f/69/929f69f1-9977-3a44-d674-11f70c852d1b/24UMGIM36186.rgb.jpg/600x600bb.jpg', durationMs: 179587, sourceType: 'youtube' }
   ];
 
   const trendingYoutube: Track[] = [
-    { id: 'yt-1', title: 'Hanumankind - Big Dawgs', artist: { name: 'Hanumankind' }, album: { name: 'Big Dawgs Single' }, coverUrl: 'https://img.youtube.com/vi/hOHKltAiKXQ/mqdefault.jpg', durationMs: 205000, sourceType: 'youtube' },
-    { id: 'yt-2', title: 'Coldplay - Feelslikeimfallinginlove', artist: { name: 'Coldplay' }, album: { name: 'Moon Music' }, coverUrl: 'https://img.youtube.com/vi/W7lT4HlY82M/mqdefault.jpg', durationMs: 240000, sourceType: 'youtube' },
-    { id: 'yt-3', title: 'Eminem - Houdini', artist: { name: 'Eminem' }, album: { name: 'The Death of Slim Shady' }, coverUrl: 'https://img.youtube.com/vi/22tVWwmVg1M/mqdefault.jpg', durationMs: 227000, sourceType: 'youtube' },
-    { id: 'yt-4', title: 'Post Malone - I Had Some Help (feat. Morgan Wallen)', artist: { name: 'Post Malone' }, album: { name: 'F-1 Trillion' }, coverUrl: 'https://img.youtube.com/vi/W59hL7Wk1tM/mqdefault.jpg', durationMs: 180000, sourceType: 'youtube' }
+    { id: 'it_1765520596', title: 'Big Dawgs', artist: { name: 'Hanumankind & Kalmi' }, album: { name: 'Big Dawgs - Single', coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/42/d2/6c/42d26c01-619f-fa0a-2e83-7f4a28b5d3b2/24UMGIM70977.rgb.jpg/600x600bb.jpg' }, coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/42/d2/6c/42d26c01-619f-fa0a-2e83-7f4a28b5d3b2/24UMGIM70977.rgb.jpg/600x600bb.jpg', durationMs: 190667, sourceType: 'youtube' },
+    { id: 'it_1751728802', title: 'feelslikeimfallinginlove', artist: { name: 'Coldplay' }, album: { name: 'Moon Music', coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/af/3c/0f/af3c0fe2-1c4f-8499-67a8-14a8e41fdbf8/5021732410535.jpg/600x600bb.jpg' }, coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/af/3c/0f/af3c0fe2-1c4f-8499-67a8-14a8e41fdbf8/5021732410535.jpg/600x600bb.jpg', durationMs: 236231, sourceType: 'youtube' },
+    { id: 'it_1749608600', title: 'Houdini', artist: { name: 'Eminem' }, album: { name: 'Houdini - Single', coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/0f/11/b5/0f11b57e-999e-b93b-41bc-539d71e7e86f/24UMGIM60029.rgb.jpg/600x600bb.jpg' }, coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/0f/11/b5/0f11b57e-999e-b93b-41bc-539d71e7e86f/24UMGIM60029.rgb.jpg/600x600bb.jpg', durationMs: 227239, sourceType: 'youtube' },
+    { id: 'it_1744452425', title: 'I Had Some Help (feat. Morgan Wallen)', artist: { name: 'Post Malone' }, album: { name: 'F-1 Trillion', coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/84/df/b9/84dfb96b-27c8-4d40-4780-b65ff22790e4/24UMGIM50612.rgb.jpg/600x600bb.jpg' }, coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/84/df/b9/84dfb96b-27c8-4d40-4780-b65ff22790e4/24UMGIM50612.rgb.jpg/600x600bb.jpg', durationMs: 178206, sourceType: 'youtube' }
   ];
 
   const livePerformances: Track[] = [
-    { id: 'live-1', title: 'Fix You (Live in São Paulo)', artist: { name: 'Coldplay' }, album: { name: 'Live Album' }, coverUrl: 'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?w=500&auto=format&fit=crop&q=80', durationMs: 310000, sourceType: 'youtube' },
+    { id: 'it_1123076826', title: 'Fix You', artist: { name: 'Coldplay' }, album: { name: 'X&Y', coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/0c/82/48/0c8248a8-4a5b-d30d-8056-f32d650d2fc9/190295978068.jpg/600x600bb.jpg' }, coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/0c/82/48/0c8248a8-4a5b-d30d-8056-f32d650d2fc9/190295978068.jpg/600x600bb.jpg', durationMs: 294992, sourceType: 'youtube' },
     { id: 'live-2', title: 'Alive 2007 Medley (Live)', artist: { name: 'Daft Punk' }, album: { name: 'Alive 2007' }, coverUrl: 'https://images.unsplash.com/photo-1487180142328-0c4e37023af5?w=500&auto=format&fit=crop&q=80', durationMs: 350000, sourceType: 'youtube' },
     { id: 'live-3', title: 'Cruel Summer (The Eras Tour Live)', artist: { name: 'Taylor Swift' }, album: { name: 'Lover (Live)' }, coverUrl: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=500&auto=format&fit=crop&q=80', durationMs: 215000, sourceType: 'youtube' }
   ];
@@ -187,17 +213,15 @@ export default function HomePage() {
   const TrackCard = ({ track, onClick }: { track: Track; onClick: () => void }) => {
     const isCurrent = currentTrack?.id === track.id;
     const artistName = track.artist?.name || 'Unknown';
-    const isYt = track.id.startsWith('yt-') || track.id.startsWith('pod-') || track.id.startsWith('mood-') || track.id.startsWith('live-') || track.id.length < 15;
+    const isYtOrCustom = track.id.startsWith('yt-') || track.id.startsWith('pod-') || track.id.startsWith('mood-') || track.id.startsWith('live-') || track.id.startsWith('it_') || track.id.startsWith('dz_') || track.id.length < 15;
 
-    // Use Spotify router path on click if it's a real track
-    const handleNavigation = (e: React.MouseEvent) => {
-      // If we clicked play directly, don't navigate
+    const handlePlayBtnClick = (e: React.MouseEvent) => {
       e.stopPropagation();
       onClick();
     };
 
     const handleCardClick = () => {
-      if (track.id.startsWith('mood-') || track.id.startsWith('yt-') || track.id.startsWith('pod-')) {
+      if (isYtOrCustom) {
         onClick();
       } else {
         router.push(`/albums/${track.album?.id || '4aawyABuhtvU4upGL7jSMG'}`);
@@ -205,330 +229,425 @@ export default function HomePage() {
     };
 
     return (
-      <div
+      <motion.div
+        whileHover={{ y: -6, scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
         onClick={handleCardClick}
-        className="group relative flex-shrink-0 w-44 snap-start rounded-2xl bg-[#1A1A1A]/40 border border-white/[0.06] overflow-hidden hover:border-cyan-500/40 hover:-translate-y-1 hover:shadow-xl hover:shadow-cyan-500/10 transition-all duration-200 cursor-pointer"
+        className="group relative w-full rounded-2xl bg-neutral-900/40 hover:bg-neutral-850/50 border border-white/[0.04] hover:border-cyan-500/30 overflow-hidden hover:shadow-2xl hover:shadow-cyan-500/5 transition-all duration-300 cursor-pointer p-4 flex flex-col h-full text-left"
       >
-        <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-neutral-900">
-          {track.coverUrl ? (
-            <img
-              src={track.coverUrl}
-              alt={track.title}
-              className="absolute inset-0 h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
-              loading="lazy"
-              referrerPolicy="no-referrer"
-            />
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-neutral-850 to-neutral-900">
-              <Music className="h-8 w-8 text-neutral-600" />
-            </div>
-          )}
+        <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-neutral-900 shadow-md">
+          <ImageWithFallback
+            src={track.coverUrl || '/images/default-cover.png'}
+            alt={track.title}
+            fill
+            sizes="(max-width: 640px) 150px, 220px"
+            className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+          />
           {/* Play button overlay */}
-          <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
             <button
-              onClick={handleNavigation}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-cyan-400 shadow-lg shadow-cyan-500/40 transform scale-90 group-hover:scale-100 transition-transform active:scale-95"
+              onClick={handlePlayBtnClick}
+              className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-r from-cyan-400 to-purple-500 shadow-xl shadow-cyan-500/30 transform scale-90 group-hover:scale-100 transition-transform active:scale-95 duration-300"
             >
               {isCurrent && isPlaying ? (
-                <Pause className="h-4.5 w-4.5 fill-black stroke-black" />
+                <Pause className="h-5 w-5 fill-black stroke-black" />
               ) : (
-                <Play className="h-4.5 w-4.5 fill-black stroke-black translate-x-[1px]" />
+                <Play className="h-5 w-5 fill-black stroke-black translate-x-[1px]" />
               )}
             </button>
           </div>
         </div>
 
         {/* Info */}
-        <div className="p-3 space-y-0.5 text-left font-sans">
-          <p className={`text-sm font-semibold leading-tight line-clamp-1 ${isCurrent ? 'text-cyan-400 drop-shadow-[0_0_8px_rgba(0,245,255,0.3)]' : 'text-white'}`}>
-            {track.title}
-          </p>
-          <p className="text-[11px] text-neutral-500 line-clamp-1">
-            {artistName}
-          </p>
+        <div className="mt-4 flex-grow flex flex-col justify-between font-sans">
+          <div className="space-y-1">
+            <h4 className={`text-sm font-bold leading-tight line-clamp-1 ${isCurrent ? 'text-cyan-400 drop-shadow-[0_0_8px_rgba(0,245,255,0.3)]' : 'text-white'}`}>
+              {track.title}
+            </h4>
+            <p className="text-xs text-neutral-400 line-clamp-1 font-semibold">
+              {artistName}
+            </p>
+          </div>
+          <div className="flex items-center justify-between mt-3 pt-2 border-t border-white/[0.03] text-[10px] text-neutral-500 font-bold uppercase tracking-wider">
+            <span>{track.sourceType}</span>
+            <span className="font-mono">{Math.floor(track.durationMs / 60000)}:{(Math.floor((track.durationMs % 60000) / 1000)).toString().padStart(2, '0')}</span>
+          </div>
         </div>
-      </div>
+      </motion.div>
     );
   };
 
   return (
-    <div className="space-y-10 text-white pb-12 font-sans select-none">
+    <div className="space-y-8 text-white pb-12 font-sans select-none w-full">
       
-      {/* 1. GREETING HEADER & BANNER */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-cyan-500/10 via-purple-600/5 to-transparent border border-white/[0.06] px-8 py-10 text-left">
-        {/* Glowing atmospheres */}
-        <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-cyan-500/10 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-12 right-32 h-48 w-48 rounded-full bg-purple-600/10 blur-3xl" />
+      {/* 1. GREETING HEADER & STUNNING HERO BANNER */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-cyan-500/15 via-purple-600/10 to-transparent border border-white/[0.08] px-8 py-10 text-left shadow-2xl">
+        {/* Animated Visualizer Background inside Hero */}
+        <div className="absolute inset-0 bg-[#000]/10 backdrop-blur-[2px] -z-10" />
+        <div className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-cyan-500/10 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-24 right-48 h-80 w-80 rounded-full bg-purple-600/10 blur-3xl" />
 
-        <p className="mb-1 text-[10px] font-black uppercase tracking-[0.2em] text-cyan-400">
-          {getTimeOfDayLabel()} · NeoTunes Universe
-        </p>
-        <h1 className="text-4xl sm:text-5xl font-black tracking-tighter text-white">
-          Good {timeOfDay},<br className="sm:hidden" /> {displayName}
-        </h1>
-        <p className="mt-2 max-w-md text-sm text-neutral-400 font-semibold leading-relaxed">
-          Unifying your local clouds, YouTube discoverability, and Spotify metadata into a single, high-fidelity experience.
-        </p>
-      </div>
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 relative z-10">
+          <div className="space-y-4">
+            <p className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.25em] text-cyan-400 bg-cyan-500/10 px-3.5 py-1.5 rounded-full border border-cyan-500/20">
+              <Sparkles className="h-3.5 w-3.5" />
+              <span>{getTimeOfDayLabel()} · NeoTunes Premium</span>
+            </p>
+            <h1 className="text-4xl sm:text-6xl font-black tracking-tight leading-none text-white max-w-2xl">
+              The Future of Music,<br />Tailored for You
+            </h1>
+            <p className="max-w-lg text-sm text-neutral-405 font-semibold leading-relaxed">
+              Unifying your local storage lockers, the completeness of YouTube, and Spotify Web metadata. Powered by Upstash Redis and Supabase.
+            </p>
 
-      {/* 2. DYNAMIC AI DJ PANEL */}
-      <section className="relative overflow-hidden rounded-3xl border border-white/[0.08] bg-[#111111]/70 backdrop-blur-xl p-6 text-left">
-        <div className="absolute top-0 right-0 p-4">
-          <button 
-            onClick={() => setShowAiDJDetail(!showAiDJDetail)}
-            className="text-neutral-500 hover:text-white p-1 transition-colors"
-            title="AI DJ Details"
-          >
-            <Info className="h-4 w-4" />
-          </button>
-        </div>
-
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="flex items-center gap-4">
-            {/* Spinning glowing DJ disc */}
-            <div className="relative h-16 w-16 rounded-full bg-gradient-to-tr from-cyan-400 to-purple-500 p-0.5 shadow-[0_0_20px_rgba(0,245,255,0.2)] animate-spin [animation-duration:10s] flex-shrink-0">
-              <div className="h-full w-full rounded-full bg-[#111111] flex items-center justify-center">
-                <Sparkles className="h-6 w-6 text-cyan-400" />
+            {/* Quick Stats Grid */}
+            <div className="flex gap-6 text-left pt-2">
+              <div>
+                <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider block">Liked Songs</span>
+                <span className="text-lg font-black text-cyan-400">{stats.likedCount}</span>
               </div>
-            </div>
-            <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-cyan-400">AI DJ Session</span>
-              <h2 className="text-xl font-black text-white">AI DJ Saswata</h2>
-              <p className="text-xs text-neutral-400 font-semibold">Ready with your late-night workspace vibe</p>
+              <div className="w-[1px] bg-white/[0.08]" />
+              <div>
+                <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider block">Cloud Files</span>
+                <span className="text-lg font-black text-purple-400">{stats.cloudCount}</span>
+              </div>
+              <div className="w-[1px] bg-white/[0.08]" />
+              <div>
+                <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider block">Total Plays</span>
+                <span className="text-lg font-black text-white">{stats.historyCount}</span>
+              </div>
             </div>
           </div>
 
-          <div className="flex gap-3 w-full md:w-auto">
+          {/* Quick Play Action Card */}
+          <div className="bg-neutral-900/60 backdrop-blur-md border border-white/[0.08] rounded-2xl p-5 lg:w-80 text-left space-y-4 flex-shrink-0 shadow-lg">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-cyan-400/15 flex items-center justify-center text-cyan-400">
+                <Headphones className="h-5 w-5" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-neutral-400 uppercase">Personalized Mix</h4>
+                <p className="text-sm font-black text-white">Saswata&apos;s Workspace Vibe</p>
+              </div>
+            </div>
+            <p className="text-[11px] text-neutral-450 font-semibold leading-normal">
+              Based on your liked songs and listening history, launch a custom workspace session.
+            </p>
             <button
               onClick={() => handlePlayTrack(arijitSongs[0], arijitSongs)}
-              className="flex-1 md:flex-none flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-cyan-400 to-purple-500 hover:from-cyan-350 hover:to-purple-450 px-6 py-3 text-xs font-black text-black shadow-lg shadow-cyan-500/20 active:scale-95 transition-all"
+              className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 to-purple-500 hover:from-cyan-350 hover:to-purple-450 py-3 text-xs font-black text-black shadow-lg shadow-cyan-500/10 active:scale-95 transition-all duration-200"
             >
               <Play className="h-4 w-4 fill-black stroke-black translate-x-[0.5px]" />
-              <span>Launch AI DJ Mix</span>
+              <span>Listen Now</span>
             </button>
           </div>
         </div>
+      </div>
 
-        {/* AI DJ Decision Logic Display */}
-        <AnimatePresence>
-          {(showAiDJDetail || true) && (
-            <motion.div 
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="mt-6 pt-5 border-t border-white/[0.05] grid grid-cols-2 sm:grid-cols-4 gap-4"
+      {/* 2. CATEGORY TAB SELECTOR BAR */}
+      <div className="flex items-center space-x-2 border-b border-white/[0.06] pb-1">
+        {[
+          { id: 'home', label: 'Home Dashboard', icon: Grid },
+          { id: 'foryou', label: 'For You & Mixes', icon: Sparkles },
+          { id: 'explore', label: 'Explore & Concerts', icon: Compass }
+        ].map((tab) => {
+          const isActive = activeCategory === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveCategory(tab.id as any)}
+              className={`relative flex items-center space-x-2 px-6 py-3.5 text-xs font-black uppercase tracking-wider transition-colors ${
+                isActive ? 'text-cyan-400' : 'text-neutral-400 hover:text-white'
+              }`}
             >
-              <div className="rounded-2xl bg-white/[0.02] border border-white/[0.04] p-3 text-left">
-                <span className="text-[10px] font-bold text-neutral-500 uppercase">Recent Activity</span>
-                <p className="text-xs font-bold text-neutral-250 mt-1">Coding React Apps</p>
-              </div>
-              <div className="rounded-2xl bg-white/[0.02] border border-white/[0.04] p-3 text-left">
-                <span className="text-[10px] font-bold text-neutral-500 uppercase">Favorite Artists</span>
-                <p className="text-xs font-bold text-neutral-250 mt-1">Arijit Singh, Weeknd</p>
-              </div>
-              <div className="rounded-2xl bg-white/[0.02] border border-white/[0.04] p-3 text-left">
-                <span className="text-[10px] font-bold text-neutral-500 uppercase">Today&apos;s Weather</span>
-                <p className="text-xs font-bold text-neutral-250 mt-1">Monsoon Showers 🌧️</p>
-              </div>
-              <div className="rounded-2xl bg-white/[0.02] border border-white/[0.04] p-3 text-left">
-                <span className="text-[10px] font-bold text-neutral-500 uppercase">Time of Day</span>
-                <p className="text-xs font-bold text-neutral-250 mt-1">Late Night Vibes</p>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </section>
+              {isActive && (
+                <motion.div 
+                  layoutId="home-category-active" 
+                  className="absolute bottom-0 left-0 right-0 h-[2px] bg-cyan-400 shadow-[0_0_8px_rgba(0,245,255,0.6)]" 
+                />
+              )}
+              <tab.icon className="h-4 w-4" />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
+      </div>
 
-      {/* 3. MOOD DETECTION PANEL */}
-      <section className="space-y-4 text-left">
-        <h3 className="text-sm font-black uppercase tracking-wider text-neutral-400">Identify Your Mood</h3>
-        <div className="flex gap-2.5 overflow-x-auto pb-2 scrollbar-hide snap-x">
-          {['Coding', 'Focus', 'Workout', 'Happy', 'Sleep', 'Driving', 'Study', 'Romantic', 'Rain', 'Party'].map((mood) => {
-            const isActive = selectedMood === mood;
-            const emojis: Record<string, string> = {
-              Coding: '💻', Focus: '🧠', Workout: '⚡', Happy: '😄', Sleep: '😴', Driving: '🚗', Study: '📖', Romantic: '❤️', Rain: '🌧️', Party: '🥳'
-            };
-            return (
-              <button
-                key={mood}
-                onClick={() => setSelectedMood(mood)}
-                className={`snap-start flex-shrink-0 flex items-center gap-2 rounded-full px-5 py-2.5 text-xs font-bold transition-all border ${
-                  isActive 
-                    ? 'bg-gradient-to-r from-cyan-400 to-purple-500 border-cyan-400 text-black shadow-md shadow-cyan-500/10'
-                    : 'border-white/[0.06] bg-[#111111]/40 text-neutral-400 hover:text-white hover:border-neutral-750'
-                }`}
-              >
-                <span>{emojis[mood] || '🎵'}</span>
-                <span>{mood}</span>
-              </button>
-            );
-          })}
-        </div>
-      </section>
+      {/* TABBED VIEWPORT */}
+      <div className="mt-4">
+        
+        {/* ==================== HOME TAB ==================== */}
+        {activeCategory === 'home' && (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            {/* LEFT COLUMN: HERO MIXES, CONTINUE LISTENING, MOOD SELECTION (8 Columns) */}
+            <div className="lg:col-span-8 space-y-8">
+              
+              {/* Mood Selection Row */}
+              <section className="space-y-4 text-left">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-black uppercase tracking-wider text-neutral-400">Match Your Mood</h3>
+                  <span className="text-[11px] font-black text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">{selectedMood} Active</span>
+                </div>
+                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x">
+                  {['Coding', 'Focus', 'Workout', 'Happy', 'Sleep', 'Driving', 'Study', 'Rain', 'Party'].map((mood) => {
+                    const isActive = selectedMood === mood;
+                    const emojis: Record<string, string> = {
+                      Coding: '💻', Focus: '🧠', Workout: '⚡', Happy: '😄', Sleep: '😴', Driving: '🚗', Study: '📖', Rain: '🌧️', Party: '🥳'
+                    };
+                    return (
+                      <button
+                        key={mood}
+                        onClick={() => setSelectedMood(mood)}
+                        className={`snap-start flex-shrink-0 flex items-center gap-2 rounded-full px-5 py-2.5 text-xs font-bold transition-all border ${
+                          isActive 
+                            ? 'bg-gradient-to-r from-cyan-400 to-purple-500 border-cyan-400 text-black shadow-lg shadow-cyan-500/10'
+                            : 'border-white/[0.06] bg-neutral-900/40 text-neutral-400 hover:text-white hover:border-neutral-700'
+                        }`}
+                      >
+                        <span>{emojis[mood] || '🎵'}</span>
+                        <span>{mood}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
 
-      {/* 4. AI MIXES SECTION */}
-      <section className="space-y-4 text-left">
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-cyan-400" />
-          <h2 className="text-lg font-bold tracking-tight text-white">AI Daily Mixes</h2>
-        </div>
-        <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide snap-x">
-          {[
-            { title: 'Coding Mix', desc: 'Focus instrumentals and synthwaves', gradient: 'from-[#7B61FF] to-[#00F5FF]' },
-            { title: 'Morning Mix', desc: 'Light acoustic and wake-up songs', gradient: 'from-amber-500 to-cyan-400' },
-            { title: 'Evening Mix', desc: 'Chill beats and lo-fi melodies', gradient: 'from-purple-600 to-rose-400' },
-            { title: 'Rain Mix', desc: 'Cozy atmospheric acoustics', gradient: 'from-blue-600 to-indigo-500' },
-            { title: 'Late Night Mix', desc: 'Deep atmospheric and OLED ambient', gradient: 'from-neutral-900 to-purple-950' },
-            { title: 'Travel Mix', desc: 'Upbeat tracks for the open road', gradient: 'from-emerald-500 to-teal-400' }
-          ].map((mix) => (
-            <div
-              key={mix.title}
-              onClick={() => handlePlayTrack(getActiveMoodTracks()[0], getActiveMoodTracks())}
-              className="snap-start flex-shrink-0 w-64 rounded-2xl bg-[#1A1A1A]/40 border border-white/[0.06] p-5 cursor-pointer relative overflow-hidden group hover:border-cyan-500/40 hover:-translate-y-1 transition-all"
-            >
-              {/* Glowing gradient back-accent */}
-              <div className={`absolute -inset-px -z-10 bg-gradient-to-tr ${mix.gradient} opacity-0 group-hover:opacity-10 rounded-2xl blur-md transition-opacity duration-300`} />
-              <div className={`h-2.5 w-12 rounded-full bg-gradient-to-r ${mix.gradient} mb-4`} />
-              <h4 className="text-sm font-black text-white">{mix.title}</h4>
-              <p className="text-xs text-neutral-500 mt-1">{mix.desc}</p>
+              {/* Mood Songs */}
+              <section className="space-y-4 text-left">
+                <h3 className="text-sm font-black uppercase tracking-wider text-neutral-400">Active Mood Station</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-5">
+                  {getActiveMoodTracks().map((track) => (
+                    <TrackCard key={track.id} track={track} onClick={() => handlePlayTrack(track, getActiveMoodTracks())} />
+                  ))}
+                </div>
+              </section>
+
+              {/* Continue Listening */}
+              {history.length > 0 && (
+                <section className="space-y-4 text-left">
+                  <div className="flex items-center gap-2 text-neutral-400">
+                    <Clock className="h-4.5 w-4.5" />
+                    <h3 className="text-sm font-black uppercase tracking-wider">Recently Played</h3>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-5">
+                    {history.slice(0, 4).map((track, i) => (
+                      <TrackCard key={`${track.id}-continue-${i}`} track={track} onClick={() => handlePlayTrack(track, history)} />
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* Cloud Music uploads */}
+              {cloudMusic.length > 0 && (
+                <section className="space-y-4 text-left">
+                  <div className="flex items-center gap-2 text-cyan-400">
+                    <Cloud className="h-4.5 w-4.5" />
+                    <h3 className="text-sm font-black uppercase tracking-wider">Your Cloud Locker</h3>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-5">
+                    {cloudMusic.slice(0, 4).map((track) => (
+                      <TrackCard key={track.id} track={track} onClick={() => handlePlayTrack(track, cloudMusic)} />
+                    ))}
+                  </div>
+                </section>
+              )}
+
             </div>
-          ))}
-        </div>
-      </section>
 
-      {/* 5. DYNAMIC SECTIONS GRID */}
+            {/* RIGHT COLUMN: CHARTS / TOP HITS & AI DJ DETAILS (4 Columns) */}
+            <div className="lg:col-span-4 space-y-6">
+              
+              {/* Dynamic AI DJ Panel */}
+              <section className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#111]/70 p-5 text-left shadow-lg">
+                <div className="absolute top-0 right-0 p-3">
+                  <button 
+                    onClick={() => setShowAiDJDetail(!showAiDJDetail)}
+                    className="text-neutral-500 hover:text-white p-1 transition-colors"
+                  >
+                    <Info className="h-4 w-4" />
+                  </button>
+                </div>
 
-      {/* FOR YOU */}
-      <section className="space-y-4 text-left">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold tracking-tight">For You</h2>
-        </div>
-        {recsLoading ? (
-          <div className="flex gap-4 overflow-x-auto pb-2">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="animate-pulse w-44 h-56 rounded-2xl bg-[#1A1A1A]/40" />
-            ))}
-          </div>
-        ) : (
-          <div className="flex gap-4 overflow-x-auto pb-2 snap-x scrollbar-hide">
-            {recommendations.slice(0, 8).map((track) => (
-              <TrackCard key={track.id} track={track} onClick={() => handlePlayTrack(track, recommendations)} />
-            ))}
+                <div className="flex items-center gap-3.5">
+                  {/* Glowing DJ disc */}
+                  <div className="relative h-12 w-12 rounded-full bg-gradient-to-tr from-cyan-400 to-purple-500 p-[1.5px] shadow-[0_0_15px_rgba(0,245,255,0.15)] animate-spin [animation-duration:10s] flex-shrink-0">
+                    <div className="h-full w-full rounded-full bg-[#111] flex items-center justify-center">
+                      <Sparkles className="h-5 w-5 text-cyan-400" />
+                    </div>
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-[9px] font-black uppercase tracking-widest text-cyan-400">Personal DJ Session</span>
+                    <h4 className="text-sm font-black text-white truncate">AI DJ Saswata</h4>
+                  </div>
+                </div>
+
+                {/* AI DJ Logic Details */}
+                <AnimatePresence>
+                  {(showAiDJDetail || true) && (
+                    <motion.div 
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="mt-4 pt-4 border-t border-white/[0.05] space-y-2.5 text-xs text-neutral-400 font-semibold"
+                    >
+                      <div className="flex justify-between">
+                        <span className="text-neutral-500">Workspace Vibe</span>
+                        <span className="text-white">Coding React Apps</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-neutral-500">Seed Bias</span>
+                        <span className="text-white">Arijit Singh, Weeknd</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-neutral-500">Weather Context</span>
+                        <span className="text-white">Monsoon Showers 🌧️</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-neutral-500">Time Vibe</span>
+                        <span className="text-white">Late Night Focus</span>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </section>
+
+              {/* NeoTunes Charts */}
+              <section className="space-y-4 text-left">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-black uppercase tracking-wider text-neutral-400">Charts (Top Hits)</h3>
+                  <TrendingUp className="h-4.5 w-4.5 text-cyan-400" />
+                </div>
+                <div className="space-y-2.5">
+                  {globalHits.map((track, i) => (
+                    <div
+                      key={`${track.id}-chart`}
+                      onClick={() => handlePlayTrack(track, globalHits)}
+                      className="flex items-center gap-3.5 rounded-2xl bg-neutral-900/40 border border-white/[0.04] p-3 hover:bg-neutral-850/50 cursor-pointer transition-colors"
+                    >
+                      <span className="text-xs font-black text-neutral-600 w-5 text-center">#{i + 1}</span>
+                      <div className="relative h-10 w-10 rounded-lg flex-shrink-0 overflow-hidden bg-neutral-900">
+                        <ImageWithFallback src={track.coverUrl || ''} alt={track.title} fill sizes="40px" className="object-cover" />
+                      </div>
+                      <div className="flex-1 min-w-0 text-left">
+                        <p className="text-xs font-bold text-white truncate">{track.title}</p>
+                        <p className="text-[10px] text-neutral-400 truncate mt-0.5">{track.artist.name}</p>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-neutral-600" />
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+            </div>
+
           </div>
         )}
-      </section>
 
-      {/* BASED ON YOUR MOOD */}
-      <section className="space-y-4 text-left">
-        <h2 className="text-lg font-bold tracking-tight">Based on Your Mood: <span className="text-cyan-400 font-extrabold">{selectedMood}</span></h2>
-        <div className="flex gap-4 overflow-x-auto pb-2 snap-x scrollbar-hide">
-          {getActiveMoodTracks().map((track) => (
-            <TrackCard key={track.id} track={track} onClick={() => handlePlayTrack(track, getActiveMoodTracks())} />
-          ))}
-        </div>
-      </section>
-
-      {/* CONTINUE LISTENING & RECENTS */}
-      {history.length > 0 && (
-        <section className="space-y-4 text-left">
-          <div className="flex items-center gap-2">
-            <Clock className="h-5 w-5 text-neutral-400" />
-            <h2 className="text-lg font-bold tracking-tight">Continue Listening</h2>
-          </div>
-          <div className="flex gap-4 overflow-x-auto pb-2 snap-x scrollbar-hide">
-            {history.slice(0, 6).map((track, i) => (
-              <TrackCard key={`${track.id}-continue-${i}`} track={track} onClick={() => handlePlayTrack(track, history)} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* TRENDING ON YOUTUBE */}
-      <section className="space-y-4 text-left">
-        <h2 className="text-lg font-bold tracking-tight">🔥 Trending on YouTube</h2>
-        <div className="flex gap-4 overflow-x-auto pb-2 snap-x scrollbar-hide">
-          {trendingYoutube.map((track) => (
-            <TrackCard key={track.id} track={track} onClick={() => handlePlayTrack(track, trendingYoutube)} />
-          ))}
-        </div>
-      </section>
-
-      {/* ARIJIT SINGH CORNER */}
-      <section className="space-y-4 text-left">
-        <h2 className="text-lg font-bold tracking-tight">🎤 Because You Like Arijit Singh</h2>
-        <div className="flex gap-4 overflow-x-auto pb-2 snap-x scrollbar-hide">
-          {arijitSongs.map((track) => (
-            <TrackCard key={track.id} track={track} onClick={() => handlePlayTrack(track, arijitSongs)} />
-          ))}
-        </div>
-      </section>
-
-      {/* OFFICIAL RELEASES */}
-      <section className="space-y-4 text-left">
-        <h2 className="text-lg font-bold tracking-tight">💿 Official Releases</h2>
-        <div className="flex gap-4 overflow-x-auto pb-2 snap-x scrollbar-hide">
-          {globalHits.map((track) => (
-            <TrackCard key={track.id} track={track} onClick={() => handlePlayTrack(track, globalHits)} />
-          ))}
-        </div>
-      </section>
-
-      {/* LIVE PERFORMANCES & CONCERTS */}
-      <section className="space-y-4 text-left">
-        <h2 className="text-lg font-bold tracking-tight">⚡ Live Performances & Concerts</h2>
-        <div className="flex gap-4 overflow-x-auto pb-2 snap-x scrollbar-hide">
-          {livePerformances.map((track) => (
-            <TrackCard key={track.id} track={track} onClick={() => handlePlayTrack(track, livePerformances)} />
-          ))}
-        </div>
-      </section>
-
-      {/* PODCASTS */}
-      <section className="space-y-4 text-left">
-        <h2 className="text-lg font-bold tracking-tight">🎙️ Trending Podcasts</h2>
-        <div className="flex gap-4 overflow-x-auto pb-2 snap-x scrollbar-hide">
-          {podcasts.map((track) => (
-            <TrackCard key={track.id} track={track} onClick={() => handlePlayTrack(track, podcasts)} />
-          ))}
-        </div>
-      </section>
-
-      {/* CLOUD MUSIC & COMMUNITY UPLOADS */}
-      {cloudMusic.length > 0 && (
-        <section className="space-y-4 text-left">
-          <div className="flex items-center gap-2">
-            <Cloud className="h-5 w-5 text-cyan-400" />
-            <h2 className="text-lg font-bold tracking-tight">Your Cloud Music</h2>
-          </div>
-          <div className="flex gap-4 overflow-x-auto pb-2 snap-x scrollbar-hide">
-            {cloudMusic.map((track) => (
-              <TrackCard key={track.id} track={track} onClick={() => handlePlayTrack(track, cloudMusic)} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* CHARTS & HIT SECTIONS */}
-      <section className="space-y-4 text-left">
-        <h2 className="text-lg font-bold tracking-tight">📈 NeoTunes Charts (Top Hits)</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {globalHits.slice(0, 4).map((track, i) => (
-            <div
-              key={`${track.id}-chart`}
-              onClick={() => handlePlayTrack(track, globalHits)}
-              className="flex items-center gap-4 rounded-2xl bg-[#1A1A1A]/40 border border-white/[0.04] p-3.5 hover:bg-[#1A1A1A]/60 cursor-pointer transition-colors"
-            >
-              <span className="text-lg font-black text-neutral-600 w-6 text-center">#{i + 1}</span>
-              <img src={track.coverUrl} className="h-12 w-12 rounded-xl object-cover" alt="" referrerPolicy="no-referrer" />
-              <div className="flex-1 min-w-0 text-left">
-                <p className="text-sm font-bold text-white truncate">{track.title}</p>
-                <p className="text-xs text-neutral-500 truncate">{track.artist.name}</p>
+        {/* ==================== FOR YOU TAB ==================== */}
+        {activeCategory === 'foryou' && (
+          <div className="space-y-8">
+            
+            {/* For You Recommendations */}
+            <section className="space-y-4 text-left">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-black uppercase tracking-wider text-neutral-400">Personalized for You</h3>
+                <span className="text-xs font-bold text-cyan-400">Weekly Seed</span>
               </div>
-              <ChevronRight className="h-4 w-4 text-neutral-600" />
-            </div>
-          ))}
-        </div>
-      </section>
+              {recsLoading ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <div key={i} className="animate-pulse aspect-square rounded-2xl bg-neutral-900/40 border border-white/[0.04] p-4 flex flex-col h-56" />
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
+                  {recommendations.slice(0, 12).map((track) => (
+                    <TrackCard key={track.id} track={track} onClick={() => handlePlayTrack(track, recommendations)} />
+                  ))}
+                </div>
+              )}
+            </section>
+
+            {/* Arijit Singh Corner */}
+            <section className="space-y-4 text-left">
+              <h3 className="text-sm font-black uppercase tracking-wider text-neutral-400">🎤 Artist Spotlight: Arijit Singh</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
+                {arijitSongs.map((track) => (
+                  <TrackCard key={track.id} track={track} onClick={() => handlePlayTrack(track, arijitSongs)} />
+                ))}
+              </div>
+            </section>
+
+            {/* AI Mixes Cards */}
+            <section className="space-y-4 text-left">
+              <h3 className="text-sm font-black uppercase tracking-wider text-neutral-400">AI Daily Mixes</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
+                {[
+                  { title: 'Coding Mix', desc: 'Focus instrumentals and synthwaves', gradient: 'from-[#7B61FF] to-[#00F5FF]' },
+                  { title: 'Morning Mix', desc: 'Light acoustic and wake-up songs', gradient: 'from-amber-500 to-cyan-400' },
+                  { title: 'Evening Mix', desc: 'Chill beats and lo-fi melodies', gradient: 'from-purple-600 to-rose-400' },
+                  { title: 'Rain Mix', desc: 'Cozy atmospheric acoustics', gradient: 'from-blue-600 to-indigo-500' },
+                  { title: 'Late Night Mix', desc: 'Deep atmospheric ambient', gradient: 'from-neutral-900 to-purple-950' },
+                  { title: 'Travel Mix', desc: 'Upbeat tracks for the open road', gradient: 'from-emerald-500 to-teal-400' }
+                ].map((mix) => (
+                  <div
+                    key={mix.title}
+                    onClick={() => handlePlayTrack(getActiveMoodTracks()[0], getActiveMoodTracks())}
+                    className="flex flex-col justify-between aspect-square rounded-2xl bg-neutral-900/40 border border-white/[0.04] p-5 cursor-pointer relative overflow-hidden group hover:border-cyan-500/40 hover:-translate-y-1.5 transition-all duration-300"
+                  >
+                    <div className={`absolute -inset-px -z-10 bg-gradient-to-tr ${mix.gradient} opacity-0 group-hover:opacity-10 rounded-2xl blur-md transition-opacity duration-300`} />
+                    <div className={`h-2 w-10 rounded-full bg-gradient-to-r ${mix.gradient} mb-4`} />
+                    <div className="space-y-1">
+                      <h4 className="text-sm font-black text-white">{mix.title}</h4>
+                      <p className="text-xs text-neutral-405 font-medium leading-tight">{mix.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+          </div>
+        )}
+
+        {/* ==================== EXPLORE TAB ==================== */}
+        {activeCategory === 'explore' && (
+          <div className="space-y-8">
+            
+            {/* Trending on YouTube */}
+            <section className="space-y-4 text-left">
+              <h3 className="text-sm font-black uppercase tracking-wider text-neutral-400">🔥 Trending Music</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
+                {trendingYoutube.map((track) => (
+                  <TrackCard key={track.id} track={track} onClick={() => handlePlayTrack(track, trendingYoutube)} />
+                ))}
+              </div>
+            </section>
+
+            {/* Live Performances */}
+            <section className="space-y-4 text-left">
+              <h3 className="text-sm font-black uppercase tracking-wider text-neutral-400">⚡ Live Concerts & Session Recordings</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
+                {livePerformances.map((track) => (
+                  <TrackCard key={track.id} track={track} onClick={() => handlePlayTrack(track, livePerformances)} />
+                ))}
+              </div>
+            </section>
+
+            {/* Podcasts */}
+            <section className="space-y-4 text-left">
+              <h3 className="text-sm font-black uppercase tracking-wider text-neutral-400">🎙️ Trending Podcasts</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
+                {podcasts.map((track) => (
+                  <TrackCard key={track.id} track={track} onClick={() => handlePlayTrack(track, podcasts)} />
+                ))}
+              </div>
+            </section>
+
+          </div>
+        )}
+
+      </div>
 
     </div>
   );

@@ -50,6 +50,18 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'coverartarchive.org',
       },
+      {
+        protocol: 'https',
+        hostname: '*.mzstatic.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.dzcdn.net',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.deezer.com',
+      },
     ],
   },
 };

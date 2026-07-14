@@ -18,7 +18,7 @@ import {
   Disc,
   Music
 } from 'lucide-react';
-import Image from 'next/image';
+import ImageWithFallback from '@/components/ui/ImageWithFallback';
 import { motion, useScroll, useTransform } from 'framer-motion';
 
 interface Track {
@@ -79,18 +79,18 @@ export default function ArtistDetailsPage({
   const fallbackArtist: Artist = {
     id: 'fallback-artist',
     name: 'Arijit Singh',
-    coverUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=500&auto=format&fit=crop&q=80',
+    coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music112/v4/9f/13/ca/9f13ca3b-e533-03e0-f19a-f0aaa774581d/196589311191.jpg/600x600bb.jpg',
     followers: 45209301,
     popularity: 92,
     genres: ['bollywood', 'filmi', 'romantic'],
     topTracks: [
-      { id: 'kesariya', title: 'Kesariya', artist: { name: 'Arijit Singh' }, album: { name: 'Brahmastra' }, coverUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&auto=format&fit=crop&q=80', durationMs: 268000, sourceType: 'youtube' },
-      { id: 'tum-hi-ho', title: 'Tum Hi Ho', artist: { name: 'Arijit Singh' }, album: { name: 'Aashiqui 2' }, coverUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&auto=format&fit=crop&q=80', durationMs: 262000, sourceType: 'youtube' },
-      { id: 'chaleya', title: 'Chaleya', artist: { name: 'Arijit Singh' }, album: { name: 'Jawan' }, coverUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&auto=format&fit=crop&q=80', durationMs: 200000, sourceType: 'youtube' }
+      { id: '6iBjgI6c7Bnt78v38e4a9v', title: 'Kesariya (From "Brahmastra")', artist: { name: 'Pritam, Arijit Singh & Amitabh Bhattacharya' }, album: { name: 'Kesariya - Single' }, coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music112/v4/9f/13/ca/9f13ca3b-e533-03e0-f19a-f0aaa774581d/196589311191.jpg/600x600bb.jpg', durationMs: 268165, sourceType: 'youtube' },
+      { id: '56MuuL29m1338x6j3n3R0e', title: 'Tum Hi Ho', artist: { name: 'Mithoon & Arijit Singh' }, album: { name: 'Aashiqui 2 Soundtrack' }, coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/bb/23/ee/bb23eeed-0c35-4f1d-2b11-485622777ae4/8902894353007_cover.jpg/600x600bb.jpg', durationMs: 261974, sourceType: 'youtube' },
+      { id: '3y7tEszcskWw1q7UpxjPZ7', title: 'Chaleya (From "Jawan")', artist: { name: 'Anirudh Ravichander, Arijit Singh & Shilpa Rao' }, album: { name: 'Chaleya - Single' }, coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/1e/ff/32/1eff3216-190d-6fd9-8f68-acbba846e6ee/8903431956026_cover.jpg/600x600bb.jpg', durationMs: 200374, sourceType: 'youtube' }
     ],
     albums: [
-      { id: 'album-1', name: 'Brahmastra (OST)', coverUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&auto=format&fit=crop&q=80', releaseDate: '2022', type: 'album' },
-      { id: 'album-2', name: 'Jawan Album', coverUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&auto=format&fit=crop&q=80', releaseDate: '2023', type: 'album' }
+      { id: 'kesariya_album', name: 'Kesariya (From "Brahmastra") - Single', coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music112/v4/9f/13/ca/9f13ca3b-e533-03e0-f19a-f0aaa774581d/196589311191.jpg/600x600bb.jpg', releaseDate: '2022', type: 'album' },
+      { id: 'chaleya_album', name: 'Chaleya (From "Jawan") - Single', coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/1e/ff/32/1eff3216-190d-6fd9-8f68-acbba846e6ee/8903431956026_cover.jpg/600x600bb.jpg', releaseDate: '2023', type: 'album' }
     ]
   };
 
@@ -152,7 +152,7 @@ export default function ArtistDetailsPage({
           className="flex flex-col md:flex-row items-center md:items-end gap-6 pt-4 text-center md:text-left"
         >
           <div className="relative h-44 w-44 rounded-full overflow-hidden border-2 border-white/[0.08] shadow-2xl flex-shrink-0 bg-neutral-900">
-            <Image src={artist.coverUrl} alt={artist.name} fill sizes="176px" priority className="object-cover" />
+            <ImageWithFallback src={artist.coverUrl} alt={artist.name} fill sizes="176px" priority className="object-cover" />
           </div>
 
           <div className="space-y-3.5">
@@ -220,14 +220,8 @@ export default function ArtistDetailsPage({
                 >
                   <div className="flex items-center space-x-4 truncate flex-1 pr-4">
                     <span className="text-xs font-black text-neutral-500 w-5 text-center">{idx + 1}</span>
-                    <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-lg">
-                      {track.coverUrl ? (
-                        <Image src={track.coverUrl} alt={track.title} fill sizes="40px" className="object-cover" />
-                      ) : (
-                        <div className="absolute inset-0 flex items-center justify-center bg-neutral-800">
-                          <Music className="h-4.5 w-4.5 text-neutral-600" />
-                        </div>
-                      )}
+                    <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-lg bg-neutral-900">
+                      <ImageWithFallback src={track.coverUrl || ''} alt={track.title} fill sizes="40px" className="object-cover" />
                     </div>
                     <div className="truncate">
                       <p className={`truncate text-sm font-bold ${isCurrent ? 'text-cyan-400' : 'text-white'}`}>{track.title}</p>
@@ -261,7 +255,7 @@ export default function ArtistDetailsPage({
                 className="snap-start flex-shrink-0 w-40 rounded-2xl bg-[#1A1A1A]/40 border border-white/[0.06] p-4 hover:border-cyan-500/30 transition-all cursor-pointer"
               >
                 <div className="relative aspect-square w-full rounded-xl overflow-hidden mb-3">
-                  <Image src={item.coverUrl} alt={item.name} fill sizes="160px" className="object-cover" />
+                  <ImageWithFallback src={item.coverUrl} alt={item.name} fill sizes="160px" className="object-cover" />
                 </div>
                 <h4 className="truncate text-xs font-bold leading-normal">{item.name}</h4>
                 <p className="text-[10px] text-neutral-500 font-semibold mt-0.5 capitalize">{item.type} · {item.releaseDate}</p>
@@ -287,7 +281,7 @@ export default function ArtistDetailsPage({
                 className="group rounded-2xl border border-white/[0.06] bg-[#111111]/40 overflow-hidden cursor-pointer hover:border-cyan-500/20 transition-all"
               >
                 <div className="relative aspect-video bg-neutral-900">
-                  <Image src={video.cover} alt={video.title} fill sizes="480px" className="object-cover filter opacity-70" />
+                  <ImageWithFallback src={video.cover} alt={video.title} fill sizes="480px" className="object-cover filter opacity-70" />
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-600 text-white shadow-lg">
                       <Play className="h-5 w-5 fill-white stroke-none translate-x-[1px]" />

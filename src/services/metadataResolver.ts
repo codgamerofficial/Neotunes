@@ -1,8 +1,9 @@
+// Master resolution function
 import { sql } from '@/lib/db';
 import { getSpotifyAccessToken } from '@/services/spotify';
 
 export interface UnifiedTrack {
-  id: string; // Spotify Track ID
+  id: string; // Spotify Track ID or Custom ID
   title: string;
   artist: {
     id: string;
@@ -168,8 +169,81 @@ export async function fetchFallbackArtwork(title: string, artist: string): Promi
   return null;
 }
 
+// Public Fallback Metadata Resolver (Deezer & iTunes)
+export async function resolveTrackFallback(title: string, artist: string): Promise<{
+  title: string;
+  artistName: string;
+  artistId: string;
+  artistImage: string;
+  albumName: string;
+  albumId: string;
+  albumArt: string;
+  albumReleaseDate: string;
+  durationMs: number;
+  previewUrl: string;
+  genres: string[];
+} | null> {
+  const query = `${artist} ${title}`;
+  
+  // 1. Try Deezer API first (includes artist details + high-res cover art)
+  try {
+    const res = await fetch(`https://api.deezer.com/search?q=${encodeURIComponent(query)}&limit=1`);
+    if (res.ok) {
+      const data = await res.json();
+      const item = data.data?.[0];
+      if (item) {
+        return {
+          title: item.title,
+          artistName: item.artist?.name || artist,
+          artistId: String(item.artist?.id || 'dz_artist'),
+          artistImage: item.artist?.picture_xl || item.artist?.picture_medium || '',
+          albumName: item.album?.title || 'Unknown Album',
+          albumId: String(item.album?.id || 'dz_album'),
+          albumArt: item.album?.cover_xl || item.album?.cover_big || '',
+          albumReleaseDate: new Date().getFullYear().toString(),
+          durationMs: (item.duration || 180) * 1000,
+          previewUrl: item.preview || '',
+          genres: []
+        };
+      }
+    }
+  } catch (err) {
+    console.warn('Deezer fallback resolver failed:', err);
+  }
+
+  // 2. Try iTunes API as secondary fallback
+  try {
+    const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&limit=1&entity=song`);
+    if (res.ok) {
+      const data = await res.json();
+      const item = data.results?.[0];
+      if (item) {
+        const art = item.artworkUrl100 || '';
+        const hdArt = art.replace('100x100bb.jpg', '600x600bb.jpg');
+        return {
+          title: item.trackName,
+          artistName: item.artistName || artist,
+          artistId: String(item.artistId || 'it_artist'),
+          artistImage: '',
+          albumName: item.collectionName || 'Unknown Album',
+          albumId: String(item.collectionId || 'it_album'),
+          albumArt: hdArt,
+          albumReleaseDate: item.releaseDate ? item.releaseDate.substring(0, 4) : new Date().getFullYear().toString(),
+          durationMs: item.trackTimeMillis || 180000,
+          previewUrl: item.previewUrl || '',
+          genres: item.primaryGenreName ? [item.primaryGenreName] : []
+        };
+      }
+    }
+  } catch (err) {
+    console.warn('iTunes fallback resolver failed:', err);
+  }
+
+  return null;
+}
+
 // Master resolution function
-export async function resolveTrack(spotifyId: string): Promise<UnifiedTrack> {
+export async function resolveTrack(spotifyId: string, title?: string, artist?: string): Promise<UnifiedTrack> {
   // 1. Check metadata_cache table in Supabase (valid for 30 days)
   try {
     const cached = await sql`
@@ -215,50 +289,121 @@ export async function resolveTrack(spotifyId: string): Promise<UnifiedTrack> {
     console.warn('Database cache check failed, running full resolution:', err);
   }
 
-  // 2. Fetch track info from Spotify
-  const token = await getSpotifyAccessToken();
-  const spotifyRes = await fetch(`https://api.spotify.com/v1/tracks/${spotifyId}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  // Determine search terms if we need to fall back
+  let searchTitle = title;
+  let searchArtist = artist;
 
-  if (!spotifyRes.ok) {
-    throw new Error(`Spotify track details returned status ${spotifyRes.status}`);
+  if (!searchTitle || !searchArtist) {
+    try {
+      const dbTrack = await sql`
+        SELECT t.title, a.name as artist_name
+        FROM public.tracks t
+        JOIN public.artists a ON t.artist_id = a.id
+        WHERE t.id = ${spotifyId}
+        LIMIT 1
+      `;
+      if (dbTrack.length > 0) {
+        searchTitle = dbTrack[0].title;
+        searchArtist = dbTrack[0].artist_name;
+      }
+    } catch (dbErr) {
+      console.warn('DB lookup for search metadata failed:', dbErr);
+    }
   }
 
-  const trackData = await spotifyRes.json();
-  const artistId = trackData.artists[0]?.id;
-  const albumId = trackData.album?.id;
-
-  // Fetch Full Artist & Album in parallel
-  const [artistRes, albumRes] = await Promise.all([
-    fetch(`https://api.spotify.com/v1/artists/${artistId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    }),
-    fetch(`https://api.spotify.com/v1/albums/${albumId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    }),
-  ]);
-
+  // Initialize variables for resolved metadata
+  let artistId = `art_${spotifyId}`;
+  let artistName = searchArtist || 'Unknown Artist';
   let artistImage = '';
   let genres: string[] = [];
-  if (artistRes.ok) {
-    const artistData = await artistRes.json();
-    artistImage = artistData.images?.[0]?.url || '';
-    genres = artistData.genres || [];
-  }
-
+  
+  let albumId = `alb_${spotifyId}`;
+  let albumName = 'Unknown Album';
+  let albumArt = '/images/default-cover.png';
+  let albumReleaseDate = '';
   let albumLabel = 'Unknown Label';
-  let albumReleaseDate = trackData.album?.release_date || '';
-  if (albumRes.ok) {
-    const albumData = await albumRes.json();
-    albumLabel = albumData.label || albumData.copyrights?.[0]?.text || 'Unknown Label';
+
+  let trackTitle = searchTitle || 'Unknown Track';
+  let durationMs = 180000;
+  let explicit = false;
+  let popularity = 50;
+  let previewUrl = '';
+  let spotifyUri = '';
+
+  const isDeezerId = spotifyId.startsWith('dz_');
+
+  if (!isDeezerId) {
+    // 2. Fetch track info from Spotify (only if not a Deezer track ID)
+    try {
+      const token = await getSpotifyAccessToken();
+      const spotifyRes = await fetch(`https://api.spotify.com/v1/tracks/${spotifyId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!spotifyRes.ok) {
+        throw new Error(`Spotify track details returned status ${spotifyRes.status}`);
+      }
+
+      const trackData = await spotifyRes.json();
+      artistId = trackData.artists[0]?.id || artistId;
+      artistName = trackData.artists[0]?.name || artistName;
+      albumId = trackData.album?.id || albumId;
+      albumName = trackData.album?.name || albumName;
+      trackTitle = trackData.name || trackTitle;
+      durationMs = trackData.duration_ms || durationMs;
+      explicit = trackData.explicit || false;
+      popularity = trackData.popularity || popularity;
+      previewUrl = trackData.preview_url || '';
+      spotifyUri = trackData.uri || '';
+
+      // Fetch Full Artist & Album in parallel
+      const [artistRes, albumRes] = await Promise.all([
+        fetch(`https://api.spotify.com/v1/artists/${artistId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(`https://api.spotify.com/v1/albums/${albumId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+
+      if (artistRes.ok) {
+        const artistData = await artistRes.json();
+        artistImage = artistData.images?.[0]?.url || '';
+        genres = artistData.genres || [];
+      }
+
+      if (albumRes.ok) {
+        const albumData = await albumRes.json();
+        albumLabel = albumData.label || albumData.copyrights?.[0]?.text || 'Unknown Label';
+        albumReleaseDate = albumData.release_date || '';
+      }
+
+      albumArt = trackData.album?.images?.[0]?.url || '';
+      if (!albumArt) {
+        const fallbackArt = await fetchFallbackArtwork(trackTitle, artistName);
+        albumArt = fallbackArt || '/images/default-cover.png';
+      }
+    } catch (err: any) {
+      console.warn(`Spotify resolution failed for track ${spotifyId}, trying search fallback:`, err.message);
+    }
   }
 
-  // Fallback Artwork Check
-  let albumArt = trackData.album?.images?.[0]?.url || '';
-  if (!albumArt) {
-    const fallbackArt = await fetchFallbackArtwork(trackData.name, trackData.artists[0]?.name);
-    albumArt = fallbackArt || '/images/default-cover.png';
+  // If Spotify failed (or it is a Deezer track ID), resolve using Deezer/iTunes fallback search
+  if ((!artistImage || !albumArt || albumArt.includes('default-cover')) && (searchTitle && searchArtist)) {
+    const fallback = await resolveTrackFallback(searchTitle, searchArtist);
+    if (fallback) {
+      trackTitle = fallback.title;
+      artistName = fallback.artistName;
+      artistId = isDeezerId ? spotifyId.replace('dz_', '') : fallback.artistId;
+      artistImage = fallback.artistImage;
+      albumName = fallback.albumName;
+      albumId = fallback.albumId;
+      albumArt = fallback.albumArt;
+      albumReleaseDate = fallback.albumReleaseDate;
+      durationMs = fallback.durationMs;
+      previewUrl = fallback.previewUrl;
+      genres = fallback.genres;
+    }
   }
 
   // 3. YouTube Playback Resolution
@@ -267,7 +412,7 @@ export async function resolveTrack(spotifyId: string): Promise<UnifiedTrack> {
     throw new Error('YOUTUBE_API_KEY is not configured.');
   }
 
-  const query = `${trackData.artists[0]?.name} ${trackData.name} official audio`;
+  const query = `${artistName} ${trackTitle} official audio`;
   const ytSearchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(
     query
   )}&type=video&key=${apiKey}&maxResults=4&videoCategoryId=10`;
@@ -281,7 +426,7 @@ export async function resolveTrack(spotifyId: string): Promise<UnifiedTrack> {
     if (!ytResponse.ok) {
       // Retry without Category restriction
       const fallbackYtUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(
-        `${trackData.artists[0]?.name} ${trackData.name}`
+        `${artistName} ${trackTitle}`
       )}&type=video&key=${apiKey}&maxResults=4`;
       ytResponse = await fetch(fallbackYtUrl);
     }
@@ -312,7 +457,7 @@ export async function resolveTrack(spotifyId: string): Promise<UnifiedTrack> {
           };
 
           const confidence = calculateYoutubeConfidence(
-            { title: trackData.name, artist: trackData.artists[0]?.name, durationMs: trackData.duration_ms },
+            { title: trackTitle, artist: artistName, durationMs: durationMs },
             ytVideo
           );
 
@@ -323,13 +468,12 @@ export async function resolveTrack(spotifyId: string): Promise<UnifiedTrack> {
           }
         }
 
-        // High confidence match >95% (we use 90% threshold for safe relaxed fallback matching if needed, but user wants strictly >95% for perfect link, otherwise we fallback to the highest available score)
+        // High confidence match >95%
         if (bestConfidence >= 95) {
           videoId = bestVideoId;
           finalYtChannel = bestChannel;
           verified = true;
         } else {
-          // If no perfect verified match, use the highest scorer as relaxed fallback, or fallback to YouTube's top search result video ID
           videoId = bestVideoId || videoIds[0];
           finalYtChannel = bestChannel || videoItems[0]?.snippet?.channelTitle || '';
         }
@@ -349,7 +493,7 @@ export async function resolveTrack(spotifyId: string): Promise<UnifiedTrack> {
     // Save Artist
     await sql`
       INSERT INTO public.artists (id, name, genres, popularity, images)
-      VALUES (${artistId}, ${trackData.artists[0].name}, ${genres}, ${trackData.artists[0].popularity || 50}, ${JSON.stringify([{ url: artistImage }])})
+      VALUES (${artistId}, ${artistName}, ${genres}, ${popularity}, ${JSON.stringify([{ url: artistImage }])})
       ON CONFLICT (id) DO UPDATE SET 
         genres = EXCLUDED.genres,
         popularity = EXCLUDED.popularity,
@@ -359,7 +503,7 @@ export async function resolveTrack(spotifyId: string): Promise<UnifiedTrack> {
     // Save Album
     await sql`
       INSERT INTO public.albums (id, name, artist_id, images, release_date)
-      VALUES (${albumId}, ${trackData.album.name}, ${artistId}, ${JSON.stringify([{ url: albumArt }])}, ${albumReleaseDate})
+      VALUES (${albumId}, ${albumName}, ${artistId}, ${JSON.stringify([{ url: albumArt }])}, ${albumReleaseDate})
       ON CONFLICT (id) DO UPDATE SET 
         images = EXCLUDED.images,
         release_date = EXCLUDED.release_date
@@ -368,7 +512,7 @@ export async function resolveTrack(spotifyId: string): Promise<UnifiedTrack> {
     // Save Track
     await sql`
       INSERT INTO public.tracks (id, title, artist_id, album_id, duration_ms, popularity, preview_url)
-      VALUES (${spotifyId}, ${trackData.name}, ${artistId}, ${albumId}, ${trackData.duration_ms}, ${trackData.popularity || 50}, ${trackData.preview_url || ''})
+      VALUES (${spotifyId}, ${trackTitle}, ${artistId}, ${albumId}, ${durationMs}, ${popularity}, ${previewUrl})
       ON CONFLICT (id) DO UPDATE SET 
         popularity = EXCLUDED.popularity
     `;
@@ -384,7 +528,7 @@ export async function resolveTrack(spotifyId: string): Promise<UnifiedTrack> {
     // Save Metadata Cache (valid for 30 days)
     await sql`
       INSERT INTO public.metadata_cache (spotify_id, youtube_video_id, album_art, artist_image, duration, release_date, genres, last_updated)
-      VALUES (${spotifyId}, ${videoId}, ${albumArt}, ${artistImage}, ${trackData.duration_ms}, ${albumReleaseDate}, ${genres}, NOW())
+      VALUES (${spotifyId}, ${videoId}, ${albumArt}, ${artistImage}, ${durationMs}, ${albumReleaseDate}, ${genres}, NOW())
       ON CONFLICT (spotify_id) DO UPDATE SET
         youtube_video_id = EXCLUDED.youtube_video_id,
         album_art = EXCLUDED.album_art,
@@ -400,26 +544,26 @@ export async function resolveTrack(spotifyId: string): Promise<UnifiedTrack> {
 
   return {
     id: spotifyId,
-    title: trackData.name,
+    title: trackTitle,
     artist: {
       id: artistId,
-      name: trackData.artists[0]?.name,
+      name: artistName,
     },
     album: {
       id: albumId,
-      name: trackData.album?.name,
+      name: albumName,
       coverUrl: albumArt,
       releaseDate: albumReleaseDate,
       label: albumLabel,
     },
     artistImage,
-    durationMs: trackData.duration_ms,
-    explicit: trackData.explicit || false,
+    durationMs: durationMs,
+    explicit: explicit,
     genres,
-    popularity: trackData.popularity || 0,
+    popularity: popularity,
     sourceType: 'youtube',
     sourceId: videoId,
-    spotifyUri: trackData.uri,
+    spotifyUri: spotifyUri,
     youtubeChannel: finalYtChannel,
   };
 }

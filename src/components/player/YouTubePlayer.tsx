@@ -405,11 +405,15 @@ export default function YouTubePlayer() {
       }
 
       try {
-        const res = await fetch(`/api/cloud/resolve?filePath=${encodeURIComponent(currentTrack.sourceId || '')}`);
-        if (!res.ok) throw new Error('Cloud resolve failed');
-        const data = await res.json();
-        
-        audio.src = data.url;
+        const sourceUrl = currentTrack.sourceId || '';
+        if (sourceUrl.startsWith('blob:') || sourceUrl.startsWith('data:') || sourceUrl.startsWith('http://') || sourceUrl.startsWith('https://')) {
+          audio.src = sourceUrl;
+        } else {
+          const res = await fetch(`/api/cloud/resolve?filePath=${encodeURIComponent(sourceUrl)}`);
+          if (!res.ok) throw new Error('Cloud resolve failed');
+          const data = await res.json();
+          audio.src = data.url;
+        }
         audio.load();
         if (isPlaying) {
           audio.play().catch((err) => console.warn('Audio play error:', err));
