@@ -583,7 +583,7 @@ export default function LibraryPage() {
             {activeTab === 'playlists' && (
               playlists.length === 0 ? (
                 <div className="rounded-3xl border border-dashed border-white/[0.08] p-12 text-center text-sm text-neutral-500">
-                  You haven't created any playlists yet. Click "New Playlist" to start.
+                  You haven&apos;t created any playlists yet. Click &ldquo;New Playlist&rdquo; to start.
                 </div>
               ) : (
                 viewMode === 'grid' ? (
