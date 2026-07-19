@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3840 1600" width="3840" height="1600">
+  <!-- Background -->
+  <rect width="3840" height="1600" fill="#030303" />
+
+  <!-- Stadium Pitch Grid Perspective -->
+  <path d="M 0 1600 L 1200 900 L 2640 900 L 3840 1600 Z" fill="url(#pitchGradient)" opacity="0.15" />
+  
+  <!-- Definitions of Gradients -->
+  <defs>
+    <linearGradient id="pitchGradient" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00F5FF" stop-opacity="0.1" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.9" />
+    </linearGradient>
+
+    <!-- Argentina Glow Left -->
+    <radialGradient id="argentinaGlow" cx="20%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#7BC3F5" stop-opacity="0.25" />
+      <stop offset="50%" stop-color="#7BC3F5" stop-opacity="0.08" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Spain Glow Right -->
+    <radialGradient id="spainGlow" cx="80%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#E01E22" stop-opacity="0.25" />
+      <stop offset="50%" stop-color="#F1A80A" stop-opacity="0.08" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Trophy Glow Center -->
+    <radialGradient id="trophyGlow" cx="50%" cy="55%" r="35%">
+      <stop offset="0%" stop-color="#FFD54A" stop-opacity="0.3" />
+      <stop offset="40%" stop-color="#FFD54A" stop-opacity="0.1" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Floodlights -->
+    <radialGradient id="floodlightLeft" cx="10%" cy="10%" r="30%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.6" />
+      <stop offset="30%" stop-color="#7BC3F5" stop-opacity="0.2" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0" />
+    </radialGradient>
+    
+    <radialGradient id="floodlightRight" cx="90%" cy="10%" r="30%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.6" />
+      <stop offset="30%" stop-color="#E01E22" stop-opacity="0.2" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+
+  <!-- Glow overlays -->
+  <rect width="3840" height="1600" fill="url(#argentinaGlow)" />
+  <rect width="3840" height="1600" fill="url(#spainGlow)" />
+  <rect width="3840" height="1600" fill="url(#trophyGlow)" />
+
+  <!-- Floodlight Beams -->
+  <ellipse cx="384" cy="160" rx="300" ry="300" fill="url(#floodlightLeft)" />
+  <ellipse cx="3456" cy="160" rx="300" ry="300" fill="url(#floodlightRight)" />
+
+  <!-- Volumetric light cones -->
+  <polygon points="384,160 0,1200 1200,1600 384,160" fill="white" opacity="0.04" />
+  <polygon points="3456,160 2640,1600 3840,1200 3456,160" fill="white" opacity="0.04" />
+
+  <!-- Stars / Particles -->
+  <circle cx="500" cy="300" r="3" fill="#FFFFFF" opacity="0.3" />
+  <circle cx="800" cy="200" r="4" fill="#7BC3F5" opacity="0.4" />
+  <circle cx="1200" cy="400" r="2" fill="#FFFFFF" opacity="0.5" />
+  <circle cx="1600" cy="150" r="5" fill="#FFD54A" opacity="0.3" />
+  <circle cx="2200" cy="250" r="3" fill="#FFD54A" opacity="0.4" />
+  <circle cx="2800" cy="350" r="4" fill="#E01E22" opacity="0.3" />
+  <circle cx="3200" cy="180" r="2" fill="#FFFFFF" opacity="0.5" />
+
+  <!-- Stylized Messi Silhouette (Left) -->
+  <g transform="translate(600, 350) scale(4.5)">
+    <!-- Aura -->
+    <circle cx="80" cy="110" r="90" fill="#7BC3F5" opacity="0.15" filter="blur(20px)" />
+    <!-- Jersey Stripes -->
+    <path d="M 50 120 L 50 220" stroke="#7BC3F5" stroke-width="12" />
+    <path d="M 80 120 L 80 220" stroke="#FFFFFF" stroke-width="12" />
+    <path d="M 110 120 L 110 220" stroke="#7BC3F5" stroke-width="12" />
+    <!-- Body Silhouette -->
+    <path d="M 40 220 C 40 140, 60 110, 80 110 C 100 110, 120 140, 120 220 Z" fill="#0c1a30" opacity="0.85" />
+    <circle cx="80" cy="80" r="24" fill="#0c1a30" opacity="0.85" />
+    <!-- Number 10 on chest -->
+    <text x="80" y="160" font-family="sans-serif" font-weight="900" font-size="28" fill="#FFFFFF" text-anchor="middle">10</text>
+  </g>
+
+  <!-- Stylized Yamal Silhouette (Right) -->
+  <g transform="translate(2600, 350) scale(4.5)">
+    <!-- Aura -->
+    <circle cx="80" cy="110" r="90" fill="#E01E22" opacity="0.15" filter="blur(20px)" />
+    <!-- Body Silhouette -->
+    <path d="M 40 220 C 40 140, 60 110, 80 110 C 100 110, 120 140, 120 220 Z" fill="#2d0a0a" opacity="0.85" />
+    <circle cx="80" cy="80" r="24" fill="#2d0a0a" opacity="0.85" />
+    <!-- Number 19 on chest -->
+    <text x="80" y="160" font-family="sans-serif" font-weight="900" font-size="28" fill="#F1A80A" text-anchor="middle">19</text>
+  </g>
+
+  <!-- Stylized World Cup Trophy Center -->
+  <g transform="translate(1800, 450) scale(3.5)">
+    <!-- Trophy Silhouette -->
+    <path d="M 30 180 L 90 180 L 80 220 L 40 220 Z" fill="#F1A80A" />
+    <path d="M 40 110 C 40 70, 80 70, 80 110 L 75 180 L 45 180 Z" fill="#FFD54A" />
+    <ellipse cx="60" cy="80" rx="35" ry="18" fill="#FFE066" />
+    <!-- Glowing light highlights -->
+    <circle cx="60" cy="80" r="40" fill="#FFD54A" opacity="0.2" />
+  </g>
+</svg>

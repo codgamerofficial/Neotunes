@@ -1,0 +1,89 @@
+{
+  "title": "THE FINAL",
+  "subtitle": "Argentina vs Spain",
+  "slogan": "LEGENDS COLLIDE",
+  "matchName": "FIFA World Cup Final 2026",
+  "venue": "MetLife Stadium, New Jersey",
+  "kickoffDisplay": "12:30 AM IST",
+  "teams": {
+    "argentina": {
+      "name": "Argentina",
+      "short": "ARG",
+      "flag": "🇦🇷",
+      "heroPlayer": {
+        "name": "Lionel Messi",
+        "number": 10,
+        "position": "Forward",
+        "stats": {
+          "goals": 5,
+          "assists": 3,
+          "shots": 22
+        }
+      },
+      "lineup": [
+        "E. Martínez (GK)",
+        "Molina",
+        "Romero",
+        "Otamendi",
+        "Tagliafico",
+        "De Paul",
+        "Enzo Fernández",
+        "Mac Allister",
+        "Messi (C)",
+        "Álvarez",
+        "Di María"
+      ]
+    },
+    "spain": {
+      "name": "Spain",
+      "short": "ESP",
+      "flag": "🇪🇸",
+      "heroPlayer": {
+        "name": "Lamine Yamal",
+        "number": 19,
+        "position": "Forward",
+        "stats": {
+          "goals": 3,
+          "assists": 5,
+          "shots": 18
+        }
+      },
+      "lineup": [
+        "Unai Simón (GK)",
+        "Carvajal",
+        "Le Normand",
+        "Laporte",
+        "Cucurella",
+        "Rodri",
+        "Fabián Ruiz",
+        "Dani Olmo",
+        "Lamine Yamal",
+        "Morata (C)",
+        "Nico Williams"
+      ]
+    }
+  },
+  "aiPrediction": {
+    "argentina": 52,
+    "spain": 48,
+    "analysis": "Argentina's tournament experience and Messi's final dance give them a slight psychological edge, but Spain's fluid wing-play through Yamal and Williams presents a formidable threat in transitions."
+  },
+  "matchStats": {
+    "possession": { "arg": 47, "esp": 53 },
+    "shots": { "arg": 14, "esp": 16 },
+    "shotsOnTarget": { "arg": 6, "esp": 7 },
+    "corners": { "arg": 4, "esp": 6 },
+    "fouls": { "arg": 12, "esp": 9 }
+  },
+  "timeline": [
+    { "minute": "34'", "type": "goal", "team": "arg", "player": "Lionel Messi", "detail": "Penalty Kick", "score": "1 - 0" },
+    { "minute": "45'", "type": "card", "team": "esp", "player": "Dani Carvajal", "detail": "Yellow Card" },
+    { "minute": "65'", "type": "goal", "team": "esp", "player": "Lamine Yamal", "detail": "Assist by Dani Olmo", "score": "1 - 1" },
+    { "minute": "75'", "type": "goal", "team": "arg", "player": "Julián Álvarez", "detail": "Assist by Alexis Mac Allister", "score": "2 - 1" },
+    { "minute": "81'", "type": "sub", "team": "arg", "player": "Lo Celso in / De Paul out", "detail": "Substitution" },
+    { "minute": "88'", "type": "goal", "team": "esp", "player": "Dani Olmo", "detail": "Unassisted Goal", "score": "2 - 2" },
+    { "minute": "90+5'", "type": "card", "team": "arg", "player": "Cristian Romero", "detail": "Yellow Card" },
+    { "minute": "120'", "type": "match_end", "player": "Full Time", "detail": "Match ends 2-2 (AET). Penalty shoot-out follows." },
+    { "minute": "Pens", "type": "penalty", "team": "arg", "player": "Argentina wins 4-3 on Penalties", "detail": "Gonzalo Montiel scores the winning penalty!", "score": "2(4) - 2(3)" }
+  ]
+}

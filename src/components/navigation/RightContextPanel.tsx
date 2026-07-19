@@ -139,6 +139,11 @@ export default function RightContextPanel() {
   const lyricsContainerRef = useRef<HTMLDivElement | null>(null);
   const [lyrics, setLyrics] = useState<LyricLine[]>([]);
   const [activeLyricIndex, setActiveLyricIndex] = useState(-1);
+  const [audioQuality, setAudioQuality] = useState('lossless');
+  const [sleepTimer, setSleepTimer] = useState('off');
+  const [crossfade, setCrossfade] = useState(4);
+  const [outputDevice, setOutputDevice] = useState('headphones');
+  const [spatialEnabled, setSpatialEnabled] = useState(true);
 
   // Sync lyrics when currentTrack changes
   useEffect(() => {
@@ -666,8 +671,105 @@ export default function RightContextPanel() {
                   <h5 className="text-xs font-bold text-white">3D Spatial Soundstage</h5>
                   <p className="text-[10px] text-neutral-500 mt-0.5 leading-snug">Simulates surround acoustic expansion</p>
                 </div>
-                <div className="relative h-6 w-11 bg-neutral-900 rounded-full border border-white/[0.08] p-0.5 cursor-pointer flex items-center justify-start">
-                  <div className="h-4.5 w-4.5 rounded-full bg-cyan-400 shadow shadow-cyan-500/20 translate-x-5 transition-transform" />
+                <div 
+                  onClick={() => setSpatialEnabled(!spatialEnabled)}
+                  className={`relative h-6 w-11 rounded-full border border-white/[0.08] p-0.5 cursor-pointer flex items-center transition-colors duration-200 ${spatialEnabled ? 'bg-cyan-500/20 justify-end' : 'bg-neutral-900 justify-start'}`}
+                >
+                  <div className={`h-4.5 w-4.5 rounded-full bg-cyan-400 shadow shadow-cyan-500/20`} />
+                </div>
+              </div>
+
+              {/* Audio Playback Quality Selector */}
+              <div className="space-y-2 pt-2">
+                <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500">Audio Playback Quality</span>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { id: 'lossless', label: 'Lossless (24-bit)' },
+                    { id: 'high', label: 'High (320kbps)' },
+                    { id: 'standard', label: 'Standard' },
+                    { id: 'saver', label: 'Data Saver' }
+                  ].map((quality) => (
+                    <button
+                      key={quality.id}
+                      onClick={() => setAudioQuality(quality.id)}
+                      className={`py-2 text-[10px] font-bold rounded-xl border text-center transition-all ${
+                        audioQuality === quality.id 
+                          ? 'border-cyan-500/35 bg-cyan-500/5 text-cyan-400' 
+                          : 'border-white/[0.04] bg-neutral-900 text-neutral-450 hover:text-white'
+                      }`}
+                    >
+                      {quality.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Crossfade Duration Slider */}
+              <div className="space-y-2 pt-2">
+                <div className="flex justify-between text-xs font-semibold">
+                  <span className="text-neutral-400">Crossfade Transition</span>
+                  <span className="font-mono text-cyan-400 font-bold">{crossfade}s</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="12"
+                  value={crossfade}
+                  onChange={(e) => setCrossfade(parseInt(e.target.value))}
+                  className="w-full h-1 bg-neutral-900 rounded-lg appearance-none cursor-pointer accent-cyan-400 focus:outline-none"
+                  style={{
+                    background: `linear-gradient(to right, #00f5ff 0%, #00f5ff ${(crossfade / 12) * 100}%, #171717 ${(crossfade / 12) * 100}%, #171717 100%)`
+                  }}
+                />
+              </div>
+
+              {/* Sleep Timer Selector */}
+              <div className="space-y-2 pt-2">
+                <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500">Sleep Timer</span>
+                <div className="flex bg-neutral-900 border border-white/[0.04] p-0.5 rounded-lg">
+                  {[
+                    { id: 'off', label: 'Off' },
+                    { id: '5m', label: '5m' },
+                    { id: '15m', label: '15m' },
+                    { id: '30m', label: '30m' },
+                    { id: '60m', label: '1h' }
+                  ].map((timer) => (
+                    <button
+                      key={timer.id}
+                      onClick={() => setSleepTimer(timer.id)}
+                      className={`flex-1 py-1.5 text-[9px] font-black uppercase tracking-wider rounded-md transition-all ${
+                        sleepTimer === timer.id 
+                          ? 'bg-gradient-to-r from-cyan-400 to-purple-500 text-black shadow' 
+                          : 'text-neutral-450 hover:text-white'
+                      }`}
+                    >
+                      {timer.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Output Device Selectors */}
+              <div className="space-y-2 pt-2">
+                <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500">Output Device Cast</span>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { id: 'headphones', label: 'Headphones' },
+                    { id: 'speakers', label: 'Speakers' },
+                    { id: 'tv', label: 'Room TV' }
+                  ].map((device) => (
+                    <button
+                      key={device.id}
+                      onClick={() => setOutputDevice(device.id)}
+                      className={`py-2 text-[9px] font-bold rounded-xl border text-center transition-all truncate ${
+                        outputDevice === device.id 
+                          ? 'border-cyan-500/35 bg-cyan-500/5 text-cyan-400' 
+                          : 'border-white/[0.04] bg-neutral-900 text-neutral-450 hover:text-white'
+                      }`}
+                    >
+                      {device.label}
+                    </button>
+                  ))}
                 </div>
               </div>
 

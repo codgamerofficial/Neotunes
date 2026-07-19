@@ -1,7 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import Link from 'next/link';
 import { usePlaybackStore } from '@/store/playback-store';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -22,6 +23,7 @@ import {
 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLayoutStore } from '@/store/layout-store';
+import { getCampaignState } from '@/lib/campaignManager';
 
 export default function MiniPlayer() {
   const router = useRouter();
@@ -46,6 +48,55 @@ export default function MiniPlayer() {
     setRepeatMode,
     setProgress,
   } = usePlaybackStore();
+
+  const [campaignState, setCampaignState] = useState<any>(null);
+  useEffect(() => {
+    setCampaignState(getCampaignState());
+    const interval = setInterval(() => {
+      setCampaignState(getCampaignState());
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const waveformRef = useRef<HTMLCanvasElement | null>(null);
+
+  useEffect(() => {
+    if (!waveformRef.current) return;
+    const canvas = waveformRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let animId: number;
+    let phase = 0;
+
+    const draw = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const w = canvas.width;
+      const h = canvas.height;
+
+      // Draw bouncing audio-wave bars
+      const barWidth = 3;
+      const gap = 2;
+      const count = Math.floor(w / (barWidth + gap));
+      ctx.fillStyle = 'rgba(0, 245, 255, 0.45)';
+
+      for (let i = 0; i < count; i++) {
+        const energy = isPlaying ? 1.0 : 0.15;
+        const amplitude = h * 0.7 * energy;
+        const barHeight = 2 + Math.max(0, Math.sin(phase + i * 0.15) * amplitude * (Math.random() * 0.4 + 0.8));
+        const x = i * (barWidth + gap);
+        const y = h - barHeight;
+
+        ctx.fillRect(x, y, barWidth, barHeight);
+      }
+
+      phase += isPlaying ? 0.08 : 0.005;
+      animId = requestAnimationFrame(draw);
+    };
+
+    draw();
+    return () => cancelAnimationFrame(animId);
+  }, [isPlaying]);
 
   // Fetch like status of the current track
   const { data: likedData, refetch: refetchLike } = useQuery({
@@ -171,6 +222,24 @@ export default function MiniPlayer() {
             {currentTrack.artist.name}
           </p>
         </div>
+
+        {campaignState?.isActive && (
+          <Link 
+            href="/worldcup" 
+            className="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-xs font-black text-cyan-450 hover:bg-cyan-500/20 transition-all select-none"
+            title="World Cup Final Center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <span className="animate-bounce [animation-duration:2.5s]">⚽</span>
+            <span className="hidden lg:inline uppercase text-[9px] tracking-wider font-bold">
+              {campaignState.phase === 'countdown' && '12:30 AM'}
+              {campaignState.phase === 'live' && '2 - 2 Live'}
+              {campaignState.phase === 'champion' && 'ARG CHAMP'}
+            </span>
+            <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-ping" />
+          </Link>
+        )}
+
         <button
           onClick={handleLikeToggle}
           className={`liquid-interactive flex-shrink-0 p-2 transition-colors ${
@@ -233,6 +302,11 @@ export default function MiniPlayer() {
               </span>
             )}
           </button>
+        </div>
+
+        {/* Active Waveform Visualizer */}
+        <div className="w-full h-5 flex items-center justify-center relative overflow-hidden pointer-events-none mt-1">
+          <canvas ref={waveformRef} width="350" height="20" className="w-full h-full" />
         </div>
 
         {/* Progress Slider Row */}

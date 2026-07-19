@@ -1,0 +1,24 @@
+{
+  "active": true,
+  "campaignId": "worldcup-final",
+  "startDate": "2026-07-19T00:00:00+05:30",
+  "kickoffDate": "2026-07-20T00:30:00+05:30",
+  "matchEndDate": "2026-07-20T03:30:00+05:30",
+  "expiryDate": "2026-07-20T04:30:00+05:30",
+  "colors": {
+    "argentina": {
+      "light": "#7BC3F5",
+      "sky": "#54B2F0",
+      "white": "#FFFFFF",
+      "silver": "#C0C0C0"
+    },
+    "spain": {
+      "red": "#E01E22",
+      "gold": "#F1A80A",
+      "navy": "#0B162C"
+    },
+    "accent": "#00F5FF",
+    "purple": "#7B61FF",
+    "background": "#050505"
+  }
+}

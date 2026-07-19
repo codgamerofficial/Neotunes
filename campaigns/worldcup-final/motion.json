@@ -1,0 +1,25 @@
+{
+  "particles": {
+    "count": 40,
+    "speed": 0.3,
+    "color": "#7BC3F5",
+    "sizeRange": [2, 6]
+  },
+  "stadiumLights": {
+    "intensity": 0.8,
+    "flickerRate": 0.1,
+    "color": "#FFFFFF"
+  },
+  "smoke": {
+    "speed": 0.05,
+    "opacity": 0.15
+  },
+  "parallax": {
+    "scale": 1.05,
+    "factor": 15
+  },
+  "glowPulse": {
+    "duration": 2.5,
+    "intensity": 0.2
+  }
+}
