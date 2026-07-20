@@ -104,7 +104,10 @@ export async function POST(request: Request) {
     }
 
     const artistId = track.artist.id || `local_${normalizeName(track.artist.name)}`;
-    const albumId = track.album?.id || (track.album?.name ? `local_${normalizeName(track.album.name)}` : null);
+    const GENERIC_ALBUM_NAMES = ['youtube video', 'unknown album', 'single', ''];
+    const rawAlbumName = track.album?.name || '';
+    const isGenericAlbum = GENERIC_ALBUM_NAMES.includes(rawAlbumName.toLowerCase().trim());
+    const albumId = track.album?.id || (rawAlbumName && !isGenericAlbum ? `local_${normalizeName(rawAlbumName)}` : null);
 
     // 1. Ensure artist exists
     await sql`

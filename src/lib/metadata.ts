@@ -18,7 +18,9 @@ export function getTrackArtwork(row: {
   let coverUrl = '';
   let artworkSource: 'spotify' | 'youtube' | 'fallback' = 'fallback';
 
-  // 1. Priority 1: Spotify/Album Artwork
+  const trackVideoId = row.sourceId || (row.sourceType === 'youtube' ? row.id : null);
+
+  // 1. Priority 1: Spotify/Album Artwork (but reject corrupted shared YouTube thumbnails)
   if (row.album_images) {
     try {
       const imgs = typeof row.album_images === 'string' 
@@ -26,22 +28,34 @@ export function getTrackArtwork(row: {
         : row.album_images;
       if (Array.isArray(imgs) && imgs.length > 0) {
         const url = imgs[0]?.url;
-        // Ignore the corrupted kids song fallback url
-        if (url && !url.includes('7fxR_IsDt5g')) {
-          coverUrl = url;
-          artworkSource = 'spotify';
+        if (url) {
+          // Check if this album image is a YouTube thumbnail
+          const ytThumbMatch = url.match(/i\.ytimg\.com\/vi\/([^/]+)\//);
+          if (ytThumbMatch) {
+            // It's a YouTube thumbnail — only use it if it matches THIS track's video ID.
+            // This prevents the shared "local_youtubevideo" album from poisoning all tracks
+            // with one video's thumbnail.
+            if (trackVideoId && ytThumbMatch[1] === trackVideoId) {
+              coverUrl = url;
+              artworkSource = 'youtube';
+            }
+            // Otherwise skip it — let the fallback below generate the correct thumbnail.
+          } else {
+            // Not a YouTube thumbnail (Spotify, Deezer, iTunes, etc.) — always trust it
+            coverUrl = url;
+            artworkSource = 'spotify';
+          }
         }
       }
     } catch {
-      // ignore
+      // ignore parse errors
     }
   }
 
-  // 2. Priority 2: YouTube Thumbnail Fallback
+  // 2. Priority 2: YouTube Thumbnail from the track's own sourceId
   if (!coverUrl) {
-    const videoId = row.sourceId || (row.sourceType === 'youtube' ? row.id : null);
-    if (videoId && /^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
-      coverUrl = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+    if (trackVideoId && /^[a-zA-Z0-9_-]{11}$/.test(trackVideoId)) {
+      coverUrl = `https://i.ytimg.com/vi/${trackVideoId}/hqdefault.jpg`;
       artworkSource = 'youtube';
     }
   }
