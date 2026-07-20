@@ -24,7 +24,16 @@ import {
   Radio,
   Compass,
   Cpu,
-  Activity
+  Activity,
+  Mic,
+  History,
+  Download,
+  Cloud,
+  Users,
+  Calendar,
+  Bell,
+  Terminal,
+  Database
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
@@ -82,7 +91,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       category: 'Discover',
       items: [
         { label: 'Home Feed', href: '/home', icon: Home },
-        { label: 'AI Search OS', href: '/search', icon: Search, badge: 'v4.1' },
+        { label: 'AI Search OS', href: '/search', icon: Search, badge: 'AI' },
+        { label: 'Live Radio', href: '/home#explore', icon: Radio, badge: 'LIVE' },
+        { label: 'Podcasts', href: '/home#explore', icon: Mic }
       ]
     },
     {
@@ -90,19 +101,22 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       items: [
         { label: 'Your Locker', href: '/library', icon: Library },
         { label: 'Liked Tracks', href: '/liked', icon: Heart },
+        { label: 'Recently Played', href: '/home', icon: History },
+        { label: 'Downloads', href: '/settings', icon: Download }
       ]
     },
     {
-      category: 'AI Engine',
-      items: [
-        { label: 'Personal DJ', href: '/home#ai-mixes', icon: Radio, badge: 'Beta' },
-      ]
-    },
-    {
-      category: 'Personal',
+      category: 'AI Space',
       items: [
         { label: 'Music DNA', href: '/profile', icon: User },
+        { label: 'AI Status', href: '/home', icon: Sparkles }
+      ]
+    },
+    {
+      category: 'System',
+      items: [
         { label: 'Preferences', href: '/settings', icon: Settings },
+        { label: 'Labs', href: '/settings', icon: Terminal, badge: 'Dev' }
       ]
     }
   ];
@@ -330,8 +344,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
       {/* 4. Mobile Navigation Bottom Bar (Hidden on Desktop) - Floating Island Capsule */}
       <nav className="fixed bottom-5 left-4 right-4 z-40 flex h-16 px-3 justify-around items-center rounded-2xl bg-[#0E111A]/85 backdrop-blur-2xl border border-white/[0.08] shadow-[0_10px_35px_rgba(0,0,0,0.6)] md:hidden">
-        {navSections.flatMap(sec => sec.items).slice(0, 4).map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+        {navSections.flatMap(sec => sec.items).filter(item => 
+          ['/home', '/search', '/library', '/profile'].includes(item.href)
+        ).map((item) => {
+          const isActive = pathname === item.href;
           const Icon = item.icon;
           return (
             <Link

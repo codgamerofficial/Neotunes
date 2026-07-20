@@ -598,11 +598,35 @@ export default function SearchPage() {
 
       {/* C. INITIAL DISCOVERY VIEW (IF NO SEARCH DONE) */}
       {!activeSearch && !reasoningActive && (
-        <div className="space-y-12 animate-fadeIn max-w-6xl">
+        <div className="space-y-10 animate-fadeIn max-w-6xl">
           
+          {/* Conversational ChatGPT Suggestions Carousel */}
+          <section className="space-y-3">
+            <h3 className="text-xs font-black uppercase tracking-widest text-neutral-500">Conversational AI Queries</h3>
+            <div className="flex gap-2.5 overflow-x-auto pb-2 scrollbar-hide snap-x">
+              {[
+                { label: "I'm feeling nostalgic ☕", query: "classic hits 90s nostalgia" },
+                { label: "Songs like Kesariya 🧡", query: "romantic tracks Pritam Arijit" },
+                { label: "Football edit songs ⚽", query: "high energy edit beats" },
+                { label: "Rainy Bengali romantic 🌧️", query: "bengali acoustic romance rain" },
+                { label: "Workout without lyrics ⚡", query: "instrumental workout trap beat" },
+                { label: "That sad Arijit song 💔", query: "sad unplugged Arijit Singh" },
+                { label: "Play what I heard yesterday 🕒", query: "recent history recap" }
+              ].map((chip, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => executeSearch(chip.query)}
+                  className="snap-start flex-shrink-0 rounded-xl bg-gradient-to-r from-white/[0.02] to-white/[0.04] hover:from-[#00F5FF]/10 hover:to-[#9B5CFF]/10 border border-white/[0.05] hover:border-[#00F5FF]/30 px-4.5 py-2.5 text-xs font-black uppercase tracking-wider text-neutral-350 hover:text-[#00F5FF] transition-all duration-300"
+                >
+                  {chip.label}
+                </button>
+              ))}
+            </div>
+          </section>
+
           {/* Quick NLP prompts Bento Grid */}
           <section className="space-y-4">
-            <h3 className="text-xs font-black uppercase tracking-widest text-neutral-500">Suggested Semantic Prompts</h3>
+            <h3 className="text-xs font-black uppercase tracking-widest text-neutral-500">Suggested Semantic Presets</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               
               {/* Card 1: Bengali Transliteration (Wide) */}
