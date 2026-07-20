@@ -24,10 +24,10 @@ export default function NeoTuneLogo({ className = "h-9 w-9", showText = true }: 
             </linearGradient>
           </defs>
           {/* Backing N waveform */}
-          <rect x="7" y="11" width="3" height="10" rx="1.5" fill="url(#neotune-grad)" opacity="0.4" />
-          <rect x="12" y="7" width="3" height="18" rx="1.5" fill="url(#neotune-grad)" opacity="0.75" />
-          <rect x="17" y="10" width="3" height="12" rx="1.5" fill="url(#neotune-grad)" opacity="0.9" />
-          <rect x="22" y="13" width="3" height="8" rx="1.5" fill="url(#neotune-grad)" opacity="0.5" />
+          <rect x="7" y="11" width="3" height="10" rx="1.5" fill="url(#neotune-grad)" opacity="0.4" className="animate-wave-1" />
+          <rect x="12" y="7" width="3" height="18" rx="1.5" fill="url(#neotune-grad)" opacity="0.75" className="animate-wave-2" />
+          <rect x="17" y="10" width="3" height="12" rx="1.5" fill="url(#neotune-grad)" opacity="0.9" className="animate-wave-3" />
+          <rect x="22" y="13" width="3" height="8" rx="1.5" fill="url(#neotune-grad)" opacity="0.5" className="animate-wave-4" />
           
           {/* Play triangle */}
           <path

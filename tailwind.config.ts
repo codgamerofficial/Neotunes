@@ -32,11 +32,16 @@ const config: Config = {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
+        osbg: "#07090D",
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+      },
+      spacing: {
+        "4.5": "1.125rem", // 18px
+        "13": "3.25rem",   // 52px
       },
     },
   },

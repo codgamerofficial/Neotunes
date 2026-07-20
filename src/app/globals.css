@@ -4,26 +4,33 @@
 
 @layer base {
   :root {
-    --background: 0 0% 2%; /* Deep Black #050505 */
+    --background: 220 30% 4%; /* Deep dark background #07090D */
     --foreground: 0 0% 98%;
-    --card: 0 0% 10%; /* Dark Card #1A1A1A */
+    --card: 220 25% 7%; /* Dark OS Card #0A0D14 */
     --card-foreground: 0 0% 98%;
-    --popover: 0 0% 7%; /* Surface #111111 */
+    --popover: 220 30% 5%; /* Surface #080A10 */
     --popover-foreground: 0 0% 98%;
     --primary: 182 100% 50%; /* Neon Cyan #00F5FF */
     --primary-foreground: 0 0% 2%;
     --secondary: 250 100% 69%; /* Purple #7B61FF */
     --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 15%;
-    --muted-foreground: 0 0% 64%;
+    --muted: 220 15% 12%;
+    --muted-foreground: 220 10% 64%;
     --accent: 182 100% 50%;
     --accent-foreground: 0 0% 2%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 12%;
-    --input: 0 0% 12%;
+    --border: 220 15% 10%;
+    --input: 220 15% 10%;
     --ring: 182 100% 50%;
-    --radius: 1rem;
+    --radius: 1.25rem; /* Larger rounded corners (20px) */
+    
+    /* Custom Design System Tokens */
+    --bg-os: #07090d;
+    --glass-bg: rgba(7, 9, 13, 0.45);
+    --glass-bg-heavy: rgba(10, 12, 18, 0.75);
+    --glass-border: rgba(255, 255, 255, 0.05);
+    --glass-border-hover: rgba(255, 255, 255, 0.12);
   }
 }
 
@@ -210,6 +217,63 @@ body {
 @keyframes equalize {
   0%   { transform: scaleY(0.4); }
   100% { transform: scaleY(1); }
+}
+
+/* AI Music OS Animations & Utility styles */
+@keyframes wave-bounce-1 {
+  0%, 100% { transform: scaleY(0.35); }
+  50% { transform: scaleY(0.95); }
+}
+@keyframes wave-bounce-2 {
+  0%, 100% { transform: scaleY(0.45); }
+  50% { transform: scaleY(1.05); }
+}
+@keyframes wave-bounce-3 {
+  0%, 100% { transform: scaleY(0.25); }
+  50% { transform: scaleY(0.85); }
+}
+@keyframes wave-bounce-4 {
+  0%, 100% { transform: scaleY(0.3); }
+  50% { transform: scaleY(0.75); }
+}
+
+.animate-wave-1 {
+  animation: wave-bounce-1 1.1s ease-in-out infinite;
+  transform-origin: bottom;
+}
+.animate-wave-2 {
+  animation: wave-bounce-2 0.8s ease-in-out infinite;
+  transform-origin: bottom;
+  animation-delay: 0.2s;
+}
+.animate-wave-3 {
+  animation: wave-bounce-3 1.3s ease-in-out infinite;
+  transform-origin: bottom;
+  animation-delay: 0.4s;
+}
+.animate-wave-4 {
+  animation: wave-bounce-4 0.9s ease-in-out infinite;
+  transform-origin: bottom;
+  animation-delay: 0.1s;
+}
+
+@keyframes float-ambient {
+  0%, 100% { transform: translateY(0) scale(1); opacity: 0.4; }
+  50% { transform: translateY(-15px) scale(1.05); opacity: 0.55; }
+}
+
+.animate-ambient-glow {
+  animation: float-ambient 8s ease-in-out infinite;
+}
+
+@keyframes text-shine {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+.animate-shine {
+  background-size: 200% auto;
+  animation: text-shine 4s linear infinite;
 }
 
 

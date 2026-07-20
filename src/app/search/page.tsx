@@ -31,7 +31,10 @@ import {
   AlertTriangle,
   RotateCcw,
   Sparkle,
-  Loader2
+  Loader2,
+  Compass,
+  Cpu,
+  Trophy
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { CampaignSearchRibbon } from '@/components/campaign/CampaignComponents';
@@ -106,6 +109,44 @@ const REASONING_STEPS = [
   { label: "Ranking results...", log: "[OK] Calculating fuzzy matching weights and confidence..." },
   { label: "Finished", log: "[OK] Outputting ranked search dossier." }
 ];
+
+const AI_CATEGORIES = [
+  { name: "Pop",        emoji: "🎤", color: "#00F5FF", gradient: "from-[#00F5FF]/20 via-neutral-900/40 to-transparent" },
+  { name: "Hip-Hop",    emoji: "🎧", color: "#7B61FF", gradient: "from-[#7B61FF]/20 via-neutral-900/40 to-transparent" },
+  { name: "Electronic", emoji: "⚡", color: "#34D399", gradient: "from-[#34D399]/20 via-neutral-900/40 to-transparent" },
+  { name: "Bollywood",  emoji: "🪘", color: "#F59E0B", gradient: "from-[#F59E0B]/20 via-neutral-900/40 to-transparent" },
+  { name: "Rock",       emoji: "🎸", color: "#FF2D55", gradient: "from-[#FF2D55]/20 via-neutral-900/40 to-transparent" },
+  { name: "Lo-Fi",      emoji: "☁️", color: "#6B7280", gradient: "from-[#6B7280]/20 via-neutral-900/40 to-transparent" },
+  { name: "Classical",  emoji: "🎻", color: "#8B5CF6", gradient: "from-[#8B5CF6]/20 via-neutral-900/40 to-transparent" },
+  { name: "Podcasts",   emoji: "🎙️", color: "#10B981", gradient: "from-[#10B981]/20 via-neutral-900/40 to-transparent" },
+  { name: "Mood Mixes", emoji: "🍷", color: "#EC4899", gradient: "from-[#EC4899]/20 via-neutral-900/40 to-transparent" },
+  { name: "Workout",    emoji: "🏃", color: "#F43F5E", gradient: "from-[#F43F5E]/20 via-neutral-900/40 to-transparent" },
+  { name: "Sleep Vibe", emoji: "🌙", color: "#3B82F6", gradient: "from-[#3B82F6]/20 via-neutral-900/40 to-transparent" },
+];
+
+const MOCK_AI_PICKS: UnifiedSearchTrack[] = [
+  { id: "kesariya", title: "Kesariya", artist: { name: "Arijit Singh" }, durationMs: 268165, coverUrl: "https://is1-ssl.mzstatic.com/image/thumb/Music112/v4/9f/13/ca/9f13ca3b-e533-03e0-f19a-f0aaa774581d/196589311191.jpg/600x600bb.jpg", sourceType: 'youtube', previewUrl: '', popularity: 85 },
+  { id: "blinding-lights", title: "Blinding Lights", artist: { name: "The Weeknd" }, durationMs: 201570, coverUrl: "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/a6/6e/bf/a66ebf79-5008-8948-b352-a790fc87446b/19UM1IM04638.rgb.jpg/600x600bb.jpg", sourceType: 'youtube', previewUrl: '', popularity: 90 },
+  { id: "espresso", title: "Espresso", artist: { name: "Sabrina Carpenter" }, durationMs: 175459, coverUrl: "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/57/e8/7b/57e87ba0-5057-9bb9-c247-ce7dbe426e89/24UMGIM55213.rgb.jpg/600x600bb.jpg", sourceType: 'youtube', previewUrl: '', popularity: 92 },
+  { id: "yt-1", title: "Big Dawgs", artist: { name: "Hanumankind & Kalmi" }, durationMs: 190667, coverUrl: "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/42/d2/6c/42d26c01-619f-fa0a-2e83-7f4a28b5d3b2/24UMGIM70977.rgb.jpg/600x600bb.jpg", sourceType: 'youtube', previewUrl: '', popularity: 88 },
+  { id: "lunch", title: "LUNCH", artist: { name: "Billie Eilish" }, durationMs: 179587, coverUrl: "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/92/9f/69/929f69f1-9977-3a44-d674-11f70c852d1b/24UMGIM36186.rgb.jpg/600x600bb.jpg", sourceType: 'youtube', previewUrl: '', popularity: 86 },
+];
+
+const MOCK_NEW_RELEASES: UnifiedSearchTrack[] = [
+  { id: "yt-2", title: "feelslikeimfallinginlove", artist: { name: "Coldplay" }, durationMs: 236231, coverUrl: "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/af/3c/0f/af3c0fe2-1c4f-8499-67a8-14a8e41fdbf8/5021732410535.jpg/600x600bb.jpg", sourceType: 'youtube', previewUrl: '', popularity: 84 },
+  { id: "yt-3", title: "Houdini", artist: { name: "Eminem" }, durationMs: 227000, coverUrl: "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/0c/3b/c1/0c3bc1e5-8f64-984f-e221-bf96fe08ca67/24UMGIM42701.rgb.jpg/600x600bb.jpg", sourceType: 'youtube', previewUrl: '', popularity: 89 },
+  { id: "flowers", title: "Flowers", artist: { name: "Miley Cyrus" }, durationMs: 200600, coverUrl: "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/8c/67/ff/8c67ff91-31c3-3fef-1884-ce3ec89f3af4/196589946874.jpg/600x600bb.jpg", sourceType: 'youtube', previewUrl: '', popularity: 87 },
+  { id: "heeriye", title: "Heeriye", artist: { name: "Jasleen Royal & Arijit Singh" }, durationMs: 194857, coverUrl: "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/f0/8c/2a/f08c2aeb-3903-8738-d0a5-8c2e4547eed7/5054197711039.jpg/600x600bb.jpg", sourceType: 'youtube', previewUrl: '', popularity: 83 },
+];
+
+const MOCK_TRENDING_ARTISTS = [
+  { id: "arijit-singh", name: "Arijit Singh", coverUrl: "https://is1-ssl.mzstatic.com/image/thumb/Music122/v4/8f/2c/18/8f2c18d1-f519-e587-ec17-f3eb54fa5727/190295851458.jpg/600x600bb.jpg" },
+  { id: "the-weeknd", name: "The Weeknd", coverUrl: "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/8b/63/c4/8b63c46e-1d57-19aa-78b1-3be22dc8f46c/19UM1IM02484.rgb.jpg/600x600bb.jpg" },
+  { id: "coldplay", name: "Coldplay", coverUrl: "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/b8/aa/06/b8aa063c-396f-c104-5825-fdfce7ea49bb/5019039234827.jpg/600x600bb.jpg" },
+  { id: "sabrina-carpenter", name: "Sabrina Carpenter", coverUrl: "https://is1-ssl.mzstatic.com/image/thumb/Music122/v4/eb/fa/cb/ebfacbe3-85f0-621f-c4ff-d227b6c7a98b/24UMGIM35300.rgb.jpg/600x600bb.jpg" },
+  { id: "billie-eilish", name: "Billie Eilish", coverUrl: "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/dc/18/b7/dc18b763-7eb9-6a97-9e48-8df0c345d2e0/21UMGIM08436.rgb.jpg/600x600bb.jpg" },
+];
+
 
 export default function SearchPage() {
   const router = useRouter();
@@ -278,6 +319,11 @@ export default function SearchPage() {
     const updated = recentSearches.filter(s => s !== term);
     setRecentSearches(updated);
     localStorage.setItem('neotunes-recent-searches', JSON.stringify(updated));
+  };
+
+  const clearAllRecent = () => {
+    setRecentSearches([]);
+    localStorage.setItem('neotunes-recent-searches', JSON.stringify([]));
   };
 
   // Query pipeline search endpoint
@@ -459,53 +505,69 @@ export default function SearchPage() {
       {/* A. SEARCH INPUT CONTROL DECK */}
       <div className="space-y-6 max-w-4xl">
         <div className="space-y-1">
-          <p className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.25em] text-[#2DD4FF] bg-[#2DD4FF]/10 px-3.5 py-1.5 rounded-full border border-[#2DD4FF]/20">
-            <Radio className="h-3.5 w-3.5" />
+          <p className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.25em] text-[#00F5FF] bg-[#00F5FF]/10 px-3.5 py-1.5 rounded-full border border-[#00F5FF]/20">
+            <Sparkles className="h-3.5 w-3.5 text-[#00F5FF]" />
             <span>AI Search OS v4.1</span>
           </p>
           <h1 className="text-4xl sm:text-5xl font-black tracking-tight leading-none text-white uppercase">
             Semantic Intelligence Command
           </h1>
+          <p className="text-xs sm:text-sm text-neutral-400 font-medium">
+            An advanced semantic mapping engine translating mood, activity, language, and lyrics into immediate audio signals.
+          </p>
         </div>
         
-        <div className="relative w-full group">
-          <div className="absolute inset-y-0 left-0 pl-4.5 flex items-center pointer-events-none">
-            <SearchIcon className="h-5 w-5 text-neutral-500 group-focus-within:text-[#2DD4FF] transition-colors" />
-          </div>
-          
-          <input
-            type="text"
-            placeholder="Type anything... 'bandhu tui koi geli' or 'that sad arijit song' or 'coding lofi'"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onFocus={() => setIsInputFocused(true)}
-            onBlur={() => setTimeout(() => setIsInputFocused(false), 200)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') executeSearch(query);
-            }}
-            className="w-full rounded-2xl border border-white/[0.08] bg-[#0E0E11]/80 py-4.5 pr-20 pl-13 text-sm font-semibold text-white placeholder-neutral-500 outline-none transition-all focus:border-[#2DD4FF] focus:shadow-[0_0_20px_rgba(45,212,255,0.12)]"
-          />
+        {/* Futuristic glowing search bar container */}
+        <div className={`relative w-full group rounded-[22px] p-[1.5px] bg-gradient-to-r transition-all duration-500 shadow-[inner_0_2px_4px_rgba(255,255,255,0.02),_0_12px_45px_rgba(0,0,0,0.55)] ${
+          reasoningActive 
+            ? 'from-[#00F5FF] via-[#7B61FF] to-[#9B5CFF] animate-pulse shadow-[0_0_35px_rgba(0,245,255,0.25)]' 
+            : 'from-white/[0.08] to-white/[0.08] hover:from-white/[0.15] hover:to-white/[0.15] focus-within:from-[#00F5FF] focus-within:to-[#9B5CFF] focus-within:shadow-[0_0_30px_rgba(0,245,255,0.15),_0_0_50px_rgba(155,92,255,0.1)]'
+        }`}>
+          <div className="relative w-full h-[72px] sm:h-[76px] rounded-[21px] bg-[#0E111A]/85 backdrop-blur-2xl flex items-center overflow-hidden">
+            
+            {/* Perfectly Centered Search Icon */}
+            <div className="absolute left-0 top-0 bottom-0 w-14 sm:w-16 flex items-center justify-center pointer-events-none z-10">
+              <SearchIcon className="h-5.5 w-5.5 sm:h-6 w-6 text-neutral-455 group-focus-within:text-[#00F5FF] transition-colors duration-300" />
+            </div>
+            
+            <input
+              type="text"
+              placeholder="Type anything... 'bandhu tui koi geli' or 'that sad arijit song' or 'coding lofi'"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onFocus={() => setIsInputFocused(true)}
+              onBlur={() => setTimeout(() => setIsInputFocused(false), 200)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') executeSearch(query);
+              }}
+              className="w-full h-full bg-transparent border-none outline-none pl-14 sm:pl-16 pr-16 sm:pr-20 text-sm sm:text-base font-semibold text-white placeholder-white/45 caret-[#00F5FF] transition-all duration-300"
+            />
 
-          {/* Voice Mic Trigger */}
-          <div className="absolute inset-y-0 right-3 flex items-center gap-2">
-            <button
-              onClick={toggleVoiceSearch}
-              className="p-2.5 rounded-xl border border-white/[0.06] bg-neutral-900/60 hover:bg-neutral-800 text-neutral-400 hover:text-[#2DD4FF] transition-colors"
-              title="Voice Input"
-            >
-              <Mic className="h-4.5 w-4.5" />
-            </button>
-          </div>
+            {/* Voice Mic Trigger */}
+            <div className="absolute right-3.5 sm:right-4 top-0 bottom-0 flex items-center z-10">
+              <button
+                onClick={toggleVoiceSearch}
+                className="h-10 w-10 sm:h-11 w-11 rounded-xl border flex items-center justify-center bg-white/[0.04] border-white/[0.08] hover:border-[#00F5FF]/40 text-neutral-400 hover:text-[#00F5FF] hover:bg-white/[0.08] hover:scale-105 active:scale-95 transition-all duration-300"
+                title="Voice Input"
+              >
+                <Mic className="h-5 w-5 text-current" />
+              </button>
+            </div>
 
-          {/* Laser scanning bar during reasoning */}
-          {reasoningActive && (
-            <div className="absolute bottom-0 left-2 right-2 h-[2px] bg-gradient-to-r from-transparent via-[#2DD4FF] to-transparent animate-pulse" />
-          )}
+            {/* Laser scanning bar during reasoning */}
+            {reasoningActive && (
+              <div className="absolute bottom-0 left-2 right-2 h-[2px] bg-gradient-to-r from-transparent via-[#00F5FF] to-transparent animate-pulse" />
+            )}
+          </div>
         </div>
 
         {speechError && (
           <p className="text-xs font-bold text-rose-450 pl-1">{speechError}</p>
         )}
+
+        <div className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest pl-2">
+          ⚡ TIP: Try natural prompts describing mood, context, or transliterated lyrics.
+        </div>
       </div>
 
       {/* B. RECENT SEARCHES OVERLAY */}
@@ -513,11 +575,11 @@ export default function SearchPage() {
         <motion.div
           initial={{ opacity: 0, y: -5 }}
           animate={{ opacity: 1, y: 0 }}
-          className="absolute z-20 w-full max-w-4xl rounded-2xl border border-white/[0.08] bg-[#0E0E11] p-4.5 shadow-2xl space-y-3 text-left"
+          className="absolute z-20 w-full max-w-4xl rounded-2xl border border-white/[0.08] bg-[#0E111A]/95 p-4.5 shadow-2xl space-y-3 text-left backdrop-blur-2xl"
         >
           <div className="flex justify-between items-center text-[10px] font-black uppercase text-neutral-500 tracking-wider">
             <span>Recent Command History</span>
-            <Clock className="h-3.5 w-3.5" />
+            <span onClick={clearAllRecent} className="hover:text-rose-450 cursor-pointer transition-colors">Clear All</span>
           </div>
           <div className="flex flex-wrap gap-2">
             {recentSearches.map((term) => (
@@ -536,58 +598,266 @@ export default function SearchPage() {
 
       {/* C. INITIAL DISCOVERY VIEW (IF NO SEARCH DONE) */}
       {!activeSearch && !reasoningActive && (
-        <div className="space-y-10 animate-fadeIn max-w-6xl">
+        <div className="space-y-12 animate-fadeIn max-w-6xl">
           
-          {/* Quick NLP prompts grid */}
+          {/* Quick NLP prompts Bento Grid */}
           <section className="space-y-4">
             <h3 className="text-xs font-black uppercase tracking-widest text-neutral-500">Suggested Semantic Prompts</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              {[
-                { title: "bandhu tui koi geli", desc: "Transliterated Bengali Folk search", tag: "Transliteration" },
-                { title: "that sad arijit song", desc: "Emotion & artist matching", tag: "Sad Mood" },
-                { title: "late night lofi beats for coding", desc: "Activity & genre mapping", tag: "Focus Session" },
-                { title: "football edit music", desc: "Stadium energy beats", tag: "World Cup Vibe" },
-                { title: "gym workout motivation", desc: "High-BPM electronic pump", tag: "Energy Boost" },
-                { title: "retro classic hindi 90s", desc: "Generational decade query", tag: "Decade Shift" }
-              ].map((item) => (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              
+              {/* Card 1: Bengali Transliteration (Wide) */}
+              <div
+                onClick={() => executeSearch("bandhu tui koi geli")}
+                className="col-span-1 md:col-span-2 bg-gradient-to-br from-[#00F5FF]/10 via-[#3B82F6]/5 to-transparent border border-white/[0.06] hover:border-[#00F5FF]/30 p-6 rounded-[24px] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(0,245,255,0.06)] flex flex-col justify-between min-h-[140px] relative overflow-hidden group cursor-pointer"
+              >
+                <div className="absolute -top-10 -right-10 w-28 h-28 rounded-full bg-[#00F5FF]/5 blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
+                <div className="flex justify-between items-start">
+                  <span className="text-[9px] font-black uppercase tracking-wider text-[#00F5FF] bg-[#00F5FF]/10 px-2.5 py-1 rounded-full border border-[#00F5FF]/20">Transliteration</span>
+                  <Compass className="h-5 w-5 text-neutral-500 group-hover:text-[#00F5FF] transition-colors" />
+                </div>
+                <div className="mt-4">
+                  <h4 className="text-base font-black text-white italic group-hover:text-[#00F5FF] transition-colors">&ldquo;bandhu tui koi geli&rdquo;</h4>
+                  <p className="text-xs text-neutral-400 font-semibold mt-1">Bengali folk search. Instantly matches phonetic inputs to relational metadata.</p>
+                </div>
+              </div>
+
+              {/* Card 2: Focus Session (Tall) */}
+              <div
+                onClick={() => executeSearch("late night lofi beats for coding")}
+                className="col-span-1 md:row-span-2 bg-gradient-to-br from-[#7B61FF]/10 via-[#9B5CFF]/5 to-transparent border border-white/[0.06] hover:border-[#7B61FF]/30 p-6 rounded-[24px] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(123,97,255,0.06)] flex flex-col justify-between min-h-[220px] relative overflow-hidden group cursor-pointer"
+              >
+                <div className="absolute -bottom-10 -right-10 w-32 h-32 rounded-full bg-[#7B61FF]/5 blur-3xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
+                <div className="flex justify-between items-start">
+                  <span className="text-[9px] font-black uppercase tracking-wider text-[#7B61FF] bg-[#7B61FF]/10 px-2.5 py-1 rounded-full border border-[#7B61FF]/20">Focus Session</span>
+                  <Cpu className="h-5 w-5 text-neutral-500 group-hover:text-[#7B61FF] transition-colors" />
+                </div>
+                <div className="mt-8 text-left">
+                  <h4 className="text-base font-black text-white italic group-hover:text-[#7B61FF] transition-colors">&ldquo;late night lofi beats for coding&rdquo;</h4>
+                  <p className="text-xs text-neutral-400 font-semibold mt-2 leading-relaxed">Activity & vibe mapping. Generate a custom ambient space tailored for deep focus and low-tempo study flow.</p>
+                </div>
+              </div>
+
+              {/* Card 3: Sad Mood (Standard) */}
+              <div
+                onClick={() => executeSearch("that sad arijit song")}
+                className="col-span-1 bg-gradient-to-br from-[#FF2D55]/10 to-transparent border border-white/[0.06] hover:border-[#FF2D55]/30 p-6 rounded-[24px] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(255,45,85,0.06)] flex flex-col justify-between min-h-[140px] relative overflow-hidden group cursor-pointer"
+              >
+                <div className="absolute -top-10 -right-10 w-20 h-20 rounded-full bg-[#FF2D55]/5 blur-xl pointer-events-none" />
+                <div className="flex justify-between items-start">
+                  <span className="text-[9px] font-black uppercase tracking-wider text-[#FF2D55] bg-[#FF2D55]/10 px-2.5 py-1 rounded-full border border-[#FF2D55]/20">Sad Mood</span>
+                  <Heart className="h-5 w-5 text-neutral-500 group-hover:text-[#FF2D55] transition-colors" />
+                </div>
+                <div className="mt-4">
+                  <h4 className="text-base font-black text-white italic group-hover:text-[#FF2D55] transition-colors">&ldquo;that sad arijit song&rdquo;</h4>
+                  <p className="text-xs text-neutral-400 font-semibold mt-1">Emotion & artist correlation.</p>
+                </div>
+              </div>
+
+              {/* Card 4: World Cup Vibe (Standard) */}
+              <div
+                onClick={() => executeSearch("football edit music")}
+                className="col-span-1 bg-gradient-to-br from-amber-500/10 to-transparent border border-white/[0.06] hover:border-amber-500/30 p-6 rounded-[24px] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(245,158,11,0.06)] flex flex-col justify-between min-h-[140px] relative overflow-hidden group cursor-pointer"
+              >
+                <div className="absolute -bottom-10 -right-10 w-20 h-20 rounded-full bg-amber-500/5 blur-xl pointer-events-none" />
+                <div className="flex justify-between items-start">
+                  <span className="text-[9px] font-black uppercase tracking-wider text-amber-500 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20">World Cup Vibe</span>
+                  <Trophy className="h-5 w-5 text-neutral-500 group-hover:text-amber-500 transition-colors" />
+                </div>
+                <div className="mt-4">
+                  <h4 className="text-base font-black text-white italic group-hover:text-amber-500 transition-colors">&ldquo;football edit music&rdquo;</h4>
+                  <p className="text-xs text-neutral-400 font-semibold mt-1">Stadium energy audio beats.</p>
+                </div>
+              </div>
+
+              {/* Card 5: Energy Boost (Wide) */}
+              <div
+                onClick={() => executeSearch("gym workout motivation")}
+                className="col-span-1 md:col-span-2 bg-gradient-to-br from-[#34D399]/10 via-[#00F5FF]/5 to-transparent border border-white/[0.06] hover:border-[#34D399]/30 p-6 rounded-[24px] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(52,211,153,0.06)] flex flex-col justify-between min-h-[140px] relative overflow-hidden group cursor-pointer"
+              >
+                <div className="absolute -top-10 -right-10 w-24 h-24 rounded-full bg-[#34D399]/5 blur-2xl pointer-events-none" />
+                <div className="flex justify-between items-start">
+                  <span className="text-[9px] font-black uppercase tracking-wider text-[#34D399] bg-[#34D399]/10 px-2.5 py-1 rounded-full border border-[#34D399]/20">Energy Boost</span>
+                  <Activity className="h-5 w-5 text-neutral-500 group-hover:text-[#34D399] transition-colors" />
+                </div>
+                <div className="mt-4">
+                  <h4 className="text-base font-black text-white italic group-hover:text-[#34D399] transition-colors">&ldquo;gym workout motivation&rdquo;</h4>
+                  <p className="text-xs text-neutral-400 font-semibold mt-1">High-BPM electronic pump. Maximize physical output with heavy synth lines.</p>
+                </div>
+              </div>
+
+              {/* Card 6: Decade Shift (Standard) */}
+              <div
+                onClick={() => executeSearch("retro classic hindi 90s")}
+                className="col-span-1 bg-gradient-to-br from-[#00F5FF]/10 to-transparent border border-white/[0.06] hover:border-[#00F5FF]/30 p-6 rounded-[24px] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(0,245,255,0.06)] flex flex-col justify-between min-h-[140px] relative overflow-hidden group cursor-pointer"
+              >
+                <div className="absolute -top-10 -right-10 w-20 h-20 rounded-full bg-[#00F5FF]/5 blur-xl pointer-events-none" />
+                <div className="flex justify-between items-start">
+                  <span className="text-[9px] font-black uppercase tracking-wider text-[#00F5FF] bg-[#00F5FF]/10 px-2.5 py-1 rounded-full border border-[#00F5FF]/20">Decade Shift</span>
+                  <Clock className="h-5 w-5 text-neutral-500 group-hover:text-[#00F5FF] transition-colors" />
+                </div>
+                <div className="mt-4">
+                  <h4 className="text-base font-black text-white italic group-hover:text-[#00F5FF] transition-colors">&ldquo;retro classic hindi 90s&rdquo;</h4>
+                  <p className="text-xs text-neutral-400 font-semibold mt-1">Nostalgic decade-specific curation.</p>
+                </div>
+              </div>
+
+            </div>
+          </section>
+
+          {/* Immersive Category Cards */}
+          <section className="space-y-4">
+            <h3 className="text-xs font-black uppercase tracking-wider text-neutral-500">Intelligent AI Categories</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+              {AI_CATEGORIES.map((c) => (
                 <div
-                  key={item.title}
-                  onClick={() => executeSearch(item.title)}
-                  className="rounded-2xl border border-white/[0.06] bg-[#0E0E11]/80 p-5 cursor-pointer hover:border-[#2DD4FF]/40 hover:-translate-y-1 transition-all text-left flex flex-col justify-between min-h-[110px]"
+                  key={c.name}
+                  onClick={() => executeSearch(c.name)}
+                  className="relative rounded-[22px] border border-white/[0.05] bg-[#0E111A]/60 p-5 cursor-pointer hover:border-white/[0.15] hover:-translate-y-1.5 transition-all duration-300 text-left flex flex-col justify-between aspect-square group shadow-xl overflow-hidden"
+                  style={{
+                    boxShadow: `inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 10px 30px rgba(0, 0, 0, 0.35)`
+                  }}
                 >
-                  <div className="space-y-1">
-                    <span className="text-[9px] font-black uppercase tracking-wider text-[#2DD4FF] bg-[#2DD4FF]/10 px-2 py-0.5 rounded w-fit block">{item.tag}</span>
-                    <h4 className="text-sm font-black text-white italic group-hover:text-[#2DD4FF] mt-2">&ldquo;{item.title}&rdquo;</h4>
+                  {/* Immersive radial glow source */}
+                  <div 
+                    className="absolute -top-10 -right-10 w-24 h-24 rounded-full blur-2xl opacity-20 group-hover:opacity-45 transition-all duration-500"
+                    style={{ backgroundColor: c.color }}
+                  />
+                  {/* Soft Particles inside */}
+                  <div className="absolute inset-0 opacity-15 pointer-events-none">
+                    <span className="absolute w-1 h-1 rounded-full bg-white top-1/4 left-1/3 animate-ping" />
+                    <span className="absolute w-1.5 h-1.5 rounded-full bg-white top-2/3 left-2/3 animate-pulse" />
+                    <span className="absolute w-1 h-1 rounded-full bg-white top-1/2 left-3/4 animate-ping" />
                   </div>
-                  <p className="text-[11px] text-neutral-400 font-semibold mt-2">{item.desc}</p>
+
+                  <span className="text-3xl mb-4 block transform group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">{c.emoji}</span>
+                  <div className="space-y-0.5">
+                    <span className="text-xs font-black text-white uppercase tracking-wider block">{c.name}</span>
+                    <span className="text-[8px] font-black text-neutral-500 uppercase tracking-widest block">OS Optimized</span>
+                  </div>
                 </div>
               ))}
             </div>
           </section>
 
-          {/* Quick Mood Categories Grid */}
-          <section className="space-y-4">
-            <h3 className="text-xs font-black uppercase tracking-wider text-neutral-500">Intelligent AI Categories</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
-              {[
-                { name: "Pop",        emoji: "🎤", gradient: "from-[#2DD4FF]/25 to-transparent",   border: "hover:border-[#2DD4FF]/30" },
-                { name: "Hip-Hop",    emoji: "🎧", gradient: "from-[#9B5CFF]/25 to-transparent",   border: "hover:border-[#9B5CFF]/30" },
-                { name: "Electronic", emoji: "⚡", gradient: "from-[#34D399]/25 to-transparent",   border: "hover:border-[#34D399]/30" },
-                { name: "Bollywood",  emoji: "🪘", gradient: "from-amber-500/25 to-transparent",   border: "hover:border-amber-500/30" },
-                { name: "Rock",       emoji: "🎸", gradient: "from-[#FF2D55]/25 to-transparent",   border: "hover:border-[#FF2D55]/30" },
-                { name: "Lo-Fi",      emoji: "☁️", gradient: "from-neutral-700/25 to-transparent", border: "hover:border-neutral-500/30" },
-              ].map((g) => (
-                <div
-                  key={g.name}
-                  onClick={() => executeSearch(g.name)}
-                  className={`rounded-2xl border border-white/[0.06] bg-gradient-to-br ${g.gradient} ${g.border} p-5 cursor-pointer hover:-translate-y-1.5 transition-all text-left flex flex-col justify-between aspect-square group shadow-xl`}
-                >
-                  <span className="text-3xl mb-4 block group-hover:scale-105 transition-transform">{g.emoji}</span>
-                  <span className="text-xs font-black text-white uppercase tracking-wider">{g.name}</span>
+          {/* AI Picks & Trending Sections (Content Below) */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-4">
+            
+            {/* Left Column: AI Picks & New Releases */}
+            <div className="lg:col-span-8 space-y-10">
+              
+              {/* AI Picks for You */}
+              <section className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-xs font-black uppercase tracking-widest text-neutral-500">AI picks for you</h3>
+                  <span className="text-[9px] font-black text-[#00F5FF] uppercase tracking-wider bg-[#00F5FF]/10 px-2.5 py-1 rounded-full border border-[#00F5FF]/20 animate-pulse">Personalized</span>
                 </div>
-              ))}
+                <div className="space-y-3">
+                  {MOCK_AI_PICKS.map((track, i) => (
+                    <div
+                      key={track.id}
+                      onClick={() => handlePlayTrack(track, MOCK_AI_PICKS)}
+                      className="group rounded-2xl border border-white/[0.04] bg-[#0E111A]/40 hover:bg-[#121622]/60 hover:border-white/[0.1] p-3 cursor-pointer transition-all duration-300 flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                        <span className="text-xs font-black text-neutral-500 w-5 text-center">0{i + 1}</span>
+                        <div className="relative h-12 w-12 rounded-xl overflow-hidden bg-neutral-900 border border-white/[0.05] flex-shrink-0 group-hover:scale-105 transition-transform duration-300">
+                          <img src={track.coverUrl} alt={track.title} className="object-cover w-full h-full" />
+                        </div>
+                        <div className="min-w-0 text-left">
+                          <h4 className="text-xs font-black text-white truncate group-hover:text-[#00F5FF] transition-colors">{track.title}</h4>
+                          <p className="text-[10px] text-neutral-450 font-bold truncate mt-0.5">{track.artist.name}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4 ml-4">
+                        <span className="text-[9px] font-black uppercase text-[#00F5FF]/80">98% match</span>
+                        <button className="h-8.5 w-8.5 rounded-full bg-white/5 border border-white/10 group-hover:bg-gradient-to-r group-hover:from-[#00F5FF] group-hover:to-[#9B5CFF] group-hover:border-none flex items-center justify-center text-white group-hover:text-black transition-all">
+                          <Play className="h-3.5 w-3.5 fill-current translate-x-[0.5px]" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              {/* New Releases */}
+              <section className="space-y-4">
+                <h3 className="text-xs font-black uppercase tracking-widest text-neutral-500">New Releases</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {MOCK_NEW_RELEASES.map((track) => (
+                    <div
+                      key={track.id}
+                      onClick={() => handlePlayTrack(track, MOCK_NEW_RELEASES)}
+                      className="group rounded-2xl border border-white/[0.04] bg-[#0E111A]/40 hover:bg-[#121622]/60 hover:border-white/[0.1] p-3.5 cursor-pointer transition-all duration-300 flex items-center gap-3.5"
+                    >
+                      <div className="relative h-14 w-14 rounded-xl overflow-hidden bg-neutral-900 border border-white/[0.05] flex-shrink-0 group-hover:scale-105 transition-transform duration-300">
+                        <img src={track.coverUrl} alt={track.title} className="object-cover w-full h-full" />
+                      </div>
+                      <div className="min-w-0 flex-1 text-left">
+                        <h4 className="text-xs font-black text-white truncate group-hover:text-[#00F5FF] transition-colors">{track.title}</h4>
+                        <p className="text-[10px] text-neutral-450 font-bold truncate mt-0.5">{track.artist.name}</p>
+                        <span className="inline-block text-[8px] font-black text-[#9B5CFF] bg-[#9B5CFF]/10 px-1.5 py-0.5 rounded border border-[#9B5CFF]/20 mt-1">NEW RELEASE</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
             </div>
-          </section>
+
+            {/* Right Column: Trending Artists & OS Insights */}
+            <div className="lg:col-span-4 space-y-10">
+              
+              {/* Trending Artists */}
+              <section className="space-y-4">
+                <h3 className="text-xs font-black uppercase tracking-widest text-neutral-500">Trending Artists</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  {MOCK_TRENDING_ARTISTS.map((art) => (
+                    <div
+                      key={art.id}
+                      onClick={() => executeSearch(art.name)}
+                      className="group rounded-2xl border border-white/[0.04] bg-[#0E111A]/40 p-4 text-center cursor-pointer hover:border-white/[0.12] transition-all duration-300"
+                    >
+                      <div className="relative h-16 w-16 mx-auto rounded-full overflow-hidden border border-white/[0.08] shadow bg-neutral-900 group-hover:scale-105 transition-transform duration-300">
+                        <img src={art.coverUrl} alt={art.name} className="object-cover w-full h-full" />
+                      </div>
+                      <h4 className="text-[11px] font-black text-white mt-3 truncate w-full group-hover:text-[#00F5FF] transition-colors">{art.name}</h4>
+                      <span className="text-[8px] font-black text-neutral-500 uppercase tracking-widest mt-0.5 block">Verified</span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              {/* OS Insights */}
+              <section className="space-y-4">
+                <h3 className="text-xs font-black uppercase tracking-widest text-neutral-500">OS Intelligence Insights</h3>
+                <div className="rounded-[24px] border border-white/[0.05] bg-gradient-to-br from-[#0E111A]/80 to-transparent p-5 space-y-4 text-left shadow-2xl relative overflow-hidden">
+                  <div className="absolute -top-10 -right-10 w-24 h-24 rounded-full bg-[#9B5CFF]/5 blur-2xl pointer-events-none" />
+                  
+                  <div className="space-y-3.5">
+                    <div className="flex items-center justify-between border-b border-white/[0.04] pb-2.5">
+                      <span className="text-[10px] text-neutral-450 font-bold uppercase tracking-wider">Active Profile</span>
+                      <span className="text-[10px] text-[#00F5FF] font-black uppercase">Lossless Coder</span>
+                    </div>
+                    <div className="flex items-center justify-between border-b border-white/[0.04] pb-2.5">
+                      <span className="text-[10px] text-neutral-450 font-bold uppercase tracking-wider">Energy Quotient</span>
+                      <span className="text-[10px] text-[#34D399] font-black uppercase">High (84 BPM Avg)</span>
+                    </div>
+                    <div className="flex items-center justify-between border-b border-white/[0.04] pb-2.5">
+                      <span className="text-[10px] text-neutral-450 font-bold uppercase tracking-wider">Top Vibe intent</span>
+                      <span className="text-[10px] text-[#7B61FF] font-black uppercase">Synthesized Lofi</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-neutral-450 font-bold uppercase tracking-wider">Peak Listening Hour</span>
+                      <span className="text-[10px] text-amber-500 font-black uppercase">10 PM - 1 AM</span>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+            </div>
+
+          </div>
+
         </div>
       )}
 

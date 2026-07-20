@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { createClientServer } from '@/lib/supabase-server';
 import { ensureDbUser } from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const filePath = searchParams.get('filePath');
