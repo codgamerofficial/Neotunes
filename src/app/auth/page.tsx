@@ -41,7 +41,7 @@ export default function AuthPage() {
       particleCount: 80,
       spread: 60,
       origin: { y: 0.65 },
-      colors: ['#2DD4FF', '#9B5CFF', '#34D399'],
+      colors: ['#00F5FF', '#9B5CFF', '#34D399'],
     });
   };
 
@@ -114,27 +114,27 @@ export default function AuthPage() {
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#050505] px-4 select-none">
       
       {/* Interactive Glowing Orb Backgrounds */}
-      <div className="absolute top-1/4 left-1/4 -z-10 h-96 w-96 rounded-full bg-[#2DD4FF]/10 blur-[130px] animate-pulse" />
+      <div className="absolute top-1/4 left-1/4 -z-10 h-96 w-96 rounded-full bg-[#00F5FF]/10 blur-[130px] animate-pulse" />
       <div className="absolute bottom-1/4 right-1/4 -z-10 h-96 w-96 rounded-full bg-[#9B5CFF]/10 blur-[130px] animate-pulse" />
 
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="w-full max-w-md rounded-[32px] p-[1.5px] bg-gradient-to-tr from-white/[0.12] to-transparent shadow-[0_24px_50px_rgba(0,0,0,0.8)] border border-white/[0.06] backdrop-blur-2xl bg-white/[0.01]"
+        className="w-full max-w-md rounded-[28px] p-[1.5px] bg-gradient-to-tr from-white/[0.12] to-transparent shadow-[0_24px_50px_rgba(0,0,0,0.8)] border border-white/[0.06] backdrop-blur-2xl bg-white/[0.01]"
       >
         <div className="w-full h-full p-6 sm:p-8 flex flex-col">
           
           {/* Logo & Assistant Greeting */}
           <div className="flex flex-col items-center space-y-3.5 text-center">
-            <div className="flex items-center justify-center text-[#2DD4FF]">
+            <div className="flex items-center justify-center text-[#00F5FF]">
               <NeoTuneLogo className="h-10 w-10" showText={false} />
             </div>
             
-            <div className="rounded-2xl bg-white/[0.02] border border-white/[0.04] p-3 text-left w-full relative">
-              <span className="text-[9px] font-black uppercase tracking-[0.2em] text-[#2DD4FF] flex items-center gap-1.5 mb-1.5">
+            <div className="rounded-2xl bg-white/[0.02] border border-white/[0.04] p-3.5 text-left w-full relative nothing-dots">
+              <span className="text-[9px] font-black uppercase tracking-[0.2em] text-[#00F5FF] flex items-center gap-1.5 mb-1">
                 <Sparkles className="h-3.5 w-3.5 animate-pulse" />
-                <span>AI DJ Assistant Welcome</span>
+                <span>AI DJ Welcome</span>
               </span>
               <p className="text-[11px] text-neutral-400 font-semibold leading-relaxed">
                 &ldquo;Hello. Sign in to NeoTunes to load your custom workspace presets, manage your Cloud Locker, and access our semantic query engine.&rdquo;
@@ -158,8 +158,8 @@ export default function AuthPage() {
                     setMode(tab.id as any);
                     setMessage(null);
                   }}
-                  className={`flex-1 rounded-lg py-2.5 text-xs font-black uppercase tracking-wider transition-all ${
-                    isActive ? 'bg-gradient-to-r from-[#2DD4FF] to-[#9B5CFF] text-black shadow-md' : 'text-neutral-500 hover:text-white'
+                  className={`flex-1 rounded-lg py-2.5 text-[10px] font-black uppercase tracking-wider transition-all ${
+                    isActive ? 'bg-gradient-to-r from-[#00F5FF] to-[#9B5CFF] text-black shadow-md' : 'text-neutral-500 hover:text-white'
                   }`}
                 >
                   {tab.label}
@@ -181,40 +181,40 @@ export default function AuthPage() {
               >
                 {mode === 'signup' && (
                   <div className="relative group">
-                    <User className="absolute top-3.5 left-4 h-4.5 w-4.5 text-neutral-500 group-focus-within:text-[#2DD4FF] transition-colors" />
+                    <User className="absolute top-3.5 left-4 h-4.5 w-4.5 text-neutral-500 group-focus-within:text-[#00F5FF] transition-colors" />
                     <input
                       type="text"
                       required
                       placeholder="Full Name"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className="w-full rounded-xl border border-white/[0.06] bg-[#0c0c0c] py-3 pr-4 pl-11 text-xs font-semibold text-white placeholder-neutral-500 outline-none transition-all focus:border-[#2DD4FF] focus:shadow-[0_0_12px_rgba(45,212,255,0.15)]"
+                      className="w-full rounded-xl border border-white/[0.06] bg-[#0c0c0c] py-3 pr-4 pl-11 text-xs font-semibold text-white placeholder-neutral-500 outline-none transition-all focus:border-[#00F5FF] focus:shadow-[0_0_12px_rgba(0,245,255,0.15)]"
                     />
                   </div>
                 )}
 
                 <div className="relative group">
-                  <Mail className="absolute top-3.5 left-4 h-4.5 w-4.5 text-neutral-500 group-focus-within:text-[#2DD4FF] transition-colors" />
+                  <Mail className="absolute top-3.5 left-4 h-4.5 w-4.5 text-neutral-500 group-focus-within:text-[#00F5FF] transition-colors" />
                   <input
                     type="email"
                     required
                     placeholder="Email Address"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full rounded-xl border border-white/[0.06] bg-[#0c0c0c] py-3 pr-4 pl-11 text-xs font-semibold text-white placeholder-neutral-500 outline-none transition-all focus:border-[#2DD4FF] focus:shadow-[0_0_12px_rgba(45,212,255,0.15)]"
+                    className="w-full rounded-xl border border-white/[0.06] bg-[#0c0c0c] py-3 pr-4 pl-11 text-xs font-semibold text-white placeholder-neutral-500 outline-none transition-all focus:border-[#00F5FF] focus:shadow-[0_0_12px_rgba(0,245,255,0.15)]"
                   />
                 </div>
 
                 {(mode === 'signin' || mode === 'signup') && (
                   <div className="relative group">
-                    <Lock className="absolute top-3.5 left-4 h-4.5 w-4.5 text-neutral-500 group-focus-within:text-[#2DD4FF] transition-colors" />
+                    <Lock className="absolute top-3.5 left-4 h-4.5 w-4.5 text-neutral-500 group-focus-within:text-[#00F5FF] transition-colors" />
                     <input
                       type="password"
                       required
                       placeholder="Password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full rounded-xl border border-white/[0.06] bg-[#0c0c0c] py-3 pr-4 pl-11 text-xs font-semibold text-white placeholder-neutral-500 outline-none transition-all focus:border-[#2DD4FF] focus:shadow-[0_0_12px_rgba(45,212,255,0.15)]"
+                      className="w-full rounded-xl border border-white/[0.06] bg-[#0c0c0c] py-3 pr-4 pl-11 text-xs font-semibold text-white placeholder-neutral-500 outline-none transition-all focus:border-[#00F5FF] focus:shadow-[0_0_12px_rgba(0,245,255,0.15)]"
                     />
                   </div>
                 )}
@@ -222,9 +222,9 @@ export default function AuthPage() {
                 {/* Password strength meter on sign up */}
                 {mode === 'signup' && password.length > 0 && (
                   <div className="space-y-1.5 pt-1 px-1">
-                    <div className="flex justify-between text-[10px] font-black uppercase tracking-wider text-neutral-500">
+                    <div className="flex justify-between text-[9px] font-black uppercase tracking-wider text-neutral-500">
                       <span>Password Complexity</span>
-                      <span className="text-[#2DD4FF]">{pwdStrength.label}</span>
+                      <span className="text-[#00F5FF]">{pwdStrength.label}</span>
                     </div>
                     <div className="flex gap-1 h-1.5 w-full bg-neutral-900 rounded-full overflow-hidden">
                       <div className={`h-full ${pwdStrength.color} transition-all duration-300`} style={{ width: `${(pwdStrength.score + 1) * 33.3}%` }} />
@@ -247,7 +247,7 @@ export default function AuthPage() {
                 <button
                   type="button"
                   onClick={() => setMode('forgot')}
-                  className="text-[10px] font-black uppercase tracking-wider text-neutral-500 hover:text-[#2DD4FF] transition-colors"
+                  className="text-[9px] font-black uppercase tracking-wider text-neutral-500 hover:text-[#00F5FF] transition-colors"
                 >
                   Forgot Password?
                 </button>
@@ -259,7 +259,7 @@ export default function AuthPage() {
                 <button
                   type="button"
                   onClick={() => setMode('signin')}
-                  className="text-[10px] font-black uppercase tracking-wider text-neutral-500 hover:text-[#2DD4FF] transition-colors"
+                  className="text-[9px] font-black uppercase tracking-wider text-neutral-500 hover:text-[#00F5FF] transition-colors"
                 >
                   Back to Sign In
                 </button>
@@ -269,7 +269,7 @@ export default function AuthPage() {
             <button
               type="submit"
               disabled={loading}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#2DD4FF] to-[#9B5CFF] py-3 text-xs font-black uppercase tracking-widest text-black shadow-lg shadow-[#2DD4FF]/10 hover:opacity-90 active:scale-97 transition-all disabled:opacity-50"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#00F5FF] to-[#9B5CFF] py-3 text-xs font-black uppercase tracking-widest text-black shadow-lg shadow-[#00F5FF]/10 hover:opacity-90 active:scale-97 transition-all disabled:opacity-50"
             >
               {loading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -292,7 +292,7 @@ export default function AuthPage() {
             <>
               <div className="my-5 flex items-center justify-between text-neutral-700">
                 <span className="w-1/3 border-b border-white/[0.04]" />
-                <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500">or connect via</span>
+                <span className="text-[9px] font-black uppercase tracking-wider text-neutral-500">or connect via</span>
                 <span className="w-1/3 border-b border-white/[0.04]" />
               </div>
 
@@ -301,7 +301,7 @@ export default function AuthPage() {
                 <button
                   onClick={() => handleOAuthLogin('google')}
                   disabled={loading}
-                  className="flex items-center justify-center border border-white/[0.06] bg-[#0c0c0c] hover:border-[#2DD4FF]/40 rounded-xl py-3 active:scale-95 transition-all text-neutral-400 hover:text-white"
+                  className="flex items-center justify-center border border-white/[0.06] bg-[#0c0c0c] hover:border-[#00F5FF]/40 rounded-xl py-3 active:scale-95 transition-all text-neutral-450 hover:text-white"
                   title="Connect via Google"
                 >
                   <svg className="h-4 w-4" viewBox="0 0 24 24">
@@ -316,7 +316,7 @@ export default function AuthPage() {
                 <button
                   onClick={() => handleOAuthLogin('github')}
                   disabled={loading}
-                  className="flex items-center justify-center border border-white/[0.06] bg-[#0c0c0c] hover:border-[#9B5CFF]/40 rounded-xl py-3 active:scale-95 transition-all text-neutral-400 hover:text-white"
+                  className="flex items-center justify-center border border-white/[0.06] bg-[#0c0c0c] hover:border-[#9B5CFF]/40 rounded-xl py-3 active:scale-95 transition-all text-neutral-450 hover:text-white"
                   title="Connect via GitHub"
                 >
                   <svg className="h-4.5 w-4.5" fill="currentColor" viewBox="0 0 24 24">
@@ -328,7 +328,7 @@ export default function AuthPage() {
                 <button
                   onClick={() => handleOAuthLogin('apple' as any)}
                   disabled={loading}
-                  className="flex items-center justify-center border border-white/[0.06] bg-[#0c0c0c] hover:border-[#34D399]/45 rounded-xl py-3 active:scale-95 transition-all text-neutral-400 hover:text-white"
+                  className="flex items-center justify-center border border-white/[0.06] bg-[#0c0c0c] hover:border-[#34D399]/45 rounded-xl py-3 active:scale-95 transition-all text-neutral-450 hover:text-white"
                   title="Connect via Apple ID"
                 >
                   <svg className="h-4.5 w-4.5" fill="currentColor" viewBox="0 0 24 24">

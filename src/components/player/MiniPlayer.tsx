@@ -188,7 +188,7 @@ export default function MiniPlayer() {
       animate={{ y: 0, opacity: 1 }}
       exit={{ y: 100, opacity: 0 }}
       onClick={() => router.push('/player')}
-      className="liquid-dock fixed bottom-16 left-0 right-0 z-40 flex h-20 cursor-pointer items-center justify-between px-4 transition-all duration-300 md:bottom-0 md:px-6 md:z-50 border-t border-neutral-900 bg-neutral-950/75 backdrop-blur-xl"
+      className="fixed bottom-[88px] left-4 right-4 md:bottom-0 md:left-0 md:right-0 z-45 md:z-50 flex h-20 cursor-pointer items-center justify-between px-4 md:px-6 rounded-2xl md:rounded-none border border-white/[0.06] md:border-t md:border-none bg-[#0E111A]/90 md:bg-neutral-950/75 backdrop-blur-2xl transition-all duration-300 shadow-[0_10px_35px_rgba(0,0,0,0.55)]"
     >
       {/* 1. LEFT COLUMN: Artwork, Title, Artist, Like Action */}
       <div className="flex items-center space-x-3 w-full min-w-0 md:w-[30%]">

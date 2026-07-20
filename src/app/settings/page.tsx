@@ -129,7 +129,7 @@ export default function SettingsPage() {
         particleCount: 50,
         spread: 60,
         origin: { y: 0.85 },
-        colors: ['#2DD4FF', '#9B5CFF', '#34D399'],
+        colors: ['#00F5FF', '#9B5CFF', '#34D399'],
       });
       setMessage({ type: 'success', text: 'System preferences saved successfully!' });
     } catch (err: any) {
@@ -173,12 +173,12 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="space-y-8 text-white pb-20 max-w-5xl mx-auto text-left select-none font-sans relative">
+    <div className="space-y-8 text-white pb-36 sm:pb-20 max-w-5xl mx-auto text-left select-none font-sans relative">
       
       {/* 1. HEADER */}
       <div className="flex items-center justify-between border-b border-white/[0.04] pb-5">
-        <div className="flex items-center space-x-3.5">
-          <Settings className="h-8 w-8 text-[#2DD4FF]" />
+        <div className="flex items-center space-x-3">
+          <Settings className="h-7 w-7 text-[#00F5FF]" />
           <h1 className="text-3xl font-black tracking-tight text-white uppercase">Control Center</h1>
         </div>
 
@@ -192,7 +192,7 @@ export default function SettingsPage() {
 
       {/* Message alerts */}
       {message && (
-        <div className={`rounded-xl p-4.5 text-xs font-bold border text-left ${message.type === 'success' ? 'bg-[#2DD4FF]/10 border-[#2DD4FF]/20 text-[#2DD4FF]' : 'bg-red-500/10 border-red-500/20 text-red-400'}`}>
+        <div className={`rounded-xl p-4 text-xs font-bold border text-left ${message.type === 'success' ? 'bg-[#00F5FF]/10 border-[#00F5FF]/20 text-[#00F5FF]' : 'bg-red-500/10 border-red-500/20 text-red-405'}`}>
           {message.text}
         </div>
       )}
@@ -201,9 +201,9 @@ export default function SettingsPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-8 items-start">
         
         {/* Left Side: Side Nav categories */}
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1 overflow-x-auto md:overflow-visible pb-2 md:pb-0 flex-row md:flex-col border-b md:border-b-0 border-white/[0.04] mb-4 md:mb-0">
           {[
-            { id: 'general', label: 'General Locker', icon: User },
+            { id: 'general', label: 'General Vibe', icon: User },
             { id: 'playback', label: 'Playback Engine', icon: Sliders },
             { id: 'audio', label: 'Audio Decoder', icon: Volume2 },
             { id: 'appearance', label: 'Appearance', icon: SlidersHorizontal },
@@ -217,20 +217,20 @@ export default function SettingsPage() {
                 key={section.id}
                 type="button"
                 onClick={() => { setActiveSection(section.id as SettingsSection); setMessage(null); }}
-                className={`flex items-center gap-3.5 rounded-xl px-4.5 py-3.5 text-xs font-black uppercase tracking-widest transition-all border ${
+                className={`flex items-center gap-3 rounded-xl px-4.5 py-3 text-xs font-black uppercase tracking-wider transition-all border flex-shrink-0 ${
                   isActive 
-                    ? 'bg-gradient-to-r from-[#2DD4FF]/10 via-[#9B5CFF]/5 to-transparent border-[#2DD4FF]/25 text-[#2DD4FF]' 
-                    : 'border-transparent text-neutral-400 hover:text-white hover:bg-white/[0.02]'
+                    ? 'bg-gradient-to-r from-[#00F5FF]/10 via-[#9B5CFF]/5 to-transparent border-[#00F5FF]/20 text-[#00F5FF]' 
+                    : 'border-transparent text-neutral-500 hover:text-white hover:bg-white/[0.02]'
                 }`}
               >
                 <Icon className="h-4.5 w-4.5" />
-                <span>{section.label}</span>
+                <span>{section.label.split(' ')[0]}</span>
               </button>
             );
           })}
 
           {campaignActive && (
-            <div className="mt-4 pt-4 border-t border-white/[0.04] w-full">
+            <div className="mt-4 pt-4 border-t border-white/[0.04] w-full hidden md:block">
               <CampaignSettingsCard />
             </div>
           )}
@@ -243,44 +243,44 @@ export default function SettingsPage() {
           {activeSection === 'general' && (
             <form onSubmit={handleUpdateProfile} className="space-y-6">
               <div className="border-b border-white/[0.04] pb-2">
-                <h3 className="text-sm font-black uppercase tracking-widest text-[#2DD4FF]">General Settings</h3>
+                <h3 className="text-xs font-black uppercase tracking-widest text-[#00F5FF]">General Settings</h3>
                 <p className="text-xs text-neutral-500 font-semibold mt-0.5">Customize your personal profile metadata</p>
               </div>
 
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest block">Display Name</label>
+                  <label className="text-[9px] font-black text-neutral-450 uppercase tracking-wider block">Display Name</label>
                   <input
                     type="text"
                     required
                     placeholder="Saswata Dey"
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
-                    className="w-full rounded-xl border border-white/[0.06] bg-[#0c0c0c] px-4.5 py-3.5 text-xs font-semibold text-white outline-none focus:border-[#2DD4FF] focus:shadow-[0_0_15px_rgba(45,212,255,0.1)] transition-all"
+                    className="w-full rounded-xl border border-white/[0.06] bg-[#0c0c0c] px-4.5 py-3.5 text-xs font-semibold text-white outline-none focus:border-[#00F5FF] focus:shadow-[0_0_15px_rgba(0,245,255,0.1)] transition-all"
                   />
                 </div>
                 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest block">Avatar Image URL</label>
+                  <label className="text-[9px] font-black text-neutral-450 uppercase tracking-wider block">Avatar Image URL</label>
                   <input
                     type="text"
                     placeholder="https://images.unsplash.com/photo-..."
                     value={avatarUrl}
                     onChange={(e) => setAvatarUrl(e.target.value)}
-                    className="w-full rounded-xl border border-white/[0.06] bg-[#0c0c0c] px-4.5 py-3.5 text-xs font-semibold text-white outline-none focus:border-[#2DD4FF] focus:shadow-[0_0_15px_rgba(45,212,255,0.1)] transition-all"
+                    className="w-full rounded-xl border border-white/[0.06] bg-[#0c0c0c] px-4.5 py-3.5 text-xs font-semibold text-white outline-none focus:border-[#00F5FF] focus:shadow-[0_0_15px_rgba(0,245,255,0.1)] transition-all"
                   />
                 </div>
               </div>
 
               <div className="border-t border-white/[0.04] pt-5 space-y-4">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest block">Update account credentials password</label>
+                  <label className="text-[9px] font-black text-neutral-450 uppercase tracking-wider block">Update account credentials password</label>
                   <input
                     type="password"
                     placeholder="New password complexity..."
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full rounded-xl border border-white/[0.06] bg-[#0c0c0c] px-4.5 py-3.5 text-xs font-semibold text-white outline-none focus:border-[#2DD4FF] focus:shadow-[0_0_15px_rgba(45,212,255,0.1)] transition-all"
+                    className="w-full rounded-xl border border-white/[0.06] bg-[#0c0c0c] px-4.5 py-3.5 text-xs font-semibold text-white outline-none focus:border-[#00F5FF] focus:shadow-[0_0_15px_rgba(0,245,255,0.1)] transition-all"
                   />
                 </div>
                 <button
@@ -297,7 +297,7 @@ export default function SettingsPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#2DD4FF] to-[#9B5CFF] px-6 py-3.5 text-xs font-black uppercase tracking-wider text-black shadow-lg shadow-[#2DD4FF]/10 hover:opacity-90 active:scale-97 transition-all"
+                  className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#00F5FF] to-[#9B5CFF] px-6 py-3.5 text-xs font-black uppercase tracking-wider text-black shadow-lg shadow-[#00F5FF]/10 hover:opacity-90 active:scale-95 transition-all"
                 >
                   {loading && <RefreshCw className="h-4 w-4 animate-spin" />}
                   <span>Save Profile</span>
@@ -310,7 +310,7 @@ export default function SettingsPage() {
           {activeSection === 'playback' && (
             <div className="space-y-6">
               <div className="border-b border-white/[0.04] pb-2">
-                <h3 className="text-sm font-black uppercase tracking-widest text-[#2DD4FF]">Playback Engine</h3>
+                <h3 className="text-xs font-black uppercase tracking-widest text-[#00F5FF]">Playback Engine</h3>
                 <p className="text-xs text-neutral-500 font-semibold mt-0.5">Control timeline transitions & level parameters</p>
               </div>
 
@@ -325,7 +325,7 @@ export default function SettingsPage() {
                     type="button"
                     onClick={() => setCrossfade(!crossfade)}
                     className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                      crossfade ? 'bg-[#2DD4FF]' : 'bg-neutral-800'
+                      crossfade ? 'bg-[#00F5FF]' : 'bg-neutral-800'
                     }`}
                   >
                     <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-black shadow ring-0 transition duration-200 ease-in-out ${
@@ -336,9 +336,9 @@ export default function SettingsPage() {
 
                 {crossfade && (
                   <div className="space-y-2 pb-2">
-                    <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-neutral-450">
+                    <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest text-neutral-450">
                       <span>Crossfade Length</span>
-                      <span className="font-mono text-[#2DD4FF]">{crossfadeSec}s</span>
+                      <span className="font-mono text-[#00F5FF]">{crossfadeSec}s</span>
                     </div>
                     <input 
                       type="range" 
@@ -346,22 +346,41 @@ export default function SettingsPage() {
                       max="15" 
                       value={crossfadeSec}
                       onChange={e => setCrossfadeSec(Number(e.target.value))}
-                      className="w-full accent-[#2DD4FF] bg-neutral-900"
+                      className="w-full accent-[#00F5FF] bg-neutral-900"
                     />
                   </div>
                 )}
 
-                {/* Normalize */}
-                <div className="flex items-center justify-between border-b border-white/[0.03] pb-4">
+                {/* Autoplay */}
+                <div className="flex items-center justify-between border-b border-white/[0.03] pb-4 pt-2">
                   <div>
-                    <p className="text-xs font-black text-white uppercase tracking-wider">Normalize Audio Level</p>
-                    <p className="text-xs text-neutral-400 font-semibold mt-0.5 leading-normal">Maintain consistent playback decibels across sources</p>
+                    <p className="text-xs font-black text-white uppercase tracking-wider">Queue Autoplay</p>
+                    <p className="text-xs text-neutral-400 font-semibold mt-0.5 leading-normal">Launch related tracks when current queue completes</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setAutoplay(!autoplay)}
+                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                      autoplay ? 'bg-[#00F5FF]' : 'bg-neutral-800'
+                    }`}
+                  >
+                    <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-black shadow ring-0 transition duration-200 ease-in-out ${
+                      autoplay ? 'translate-x-5' : 'translate-x-0'
+                    }`} />
+                  </button>
+                </div>
+
+                {/* Audio Normalization */}
+                <div className="flex items-center justify-between pt-2">
+                  <div>
+                    <p className="text-xs font-black text-white uppercase tracking-wider">Volume Normalizer</p>
+                    <p className="text-xs text-neutral-400 font-semibold mt-0.5 leading-normal">Maintains a consistent volume amplitude across streams</p>
                   </div>
                   <button
                     type="button"
                     onClick={() => setNormalizeVolume(!normalizeVolume)}
                     className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                      normalizeVolume ? 'bg-[#2DD4FF]' : 'bg-neutral-800'
+                      normalizeVolume ? 'bg-[#00F5FF]' : 'bg-neutral-800'
                     }`}
                   >
                     <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-black shadow ring-0 transition duration-200 ease-in-out ${
@@ -373,121 +392,117 @@ export default function SettingsPage() {
             </div>
           )}
 
-          {/* AUDIO ENGINE */}
+          {/* AUDIO DECODER SETTINGS */}
           {activeSection === 'audio' && (
             <div className="space-y-6">
               <div className="border-b border-white/[0.04] pb-2">
-                <h3 className="text-sm font-black uppercase tracking-widest text-[#2DD4FF]">Audio Engine</h3>
-                <p className="text-xs text-neutral-500 font-semibold mt-0.5">Configure spatial decoder & sound wave pipelines</p>
+                <h3 className="text-xs font-black uppercase tracking-widest text-[#00F5FF]">Audio Decoder</h3>
+                <p className="text-xs text-neutral-500 font-semibold mt-0.5">Adjust decoder quality levels and EQ bounds</p>
               </div>
 
               <div className="space-y-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest block">Decoder Quality Choice</label>
-                  <div className="grid grid-cols-5 rounded-xl bg-neutral-950/60 p-1 border border-white/[0.04]">
-                    {([
-                      { id: 'low', label: 'Low' },
-                      { id: 'auto', label: 'Auto' },
-                      { id: 'high', label: 'High' },
-                      { id: 'lossless', label: 'Lossless' },
-                      { id: 'atmos', label: 'Atmos' }
-                    ] as const).map((q) => (
-                      <button
-                        key={q.id}
-                        type="button"
-                        onClick={() => setQuality(q.id)}
-                        className={`rounded-lg py-2.5 text-[9px] font-black transition-all uppercase tracking-wider ${
-                          quality === q.id
-                            ? 'bg-gradient-to-r from-[#2DD4FF] to-[#9B5CFF] text-black shadow'
-                            : 'text-neutral-405 hover:text-white'
-                        }`}
-                      >
-                        {q.label}
-                      </button>
-                    ))}
+                {/* Streaming Quality */}
+                <div className="space-y-3">
+                  <label className="text-[9px] font-black text-neutral-450 uppercase tracking-wider block">Playback Stream Resolution</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+                    {[
+                      { id: 'low', label: 'Low (64 kbps)', desc: 'Saves data usage' },
+                      { id: 'auto', label: 'Auto (Dynamic)', desc: 'Adapts to bandwidth' },
+                      { id: 'high', label: 'High (320 kbps)', desc: 'Rich stereo width' },
+                      { id: 'lossless', label: 'Lossless Hi-Fi', desc: 'Bit-perfect FLAC' },
+                      { id: 'atmos', label: 'Spatial Atmos', desc: 'Binaural 3D Stage' }
+                    ].map(opt => {
+                      const isActive = quality === opt.id;
+                      return (
+                        <div
+                          key={opt.id}
+                          onClick={() => setQuality(opt.id as any)}
+                          className={`rounded-xl border p-3 text-left cursor-pointer transition-all ${
+                            isActive
+                              ? 'border-[#00F5FF] bg-[#00F5FF]/5 text-[#00F5FF]'
+                              : 'border-white/[0.06] bg-neutral-900/40 text-neutral-450 hover:text-white'
+                          }`}
+                        >
+                          <h4 className="text-[10px] font-black uppercase tracking-wider">{opt.label.split(' ')[0]}</h4>
+                          <p className="text-[8px] text-neutral-500 font-bold mt-0.5 leading-normal">{opt.desc}</p>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
-                {/* EQ controls */}
+                {/* Parametric Equalizer knobs */}
                 <div className="space-y-4 pt-4 border-t border-white/[0.04]">
-                  <div className="flex justify-between items-center">
-                    <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest block">Spatial Equalizer (EQ)</label>
-                    <button type="button" onClick={() => { setEqBass(5); setEqMid(5); setEqTreble(5); }} className="text-[9px] font-black text-[#2DD4FF] uppercase tracking-wider">Flat Mode</button>
-                  </div>
-
-                  <div className="flex justify-around items-center h-32 bg-neutral-950/40 border border-white/[0.04] rounded-2xl p-5">
-                    {[
-                      { label: 'Bass Booster', val: eqBass, setter: setEqBass },
-                      { label: 'Vocals Mid', val: eqMid, setter: setEqMid },
-                      { label: 'Spatial Treble', val: eqTreble, setter: setEqTreble }
-                    ].map((band) => (
-                      <div key={band.label} className="flex flex-col items-center h-full gap-2">
-                        <input 
-                          type="range" 
-                          min="0" 
-                          max="10" 
-                          value={band.val} 
-                          onChange={e => band.setter(Number(e.target.value))}
-                          className="h-20 accent-[#2DD4FF] cursor-ns-resize"
-                          style={{ WebkitAppearance: 'slider-vertical' }}
-                        />
-                        <span className="text-[9px] font-black text-neutral-500 uppercase tracking-wider">{band.label.split(' ')[0]}</span>
-                      </div>
-                    ))}
+                  <label className="text-[9px] font-black text-neutral-450 uppercase tracking-wider block">Parametric Equalizer (Hardware EQ)</label>
+                  <div className="grid grid-cols-3 gap-5 bg-white/[0.01] border border-white/[0.04] p-5 rounded-2xl">
+                    <div className="space-y-1 text-center">
+                      <span className="text-[8px] font-black text-neutral-500 uppercase tracking-widest block">Bass range</span>
+                      <input type="range" min="0" max="10" value={eqBass} onChange={e => setEqBass(Number(e.target.value))} className="w-full h-1 bg-neutral-850 accent-[#00F5FF]" />
+                      <span className="font-mono text-xs text-[#00F5FF] font-bold">+{eqBass - 5} dB</span>
+                    </div>
+                    <div className="space-y-1 text-center">
+                      <span className="text-[8px] font-black text-neutral-500 uppercase tracking-widest block">Mid vocals</span>
+                      <input type="range" min="0" max="10" value={eqMid} onChange={e => setEqMid(Number(e.target.value))} className="w-full h-1 bg-neutral-850 accent-[#00F5FF]" />
+                      <span className="font-mono text-xs text-[#00F5FF] font-bold">+{eqMid - 5} dB</span>
+                    </div>
+                    <div className="space-y-1 text-center">
+                      <span className="text-[8px] font-black text-neutral-500 uppercase tracking-widest block">Treble scale</span>
+                      <input type="range" min="0" max="10" value={eqTreble} onChange={e => setEqTreble(Number(e.target.value))} className="w-full h-1 bg-neutral-850 accent-[#00F5FF]" />
+                      <span className="font-mono text-xs text-[#00F5FF] font-bold">+{eqTreble - 5} dB</span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           )}
 
-          {/* APPEARANCE PRESET */}
+          {/* APPEARANCE SETTINGS */}
           {activeSection === 'appearance' && (
             <div className="space-y-6">
               <div className="border-b border-white/[0.04] pb-2">
-                <h3 className="text-sm font-black uppercase tracking-widest text-[#2DD4FF]">Appearance Preset</h3>
-                <p className="text-xs text-neutral-500 font-semibold mt-0.5">Toggle interface design palettes & compact layouts</p>
+                <h3 className="text-xs font-black uppercase tracking-widest text-[#00F5FF]">Appearance</h3>
+                <p className="text-xs text-neutral-500 font-semibold mt-0.5">Customize workspace layouts & themes</p>
               </div>
 
               <div className="space-y-5">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest block">Choose Preset Palette</label>
-                  <div className="grid grid-cols-2 gap-4">
+                  <label className="text-[9px] font-black text-neutral-450 uppercase tracking-wider block">Theme Preset</label>
+                  <div className="grid grid-cols-2 gap-3.5">
                     {[
-                      { id: 'neoglow', label: 'Neo Glow', desc: 'Neon cyan & purple outlines', colors: 'from-[#2DD4FF] to-[#9B5CFF]' },
-                      { id: 'dark', label: 'Dark Carbon', desc: 'Slate grey & chrome accents', colors: 'from-neutral-700 to-neutral-400' },
-                      { id: 'oled', label: 'OLED Black', desc: 'Pure black backdrop (#000)', colors: 'from-neutral-900 to-black' },
-                      { id: 'cyberpunk', label: 'Cyberpunk', desc: 'Neon yellow & hot pink highlights', colors: 'from-[#FF2D55] to-[#F59E0B]' }
-                    ].map(t => (
-                      <div
-                        key={t.id}
-                        onClick={() => setTheme(t.id as any)}
-                        className={`rounded-2xl p-4.5 border cursor-pointer text-left transition-all duration-300 relative group overflow-hidden ${
-                          theme === t.id 
-                            ? 'border-[#2DD4FF]/40 bg-[#2DD4FF]/5 shadow-lg' 
-                            : 'bg-neutral-950/60 border-white/[0.04] hover:border-white/[0.08]'
-                        }`}
-                      >
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-xs font-black text-white uppercase tracking-wider block">{t.label}</span>
-                          <div className={`h-3 w-8 rounded bg-gradient-to-r ${t.colors} border border-white/[0.08]`} />
+                      { id: 'neoglow', label: 'NeoGlow Ambient', desc: 'Vibrant cyan gradients' },
+                      { id: 'dark', label: 'Deep Charcoal', desc: 'Sleek dark aesthetics' },
+                      { id: 'oled', label: 'OLED Obsidian', desc: 'Pure black panels (#050505)' },
+                      { id: 'cyberpunk', label: 'Cyberpunk Neon', desc: 'Electric pink & violet vibes' }
+                    ].map(opt => {
+                      const isActive = theme === opt.id;
+                      return (
+                        <div
+                          key={opt.id}
+                          onClick={() => setTheme(opt.id as any)}
+                          className={`rounded-2xl border p-4 text-left cursor-pointer transition-all ${
+                            isActive
+                              ? 'border-[#00F5FF] bg-[#00F5FF]/5 text-[#00F5FF]'
+                              : 'border-white/[0.06] bg-neutral-900/40 text-neutral-450 hover:text-white'
+                          }`}
+                        >
+                          <h4 className="text-xs font-black uppercase tracking-wider">{opt.label}</h4>
+                          <p className="text-[9px] text-neutral-550 font-bold mt-0.5 leading-normal">{opt.desc}</p>
                         </div>
-                        <p className="text-[10px] text-neutral-450 font-semibold leading-relaxed">{t.desc}</p>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
 
-                {/* Compact Grid Toggle */}
                 <div className="flex items-center justify-between border-t border-white/[0.04] pt-4">
                   <div>
-                    <p className="text-xs font-black text-white uppercase tracking-wider">Compact Layout</p>
-                    <p className="text-xs text-neutral-400 font-semibold mt-0.5 leading-normal">Shrinks carousel sizes for high display density</p>
+                    <p className="text-xs font-black text-white uppercase tracking-wider">Compact Side Dock</p>
+                    <p className="text-xs text-neutral-450 font-semibold mt-0.5 leading-normal">Shrinks the left sidebar workspace to icon widths</p>
                   </div>
                   <button
                     type="button"
                     onClick={() => setCompactMode(!compactMode)}
                     className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                      compactMode ? 'bg-[#2DD4FF]' : 'bg-neutral-800'
+                      compactMode ? 'bg-[#00F5FF]' : 'bg-neutral-800'
                     }`}
                   >
                     <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-black shadow ring-0 transition duration-200 ease-in-out ${
@@ -499,27 +514,39 @@ export default function SettingsPage() {
             </div>
           )}
 
-          {/* DOWNLOADS SECTION */}
+          {/* DOWNLOADS CACHE */}
           {activeSection === 'downloads' && (
             <div className="space-y-6">
               <div className="border-b border-white/[0.04] pb-2">
-                <h3 className="text-sm font-black uppercase tracking-widest text-[#2DD4FF]">Downloads Cache</h3>
-                <p className="text-xs text-neutral-500 font-semibold mt-0.5">Manage local IndexedDB audio storage limits</p>
+                <h3 className="text-xs font-black uppercase tracking-widest text-[#00F5FF]">Downloads Cache</h3>
+                <p className="text-xs text-neutral-500 font-semibold mt-0.5">Monitor storage files and caches</p>
               </div>
 
               <div className="space-y-4">
-                <div className="rounded-2xl border border-white/[0.04] bg-[#0E0E11]/85 p-5 flex justify-between items-center shadow-lg">
-                  <div className="space-y-1">
-                    <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest block">Offline Cache Space</span>
-                    <p className="text-2xl font-black text-white">12.4 MB Logged</p>
+                <div className="bg-white/[0.01] border border-white/[0.04] rounded-2xl p-5 space-y-4">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-neutral-550 font-black uppercase tracking-wider">Local offline cache size</span>
+                    <span className="font-mono text-[#00F5FF] font-black">24.5 MB</span>
                   </div>
+                  <div className="h-1.5 bg-neutral-850 rounded-full overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-[#00F5FF] to-[#9B5CFF] rounded-full" style={{ width: '12%' }} />
+                  </div>
+                  <p className="text-[10px] text-neutral-450 font-bold leading-normal">
+                    This includes tracks, album covers, and synchronized lyrics stored in browser IndexedDB.
+                  </p>
+                </div>
+
+                <div className="flex justify-between items-center pt-2">
                   <button
                     type="button"
-                    onClick={() => { alert('Browser cache cleared successfully!'); }}
-                    className="rounded-xl border border-red-500/20 hover:border-red-500/40 hover:bg-red-500/5 px-5 py-3 text-xs font-black uppercase tracking-wider text-red-400 transition-colors"
+                    onClick={() => {
+                      setMessage({ type: 'success', text: 'Browser IndexedDB cache cleared!' });
+                    }}
+                    className="rounded-xl border border-red-500/20 bg-red-500/5 hover:bg-red-500/10 px-5 py-3 text-xs font-black uppercase tracking-wider text-red-400 transition-colors"
                   >
-                    Clear cache
+                    Clear Audio Cache
                   </button>
+                  <span className="text-[9px] font-mono text-neutral-500 font-bold uppercase">Version 5.0 (Beta)</span>
                 </div>
               </div>
             </div>

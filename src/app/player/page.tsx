@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { usePlaybackStore } from '@/store/playback-store';
+import { useQueryClient } from '@tanstack/react-query';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -74,6 +75,7 @@ const genericLyrics: LyricLine[] = [
 
 export default function PlayerPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const {
     isPlaying,
     currentTrack,
@@ -148,142 +150,141 @@ export default function PlayerPage() {
       try {
         const titleQuery = currentTrack.title;
         const artistQuery = currentTrack.artist?.name || 'Unknown';
-        const duration = currentTrack.durationMs || 0;
+        const searchUrl = `https://lrclib.net/api/search?q=${encodeURIComponent(`${titleQuery} ${artistQuery}`)}`;
+        
+        const res = await fetch(searchUrl);
+        if (!res.ok) throw new Error('Search failed');
+        const searchResults = await res.json();
+        
+        if (searchResults && searchResults.length > 0) {
+          const bestMatch = searchResults[0];
+          if (bestMatch.syncedLyrics) {
+            // Parse synced lyrics string (e.g. "[00:12.34] Lyric text")
+            const lines = bestMatch.syncedLyrics.split('\n').map((line: string) => {
+              const match = line.match(/^\[(\d+):(\d+)\.(\d+)\](.*)/);
+              if (match) {
+                const min = parseInt(match[1], 10);
+                const sec = parseInt(match[2], 10);
+                const time = min * 60 + sec;
+                return { time, text: match[4].trim() };
+              }
+              return null;
+            }).filter((l: any): l is LyricLine => l !== null);
 
-        const res = await fetch(
-          `/api/lyrics?title=${encodeURIComponent(titleQuery)}&artist=${encodeURIComponent(
-            artistQuery
-          )}&durationMs=${duration}`
-        );
-        if (res.ok) {
-          const data = await res.json();
-          if (data.lyrics && data.lyrics.length > 0) {
-            setDynamicLyrics(data.lyrics);
-            return;
+            if (lines.length > 0) {
+              setDynamicLyrics(lines);
+              setLyricsLoading(false);
+              return;
+            }
           }
         }
       } catch (err) {
-        console.warn('Failed to fetch dynamic lyrics:', err);
-      } finally {
-        setLyricsLoading(false);
+        console.warn('LRCLIB fetch failed, falling back to local dataset:', err);
       }
+
+      // Local mock fallback if API fails
+      setTimeout(() => {
+        const key = currentTrack.title.toLowerCase();
+        if (key.includes('kesariya')) {
+          setDynamicLyrics(sampleLyrics.kesariya);
+        } else if (key.includes('flowers')) {
+          setDynamicLyrics(sampleLyrics.flowers);
+        } else {
+          setDynamicLyrics(genericLyrics);
+        }
+        setLyricsLoading(false);
+      }, 500);
     };
 
     fetchLyrics();
   }, [currentTrack?.id]);
 
-  // Audio Reactive Visualizer simulation
+  // Audio visualizer canvas effect
   useEffect(() => {
-    if (!isPlaying || !canvasRef.current) return;
+    if (!canvasRef.current) return;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    let animationFrameId: number;
-    let bars: number[] = Array.from({ length: 40 }).map(() => Math.random() * 20);
+    let animId: number;
+    let phase = 0;
 
     const render = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      
-      const width = canvas.width;
-      const height = canvas.height;
-      const barWidth = width / bars.length;
-      
-      // Dynamic color theme
-      const gradient = ctx.createLinearGradient(0, height, 0, 0);
-      gradient.addColorStop(0, 'rgba(123, 97, 255, 0.2)'); // Purple
-      gradient.addColorStop(0.5, 'rgba(0, 245, 255, 0.8)'); // Cyan
-      gradient.addColorStop(1, 'rgba(123, 97, 255, 0.4)');
+      const w = canvas.width;
+      const h = canvas.height;
 
-      ctx.fillStyle = gradient;
-
-      bars.forEach((barHeight, idx) => {
-        // Shift heights slightly to simulate audio reactivity
-        const change = (Math.random() - 0.5) * 6;
-        bars[idx] = Math.max(2, Math.min(height * 0.9, barHeight + change));
-
-        const x = idx * barWidth;
-        const y = height - bars[idx];
-        
-        // Draw rounded visualizer bar
+      // Draw futuristic visualizer waves
+      ctx.lineWidth = 1.5;
+      const count = 4;
+      for (let i = 0; i < count; i++) {
         ctx.beginPath();
-        ctx.roundRect(x + 2, y, barWidth - 4, bars[idx], 4);
-        ctx.fill();
-      });
+        const grad = ctx.createLinearGradient(0, 0, w, 0);
+        grad.addColorStop(0, 'rgba(0, 245, 255, 0)');
+        grad.addColorStop(0.5, i % 2 === 0 ? 'rgba(0, 245, 255, 0.4)' : 'rgba(123, 97, 255, 0.4)');
+        grad.addColorStop(1, 'rgba(0, 245, 255, 0)');
+        ctx.strokeStyle = grad;
 
-      animationFrameId = requestAnimationFrame(render);
+        const amplitude = isPlaying ? (12 - i * 2) : 2;
+        const frequency = 0.015 + i * 0.005;
+
+        for (let x = 0; x < w; x++) {
+          const y = h / 2 + Math.sin(phase + x * frequency) * amplitude * Math.sin(x * Math.PI / w);
+          if (x === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+
+      phase += isPlaying ? 0.08 : 0.005;
+      animId = requestAnimationFrame(render);
     };
 
     render();
+    return () => cancelAnimationFrame(animId);
+  }, [isPlaying]);
 
-    return () => {
-      cancelAnimationFrame(animationFrameId);
-    };
-  }, [isPlaying, activeTab]);
-
-  // Get active lyrics
-  const getLyrics = (): LyricLine[] => {
-    if (!currentTrack) return [];
-    const trackIdLower = currentTrack.id.toLowerCase();
-    for (const key in sampleLyrics) {
-      if (trackIdLower.includes(key)) return sampleLyrics[key];
-    }
-    return genericLyrics;
-  };
-
-  const activeLyrics = dynamicLyrics || getLyrics();
-
-  // Find active lyric index based on track progress
+  // Scroll lyrics container as time progresses
   const getActiveLyricIndex = () => {
-    let index = -1;
-    for (let i = 0; i < activeLyrics.length; i++) {
-      if (progress >= activeLyrics[i].time) {
-        index = i;
+    if (!dynamicLyrics) return -1;
+    let activeIdx = -1;
+    for (let i = 0; i < dynamicLyrics.length; i++) {
+      if (progress >= dynamicLyrics[i].time) {
+        activeIdx = i;
+      } else {
+        break;
       }
     }
-    return index;
+    return activeIdx;
   };
 
   const activeLyricIdx = getActiveLyricIndex();
 
-  // Auto-scroll active lyric line to center of lyrics container
   useEffect(() => {
-    if (activeTab === 'lyrics' && lyricsContainerRef.current && activeLyricIdx !== -1) {
-      const container = lyricsContainerRef.current;
-      const activeLineElement = container.children[activeLyricIdx] as HTMLElement;
-      if (activeLineElement) {
-        const topPos = activeLineElement.offsetTop - (container.clientHeight / 2) + (activeLineElement.clientHeight / 2);
-        container.scrollTo({ top: topPos, behavior: 'smooth' });
+    if (activeLyricIdx !== -1 && lyricsContainerRef.current) {
+      const activeEl = lyricsContainerRef.current.children[activeLyricIdx] as HTMLElement;
+      if (activeEl) {
+        lyricsContainerRef.current.scrollTo({
+          top: activeEl.offsetTop - 120,
+          behavior: 'smooth',
+        });
       }
     }
-  }, [activeLyricIdx, activeTab]);
+  }, [activeLyricIdx]);
 
   if (!currentTrack) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-[#050505] text-white font-sans">
-        <Disc className="h-16 w-16 animate-spin text-neutral-850" />
-        <p className="mt-4 text-neutral-400 font-semibold">No track selected</p>
-        <button
-          onClick={() => router.push('/home')}
-          className="mt-6 rounded-full bg-gradient-to-r from-cyan-400 to-purple-500 px-6 py-2.5 text-xs font-black text-black active:scale-95 transition-transform"
-        >
-          Go Home
-        </button>
+      <div className="flex h-screen flex-col items-center justify-center text-white bg-[#050505] select-none">
+        <Disc className="h-10 w-10 animate-spin text-cyan-400" />
+        <p className="mt-4 text-xs font-black tracking-widest text-neutral-500 uppercase">Searching for active stream...</p>
       </div>
     );
   }
 
-  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = parseFloat(e.target.value);
-    setProgress(val);
-    window.dispatchEvent(new CustomEvent('seek-track', { detail: { time: val } }));
-  };
-
   const handleLikeToggle = async () => {
-    if (likeLoading) return;
     setLikeLoading(true);
+    const method = isLiked ? 'DELETE' : 'POST';
     try {
-      const method = isLiked ? 'DELETE' : 'POST';
       const res = await fetch('/api/liked', {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -291,35 +292,43 @@ export default function PlayerPage() {
       });
       if (res.ok) {
         setIsLiked(!isLiked);
+        queryClient.invalidateQueries({ queryKey: ['liked-songs'] });
       }
     } catch (err) {
-      console.error('Error toggling like:', err);
+      console.error('Failed to toggle like:', err);
     } finally {
       setLikeLoading(false);
     }
   };
 
+  const toggleEffect = (key: string) => {
+    setAudioEffects(prev => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+  };
+
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const time = parseFloat(e.target.value);
+    setProgress(time);
+    window.dispatchEvent(new CustomEvent('seek-track', { detail: { time } }));
+  };
+
   const formatTime = (time: number) => {
-    if (isNaN(time) || time < 0) return '0:00';
+    if (isNaN(time)) return '0:00';
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  const toggleEffect = (effectKey: string) => {
-    setAudioEffects(prev => ({
-      ...prev,
-      [effectKey]: !prev[effectKey]
-    }));
-  };
-
-  const thumbnail = currentTrack.coverUrl || (currentTrack as any).thumbnail;
+  const thumbnail = currentTrack.coverUrl;
   const artistName = currentTrack.artist?.name || 'Unknown Artist';
+  const activeLyrics = dynamicLyrics || [];
 
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-between px-6 py-6 text-white overflow-hidden font-sans select-none bg-[#050505]">
       
-      {/* 1. DYNAMIC BACKGROUND:SOFT BLURRED ALBUM ART GLOW */}
+      {/* 1. DYNAMIC BACKGROUND: SOFT BLURRED ALBUM ART GLOW */}
       <AnimatePresence mode="wait">
         {thumbnail && (
           <motion.div
@@ -368,26 +377,45 @@ export default function PlayerPage() {
         {/* MIDDLE SECTION: ALBUM VIEW OR TABS PANEL */}
         <div className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-8 items-center my-4">
           
-          {/* LEFT: COVER ART & AUDIO REACTIVE VISUALIZER (5 Columns) */}
+          {/* LEFT: 3D SPINNING VINYL RECORD & AUDIO REACTIVE VISUALIZER (5 Columns) */}
           <div className="md:col-span-5 flex flex-col justify-center items-center">
             
-            <div className="relative aspect-square w-full max-w-[340px] rounded-2xl overflow-hidden shadow-2xl border border-white/[0.06] bg-neutral-900 group">
-              {thumbnail ? (
-                <Image
-                  src={thumbnail}
-                  alt={currentTrack?.title || "Album Cover"}
-                  fill
-                  sizes="340px"
-                  priority
-                  className="object-cover transition-transform group-hover:scale-105 duration-1000"
-                />
-              ) : (
-                <Music className="h-16 w-16 text-neutral-600" />
-              )}
+            {/* Spinning Vinyl Cover Art */}
+            <div className="relative aspect-square w-full max-w-[280px] xs:max-w-[320px] rounded-full overflow-hidden shadow-[0_15px_40px_rgba(0,0,0,0.85)] border border-white/[0.08] bg-black group flex items-center justify-center">
+              
+              {/* Spinning Vinyl Record Body */}
+              <div className={`relative w-full h-full rounded-full transition-transform duration-1000 flex items-center justify-center bg-neutral-900 border-[10px] border-neutral-950 ${isPlaying ? 'animate-vinyl' : 'animate-vinyl [animation-play-state:paused]'}`}>
+                {/* Vinyl grooved circles */}
+                <div className="absolute inset-2 border border-neutral-800/40 rounded-full" />
+                <div className="absolute inset-6 border border-neutral-800/35 rounded-full" />
+                <div className="absolute inset-10 border border-neutral-800/30 rounded-full" />
+                <div className="absolute inset-14 border border-neutral-800/25 rounded-full" />
+                <div className="absolute inset-20 border border-neutral-800/20 rounded-full" />
+
+                {/* Center Core Label */}
+                <div className="relative w-[110px] h-[110px] rounded-full overflow-hidden border-4 border-neutral-950 bg-black flex-shrink-0 flex items-center justify-center">
+                  {thumbnail ? (
+                    <Image
+                      src={thumbnail}
+                      alt={currentTrack?.title || "Album Cover"}
+                      fill
+                      sizes="110px"
+                      priority
+                      className="object-cover"
+                    />
+                  ) : (
+                    <Music className="h-10 w-10 text-neutral-600" />
+                  )}
+                  {/* Small Center Spindle Hole */}
+                  <div className="absolute h-5.5 w-5.5 rounded-full bg-[#050505] border-2 border-neutral-950 shadow-inner flex items-center justify-center z-10">
+                    <div className="h-1.5 w-1.5 rounded-full bg-white/[0.1]" />
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* AI Reactive Visualizer Canvas */}
-            <div className="w-full max-w-[340px] mt-6 h-12 relative">
+            <div className="w-full max-w-[340px] mt-8 h-12 relative">
               <canvas ref={canvasRef} className="w-full h-full" width={340} height={48} />
               {!isPlaying && (
                 <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold tracking-wider text-neutral-600 uppercase">
@@ -416,7 +444,7 @@ export default function PlayerPage() {
                     }`}
                   >
                     {activeTab === t.id && (
-                      <motion.div layoutId="player-tab-active" className="absolute bottom-0 left-0 right-0 h-[2px] bg-cyan-400" />
+                      <motion.div layoutId="player-tab-active" className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#00F5FF]" />
                     )}
                     <t.icon className="h-3.5 w-3.5" />
                     <span>{t.label}</span>
@@ -431,17 +459,17 @@ export default function PlayerPage() {
                 {activeTab === 'cover' && (
                   <div className="flex flex-col h-full justify-between py-2 text-left">
                     <div>
-                      <span className="text-[9px] font-black uppercase tracking-wider text-cyan-400">Track source: {currentTrack.sourceType}</span>
-                      <h2 className="text-3xl font-black text-white leading-tight mt-1">{currentTrack.title}</h2>
-                      <p className="text-sm text-neutral-450 font-semibold mt-1">{artistName}</p>
+                      <span className="text-[9px] font-black uppercase tracking-wider text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-full border border-cyan-500/20">Source: {currentTrack.sourceType}</span>
+                      <h2 className="text-2xl sm:text-3xl font-black text-white leading-tight mt-3">{currentTrack.title}</h2>
+                      <p className="text-xs sm:text-sm text-neutral-400 font-bold uppercase tracking-wider mt-1">{artistName}</p>
                     </div>
 
-                    <div className="rounded-2xl bg-white/[0.02] border border-white/[0.04] p-4 text-left">
-                      <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500 flex items-center gap-1.5">
-                        <Sparkles className="h-3.5 w-3.5 text-cyan-400" />
+                    <div className="rounded-2xl bg-white/[0.02] border border-white/[0.04] p-4 text-left nothing-dots">
+                      <span className="text-[9px] font-black uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
+                        <Sparkles className="h-3.5 w-3.5 text-cyan-400 animate-pulse" />
                         <span>AI DJ Insights</span>
                       </span>
-                      <p className="text-xs text-neutral-350 leading-relaxed mt-1.5 font-semibold">
+                      <p className="text-[11px] text-neutral-305 leading-relaxed mt-1.5 font-bold">
                         This track matches your late-night coding flow. Based on your favorite artists, this track is recommended for rainy weather focus.
                       </p>
                     </div>
@@ -473,8 +501,8 @@ export default function PlayerPage() {
                             key={idx}
                             className={`text-sm font-black transition-all duration-300 py-1.5 cursor-pointer origin-left ${
                               isActive 
-                                ? 'text-cyan-400 scale-105 drop-shadow-[0_0_10px_rgba(0,245,255,0.4)]' 
-                                : 'text-neutral-400 hover:text-white'
+                                ? 'text-cyan-450 scale-105 drop-shadow-[0_0_10px_rgba(0,245,255,0.4)]' 
+                                : 'text-neutral-500 hover:text-white'
                             }`}
                             onClick={() => {
                               setProgress(line.time);
@@ -495,10 +523,10 @@ export default function PlayerPage() {
                     {[
                       { key: 'spatialAudio', label: 'Spatial Audio 3D', desc: 'Immersive sound stage' },
                       { key: 'bassBoost', label: 'Bass Boost', desc: 'Extra low-end thud' },
-                      { key: 'vocalBoost', label: 'Vocal Enhancer', desc: 'Crispier vocals' },
+                      { key: 'vocalBoost', label: 'Vocal Enhancer', desc: 'Crisp vocals' },
                       { key: 'concertHall', label: 'Concert Hall', desc: 'Large space reverb' },
                       { key: 'nightMode', label: 'Late Night EQ', desc: 'Compress dynamics' },
-                      { key: 'neoSurround', label: 'Neo Surround', desc: 'Ultimate binaural width' }
+                      { key: 'neoSurround', label: 'Neo Surround', desc: 'Binaural width' }
                     ].map(fx => {
                       const isActive = audioEffects[fx.key];
                       return (
@@ -511,8 +539,8 @@ export default function PlayerPage() {
                               : 'border-white/[0.05] bg-white/[0.01] hover:border-white/[0.1] text-neutral-400 hover:text-white'
                           }`}
                         >
-                          <h4 className="text-xs font-black">{fx.label}</h4>
-                          <p className="text-[10px] text-neutral-500 font-semibold mt-0.5">{fx.desc}</p>
+                          <h4 className="text-[11px] font-black uppercase tracking-wider">{fx.label}</h4>
+                          <p className="text-[9px] text-neutral-500 font-bold mt-0.5">{fx.desc}</p>
                         </div>
                       );
                     })}
@@ -529,7 +557,7 @@ export default function PlayerPage() {
           
           {/* PROGRESS SLIDER */}
           <div className="space-y-1.5">
-            <div className="relative group">
+            <div className="relative group flex items-center">
               <input
                 type="range"
                 min={0}
@@ -584,7 +612,7 @@ export default function PlayerPage() {
                 else if (repeatMode === 'all') setRepeatMode('one');
                 else setRepeatMode('off');
               }}
-              className={`relative p-2 transition-colors ${repeatMode !== 'off' ? 'text-cyan-400' : 'text-neutral-450 hover:text-white'}`}
+              className={`relative p-2 transition-colors ${repeatMode !== 'off' ? 'text-cyan-400' : 'text-neutral-455 hover:text-white'}`}
             >
               <Repeat className="h-5 w-5" />
               {repeatMode === 'one' && (
@@ -603,10 +631,10 @@ export default function PlayerPage() {
               <button
                 onClick={handleLikeToggle}
                 disabled={likeLoading}
-                className={`flex items-center gap-2 rounded-full px-5 py-2.5 text-xs font-bold transition-all border ${
+                className={`flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs font-black uppercase tracking-wider transition-all border ${
                   isLiked
                     ? 'bg-pink-500/10 border-pink-500/25 text-pink-400'
-                    : 'border-white/[0.05] bg-white/[0.02] text-neutral-400 hover:text-white'
+                    : 'border-white/[0.05] bg-white/[0.02] text-neutral-450 hover:text-white'
                 }`}
               >
                 <Heart className={`h-4 w-4 ${isLiked ? 'fill-pink-400 stroke-pink-400' : ''}`} />
@@ -641,10 +669,10 @@ export default function PlayerPage() {
                 <button
                   key={rate}
                   onClick={() => setPlaybackRate(rate)}
-                  className={`rounded-full px-2.5 py-1 text-[10px] font-bold border transition-colors ${
+                  className={`rounded-xl px-3 py-1.5 text-[9px] font-black uppercase border transition-colors ${
                     playbackRate === rate
                       ? 'bg-cyan-400 border-cyan-400 text-black font-black'
-                      : 'border-white/[0.06] hover:bg-white/[0.04] text-neutral-400 hover:text-white'
+                      : 'border-white/[0.06] hover:bg-white/[0.04] text-neutral-450 hover:text-white'
                   }`}
                 >
                   {rate}x
@@ -677,12 +705,12 @@ export default function PlayerPage() {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 26, stiffness: 220 }}
-              className="fixed top-0 right-0 bottom-0 z-50 w-full max-w-sm border-l border-white/[0.08] bg-[#111111]/90 backdrop-blur-2xl p-6 shadow-2xl flex flex-col justify-between text-left"
+              className="fixed top-0 right-0 bottom-0 z-50 w-full max-w-sm border-l border-white/[0.08] bg-[#0E111A]/95 backdrop-blur-2xl p-6 shadow-2xl flex flex-col justify-between text-left"
             >
               <div className="flex-1 flex flex-col overflow-hidden">
                 <div className="flex items-center justify-between border-b border-white/[0.05] pb-4 mb-4">
-                  <h3 className="text-base font-black">Upcoming Queue</h3>
-                  <span className="text-xs text-neutral-500 font-mono">{queue.length} Songs</span>
+                  <h3 className="text-base font-black uppercase tracking-wider">Upcoming Queue</h3>
+                  <span className="text-[10px] text-neutral-500 font-mono font-bold">{queue.length} Songs</span>
                 </div>
 
                 <div className="flex-1 overflow-y-auto space-y-2 pr-1 scrollbar-hide">
@@ -705,24 +733,24 @@ export default function PlayerPage() {
                           <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-lg">
                             {track.coverUrl ? (
                               <Image
-                                src={track.coverUrl}
-                                alt={track.title}
-                                fill
-                                sizes="40px"
-                                className="object-cover"
-                              />
+                                  src={track.coverUrl}
+                                  alt={track.title}
+                                  fill
+                                  sizes="40px"
+                                  className="object-cover"
+                                />
                             ) : (
                               <div className="absolute inset-0 flex items-center justify-center bg-neutral-800">
                                 <Music className="h-4.5 w-4.5 text-neutral-600" />
                               </div>
                             )}
                           </div>
-                          <div className="truncate">
-                            <p className="truncate text-xs font-bold leading-normal">{track.title}</p>
-                            <p className="truncate text-[9px] text-neutral-500 font-semibold leading-normal">{track.artist?.name}</p>
+                          <div className="truncate text-left">
+                            <p className="truncate text-xs font-black uppercase tracking-wider text-white leading-normal">{track.title}</p>
+                            <p className="truncate text-[9px] text-neutral-500 font-bold uppercase tracking-wider leading-normal mt-0.5">{track.artist?.name}</p>
                           </div>
                         </div>
-                        {isActive && <span className="text-[8px] font-black uppercase tracking-wider animate-pulse">Playing</span>}
+                        {isActive && <span className="text-[8px] font-black uppercase tracking-wider animate-pulse text-cyan-400">Playing</span>}
                       </div>
                     );
                   })}
@@ -732,7 +760,7 @@ export default function PlayerPage() {
               <div className="border-t border-white/[0.05] pt-4 mt-4">
                 <button
                   onClick={() => setShowQueue(false)}
-                  className="w-full rounded-full border border-white/[0.1] hover:border-white/[0.2] py-2.5 text-xs font-bold transition-all text-neutral-300 hover:text-white text-center"
+                  className="w-full rounded-xl border border-white/[0.1] hover:border-white/[0.2] py-3 text-xs font-black uppercase transition-all text-neutral-300 hover:text-white text-center"
                 >
                   Close Drawer
                 </button>

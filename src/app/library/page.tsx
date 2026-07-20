@@ -347,7 +347,6 @@ export default function LibraryPage() {
     }
   };
 
-  // Drag and Drop playlist addition
   const handleDragStart = (e: React.DragEvent, track: Track) => {
     e.dataTransfer.setData('text/plain', JSON.stringify(track));
   };
@@ -400,28 +399,28 @@ export default function LibraryPage() {
   };
 
   return (
-    <div className="space-y-8 text-white pb-20 font-sans text-left select-none w-full relative">
+    <div className="space-y-8 text-white pb-36 sm:pb-20 font-sans text-left select-none w-full relative">
       
       {/* 1. LIBRARY PAGE HEADER */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/[0.04] pb-6">
         <div className="space-y-1">
-          <p className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.25em] text-[#2DD4FF] bg-[#2DD4FF]/10 px-3.5 py-1.5 rounded-full border border-[#2DD4FF]/20">
+          <p className="inline-flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.25em] text-[#00F5FF] bg-[#00F5FF]/10 px-3.5 py-1.5 rounded-full border border-[#00F5FF]/20">
             <Layers className="h-3.5 w-3.5" />
             <span>NEOTUNES LOCKER</span>
           </p>
-          <h1 className="text-4xl font-black tracking-tight text-white uppercase">Your Universe Locker</h1>
+          <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white uppercase">Your Universe Locker</h1>
         </div>
 
         <div className="flex items-center gap-3">
-          <label className="flex items-center gap-2 cursor-pointer rounded-xl bg-neutral-900/60 border border-white/[0.06] hover:border-[#2DD4FF]/40 px-5 py-3 text-xs font-black uppercase tracking-wider text-neutral-350 hover:text-white transition-all">
-            <UploadCloud className="h-4.5 w-4.5" />
+          <label className="flex items-center gap-2 cursor-pointer rounded-xl bg-neutral-900/60 border border-white/[0.06] hover:border-[#00F5FF]/40 px-5 py-3 text-xs font-black uppercase tracking-wider text-neutral-350 hover:text-white transition-all active:scale-95">
+            <UploadCloud className="h-4.5 w-4.5 text-[#00F5FF]" />
             <span>Upload Audio</span>
             <input type="file" accept="audio/*" onChange={handleFileUpload} className="hidden" />
           </label>
 
           <button
             onClick={() => createPlaylistMutation.mutate()}
-            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#2DD4FF] to-[#9B5CFF] px-5 py-3 text-xs font-black uppercase tracking-wider text-black shadow-lg shadow-[#2DD4FF]/10"
+            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#00F5FF] to-[#9B5CFF] px-5 py-3 text-xs font-black uppercase tracking-wider text-black shadow-lg shadow-[#00F5FF]/10 active:scale-95 transition-all"
           >
             <Plus className="h-4.5 w-4.5 stroke-[3px]" />
             <span>New Playlist</span>
@@ -437,7 +436,7 @@ export default function LibraryPage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -15 }}
             className={`rounded-2xl p-4 text-xs font-bold border text-left ${
-              infoMessage.type === 'success' ? 'bg-[#2DD4FF]/10 text-[#2DD4FF] border-[#2DD4FF]/20' : 'bg-red-500/10 text-red-400 border-red-500/20'
+              infoMessage.type === 'success' ? 'bg-[#00F5FF]/10 text-[#00F5FF] border-[#00F5FF]/20' : 'bg-red-500/10 text-red-400 border-red-500/20'
             }`}
           >
             {infoMessage.text}
@@ -448,31 +447,48 @@ export default function LibraryPage() {
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 15 }}
-            className="rounded-2xl border border-[#2DD4FF]/30 bg-neutral-950/80 p-5 flex items-center justify-between gap-4"
+            className="rounded-2xl border border-[#00F5FF]/30 bg-neutral-950/80 p-5 flex items-center justify-between gap-4"
           >
             <div className="flex items-center gap-3">
-              <Loader2 className="h-5 w-5 animate-spin text-[#2DD4FF]" />
+              <Loader2 className="h-5 w-5 animate-spin text-[#00F5FF]" />
               <span className="text-xs font-bold text-neutral-300">Syncing references to Cloud Bucket...</span>
             </div>
             <div className="w-40 h-2 bg-neutral-800 rounded-full overflow-hidden">
-              <div className="h-full bg-[#2DD4FF] transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+              <div className="h-full bg-[#00F5FF] transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* 2. COLLECTION STATS BLOCK */}
-      <section className="grid grid-cols-2 md:grid-cols-4 gap-5">
+      {/* 2. COLLECTION STATS BLOCK WITH NOTHING OS STYLE CIRCULAR RING */}
+      <section className="grid grid-cols-1 md:grid-cols-4 gap-5">
+        {/* Storage circular ring */}
+        <div className="rounded-[22px] border border-white/[0.04] bg-[#0E0E11]/80 p-5 text-left flex items-center justify-between gap-4 shadow-lg md:col-span-2">
+          <div className="space-y-1">
+            <span className="text-[8px] font-black text-neutral-500 uppercase tracking-widest block">Active Locker space</span>
+            <p className="text-2xl font-black text-white">{(allUploads.length * 4.2).toFixed(1)} / 512 MB</p>
+            <p className="text-[9px] text-[#00F5FF] font-bold uppercase tracking-wider">Synced to IndexedDB & Supabase</p>
+          </div>
+          {/* Circular progress meter */}
+          <div className="relative h-14 w-14 flex-shrink-0">
+            <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+              <path className="text-neutral-800" strokeWidth="3" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+              <path className="text-[#00F5FF]" strokeDasharray={`${Math.min(100, (allUploads.length * 4.2 / 5.12))}, 100`} strokeWidth="3" strokeLinecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+            </svg>
+            <div className="absolute inset-0 flex items-center justify-center text-[9px] font-mono text-neutral-400 font-bold">
+              {Math.min(100, (allUploads.length * 4.2 / 5.12)).toFixed(0)}%
+            </div>
+          </div>
+        </div>
+
         {[
-          { label: "Locker Space Usage", value: `${(allUploads.length * 4.2).toFixed(1)} MB`, desc: "In your active cloud" },
-          { label: "Liked Tracks count", value: `${likedTracks.length} Songs`, desc: "Syncing with Spotify DNA" },
-          { label: "Offline Cache size", value: `${(localOfflineUploads.length * 5).toFixed(1)} MB`, desc: `${localOfflineUploads.length} files saved` },
-          { label: "Playlists Owned", value: `${playlists.length} Folders`, desc: "Interactive collections" }
+          { label: "Liked Tracks", value: `${likedTracks.length} Songs`, desc: "Interactive DNA Sync" },
+          { label: "Offline Files", value: `${localOfflineUploads.length} Cache`, desc: "Stored in IndexedDB" }
         ].map((stat, i) => (
-          <div key={i} className="rounded-[22px] border border-white/[0.04] bg-[#0E0E11]/80 p-5 text-left space-y-1 hover:border-[#2DD4FF]/25 transition-colors shadow-lg">
-            <span className="text-[10px] font-black text-neutral-500 uppercase tracking-widest block">{stat.label}</span>
-            <p className="text-3xl font-black text-white">{stat.value}</p>
-            <p className="text-[10px] text-neutral-400 font-semibold">{stat.desc}</p>
+          <div key={i} className="rounded-[22px] border border-white/[0.04] bg-[#0E0E11]/80 p-5 text-left space-y-1 hover:border-[#00F5FF]/25 transition-colors shadow-lg">
+            <span className="text-[8px] font-black text-neutral-500 uppercase tracking-widest block">{stat.label}</span>
+            <p className="text-2xl font-black text-white">{stat.value}</p>
+            <p className="text-[9px] text-neutral-400 font-bold uppercase tracking-wider">{stat.desc}</p>
           </div>
         ))}
       </section>
@@ -482,7 +498,7 @@ export default function LibraryPage() {
         
         {/* Left Panel: Category Folder Cards (4 Columns) */}
         <div className="lg:col-span-4 space-y-4">
-          <h3 className="text-xs font-black uppercase tracking-wider text-neutral-500 border-b border-white/[0.04] pb-2">Collections</h3>
+          <h3 className="text-[10px] font-black uppercase tracking-wider text-neutral-500 border-b border-white/[0.04] pb-2">Collections</h3>
           <div className="grid grid-cols-1 gap-2.5">
             {collections.map((col) => {
               const Icon = col.icon;
@@ -492,28 +508,28 @@ export default function LibraryPage() {
                 <div
                   key={col.id}
                   onClick={() => setActiveTab(col.id)}
-                  className={`flex items-center justify-between rounded-2xl p-4 border cursor-pointer transition-all duration-300 relative group overflow-hidden ${
+                  className={`flex items-center justify-between rounded-xl p-3.5 border cursor-pointer transition-all duration-300 relative group overflow-hidden ${
                     isActive 
-                      ? 'border-[#2DD4FF]/20 bg-gradient-to-r from-[#2DD4FF]/5 to-transparent' 
+                      ? 'border-[#00F5FF]/20 bg-gradient-to-r from-[#00F5FF]/5 to-transparent' 
                       : 'border-white/[0.04] bg-[#0E0E11]/80 hover:border-white/[0.08]'
                   }`}
                 >
-                  <div className="flex items-center space-x-3.5 min-w-0">
-                    <div className={`h-11 w-11 rounded-xl flex items-center justify-center border transition-all ${
+                  <div className="flex items-center space-x-3 min-w-0">
+                    <div className={`h-9 w-9 rounded-lg flex items-center justify-center border transition-all ${
                       isActive 
-                        ? 'bg-[#2DD4FF]/10 border-[#2DD4FF]/20 text-[#2DD4FF]' 
-                        : 'bg-neutral-900/60 border-white/[0.04] text-neutral-400 group-hover:text-white'
+                        ? 'bg-[#00F5FF]/10 border-[#00F5FF]/20 text-[#00F5FF]' 
+                        : 'bg-neutral-900/60 border-white/[0.04] text-neutral-450 group-hover:text-white'
                     }`}>
-                      <Icon className="h-5.5 w-5.5" />
+                      <Icon className="h-4.5 w-4.5" />
                     </div>
                     <div className="text-left">
-                      <span className="text-xs font-black text-white uppercase tracking-wider block">{col.label}</span>
-                      <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider mt-0.5">{col.count || 0} Elements</span>
+                      <span className="text-[10px] font-black text-white uppercase tracking-wider block">{col.label}</span>
+                      <span className="text-[9px] text-neutral-500 font-bold uppercase tracking-wider mt-0.5">{col.count || 0} Elements</span>
                     </div>
                   </div>
 
                   <span className="text-neutral-600 hover:text-white transition-colors">
-                    <ArrowRight className="h-4.5 w-4.5" />
+                    <ArrowRight className="h-4 w-4" />
                   </span>
                 </div>
               );
@@ -525,10 +541,10 @@ export default function LibraryPage() {
         <div className="lg:col-span-8 space-y-5">
           
           <div className="flex items-center justify-between border-b border-white/[0.04] pb-3">
-            <h3 className="text-xs font-black uppercase tracking-widest text-neutral-450">Active View: {activeTab.toUpperCase()}</h3>
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-neutral-450">Active View: {activeTab.toUpperCase()}</h3>
             <div className="flex bg-neutral-900 p-0.5 rounded-lg border border-white/[0.04]">
-              <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-md ${viewMode === 'grid' ? 'bg-[#2DD4FF] text-black shadow' : 'text-neutral-500 hover:text-white'}`} title="Grid layout"><LayoutGrid className="h-4 w-4" /></button>
-              <button onClick={() => setViewMode('list')} className={`p-1.5 rounded-md ${viewMode === 'list' ? 'bg-[#2DD4FF] text-black shadow' : 'text-neutral-500 hover:text-white'}`} title="List layout"><List className="h-4 w-4" /></button>
+              <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-md ${viewMode === 'grid' ? 'bg-[#00F5FF] text-black shadow' : 'text-neutral-500 hover:text-white'}`} title="Grid layout"><LayoutGrid className="h-3.5 w-3.5" /></button>
+              <button onClick={() => setViewMode('list')} className={`p-1.5 rounded-md ${viewMode === 'list' ? 'bg-[#00F5FF] text-black shadow' : 'text-neutral-500 hover:text-white'}`} title="List layout"><List className="h-3.5 w-3.5" /></button>
             </div>
           </div>
 
@@ -560,21 +576,21 @@ export default function LibraryPage() {
                             onDragLeave={() => setDragOverFolderId(null)}
                             onDrop={(e) => handleDrop(e, pl.id)}
                             onClick={() => router.push(`/playlists/${pl.id}`)}
-                            className={`group relative rounded-3xl p-6 border cursor-pointer transition-all duration-300 text-left flex flex-col justify-between min-h-[140px] shadow-lg ${
+                            className={`group relative rounded-2xl p-5 border cursor-pointer transition-all duration-300 text-left flex flex-col justify-between min-h-[140px] shadow-lg ${
                               isOver 
-                                ? 'border-[#2DD4FF] bg-[#2DD4FF]/10 scale-102 shadow-[0_0_20px_rgba(45,212,255,0.2)]'
-                                : 'border-white/[0.06] bg-[#0E0E11]/85 hover:border-[#2DD4FF]/30'
+                                ? 'border-[#00F5FF] bg-[#00F5FF]/10 scale-[1.02] shadow-[0_0_20px_rgba(0,245,255,0.2)]'
+                                : 'border-white/[0.06] bg-[#0E0E11]/85 hover:border-[#00F5FF]/30'
                             }`}
                           >
                             {/* Visual folder tab */}
                             <div className="absolute top-0 left-6 -translate-y-[6px] h-1.5 w-16 bg-[#0E0E11] border-t border-x border-white/[0.06] rounded-t-md" />
 
                             <div className="space-y-2">
-                              <h4 className="text-base font-black text-white group-hover:text-[#2DD4FF] transition-colors truncate">{pl.name}</h4>
+                              <h4 className="text-sm font-black text-white group-hover:text-[#00F5FF] transition-colors truncate uppercase tracking-wider">{pl.name}</h4>
                               <p className="text-xs text-neutral-400 font-semibold line-clamp-2 leading-relaxed">{pl.description || 'Custom playlist folder'}</p>
                             </div>
 
-                            <div className="flex justify-between items-center pt-4 border-t border-white/[0.04] text-[10px] text-neutral-550 font-black uppercase tracking-wider">
+                            <div className="flex justify-between items-center pt-4 border-t border-white/[0.04] text-[9px] text-neutral-550 font-black uppercase tracking-wider">
                               <span>Drag tracks here</span>
                               <span className="bg-neutral-900 px-2.5 py-1 rounded-xl border border-white/[0.06] text-white">Open Folder</span>
                             </div>
@@ -601,7 +617,7 @@ export default function LibraryPage() {
                       ))}
                     </div>
                   ) : (
-                    <div className="space-y-1">
+                    <div className="space-y-1.5">
                       {likedTracks.map((track: any, i: number) => (
                         <PremiumTrackCard key={track.id} track={track} onClick={() => handlePlayTrack(track, likedTracks)} variant="horizontal" index={i + 1} />
                       ))}
@@ -627,7 +643,7 @@ export default function LibraryPage() {
                       ))}
                     </div>
                   ) : (
-                    <div className="space-y-1">
+                    <div className="space-y-1.5">
                       {allUploads.map((track, i) => (
                         <div key={track.id} draggable onDragStart={(e) => handleDragStart(e, track)}>
                           <PremiumTrackCard track={track} onClick={() => handlePlayTrack(track, allUploads)} variant="horizontal" index={i + 1} />
@@ -653,7 +669,7 @@ export default function LibraryPage() {
                       ))}
                     </div>
                   ) : (
-                    <div className="space-y-1">
+                    <div className="space-y-1.5">
                       {historyTracks.map((track: any, i: number) => (
                         <PremiumTrackCard key={track.id} track={track} onClick={() => handlePlayTrack(track, historyTracks)} variant="horizontal" index={i + 1} />
                       ))}

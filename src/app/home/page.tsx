@@ -23,7 +23,10 @@ import {
   Calendar,
   Activity,
   Play,
-  Pause
+  Pause,
+  Flame,
+  Radio,
+  Music
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CampaignHeroBanner } from '@/components/campaign/CampaignComponents';
@@ -54,7 +57,6 @@ export default function HomePage() {
     const fetchProfileAndStats = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // Fetch Display Name
         const { data: profile } = await supabase
           .from('profiles')
           .select('display_name')
@@ -66,7 +68,6 @@ export default function HomePage() {
           });
         }
 
-        // Fetch User Stats
         try {
           const [likedRes, cloudRes, historyRes] = await Promise.all([
             supabase.from('liked_tracks').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
@@ -133,8 +134,6 @@ export default function HomePage() {
       setPlaying(!isPlaying);
     } else {
       playTrack(track, list);
-      
-      // Log track in listening history in database
       fetch('/api/history', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -143,7 +142,6 @@ export default function HomePage() {
     }
   };
 
-  // AI DJ Playlist Generator
   const handleGenerateAiPlaylist = () => {
     setIsGeneratingAi(true);
     setTimeout(() => {
@@ -183,7 +181,6 @@ export default function HomePage() {
     }, 2000);
   };
 
-  // Official resolved tracks using Deezer/iTunes metadata
   const arijitSongs: Track[] = [
     { id: '6iBjgI6c7Bnt78v38e4a9v', title: 'Kesariya (From "Brahmastra")', artist: { name: 'Pritam, Arijit Singh & Amitabh Bhattacharya', id: '4YRx37jL6VOmbfUnxwSy6g' }, album: { name: 'Kesariya - Single', coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music112/v4/9f/13/ca/9f13ca3b-e533-03e0-f19a-f0aaa774581d/196589311191.jpg/600x600bb.jpg' }, coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music112/v4/9f/13/ca/9f13ca3b-e533-03e0-f19a-f0aaa774581d/196589311191.jpg/600x600bb.jpg', durationMs: 268165, sourceType: 'youtube', isHQ: true },
     { id: '56MuuL29m1338x6j3n3R0e', title: 'Tum Hi Ho', artist: { name: 'Mithoon & Arijit Singh', id: '4YRx37jL6VOmbfUnxwSy6g' }, album: { name: 'Aashiqui 2 Soundtrack', coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/bb/23/ee/bb23eeed-0c35-4f1d-2b11-485622777ae4/8902894353007_cover.jpg/600x600bb.jpg' }, coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/bb/23/ee/bb23eeed-0c35-4f1d-2b11-485622777ae4/8902894353007_cover.jpg/600x600bb.jpg', durationMs: 261974, sourceType: 'youtube' },
@@ -245,69 +242,86 @@ export default function HomePage() {
   const getActiveMoodTracks = () => moodTracks[selectedMood] || moodTracks['Coding'];
 
   return (
-    <div className="space-y-8 text-white pb-12 font-sans select-none w-full">
+    <div className="space-y-8 text-white pb-36 sm:pb-12 font-sans select-none w-full relative">
       
+      {/* Dynamic ambient soft blur behind */}
+      <div className="pointer-events-none absolute -left-20 -top-20 h-72 w-72 rounded-full bg-cyan-500/10 blur-[100px] -z-10" />
+      <div className="pointer-events-none absolute right-10 top-40 h-80 w-80 rounded-full bg-purple-500/10 blur-[120px] -z-10" />
+
       {/* 1. GREETING HEADER & STUNNING HERO BANNER */}
       {campaignActive ? (
         <CampaignHeroBanner />
       ) : (
-        <div className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-cyan-500/15 via-purple-650/10 to-transparent border border-white/[0.08] px-8 py-12 text-left shadow-2xl">
-          <div className="absolute inset-0 bg-[#000]/10 backdrop-blur-[2px] -z-10" />
-          <div className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-cyan-500/10 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-24 right-48 h-80 w-80 rounded-full bg-purple-650/15 blur-3xl" />
-
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 relative z-10">
-            <div className="space-y-4">
-              <p className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.25em] text-cyan-400 bg-cyan-500/10 px-3.5 py-1.5 rounded-full border border-cyan-500/20">
-                <Sparkles className="h-3.5 w-3.5" />
-                <span>{getTimeOfDayLabel()} · NeoTunes Premium</span>
-              </p>
-              <h1 className="text-4xl sm:text-6xl font-black tracking-tight leading-none text-white max-w-2xl">
-                The Future of Music,<br />Tailored for You
+        <div className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-cyan-500/10 via-[#0A0D14]/90 to-transparent border border-white/[0.06] p-6 sm:p-8 text-left shadow-2xl nothing-dots">
+          
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
+            <div className="space-y-4 w-full lg:max-w-2xl">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider text-cyan-400 bg-cyan-500/10 px-3 py-1 rounded-full border border-cyan-500/20">
+                  <Sparkles className="h-3 w-3 animate-pulse" />
+                  <span>{getTimeOfDayLabel()} · NeoTunes Premium</span>
+                </span>
+                <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-purple-400 bg-purple-500/10 px-3 py-1 rounded-full border border-purple-500/20">
+                  <Flame className="h-3 w-3 text-rose-450 fill-rose-450 animate-bounce" />
+                  <span>5 Day Streak</span>
+                </span>
+              </div>
+              
+              <h1 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight text-white">
+                Good {getTimeOfDayLabel()},<br />
+                <span className="bg-gradient-to-r from-[#00F5FF] via-[#7B61FF] to-[#FF2D55] bg-clip-text text-transparent animate-shine bg-size-200">{displayName} 👋</span>
               </h1>
-              <p className="max-w-lg text-sm text-neutral-405 font-semibold leading-relaxed">
-                Unifying your local storage lockers, the completeness of YouTube, and Spotify Web metadata. Powered by Upstash Redis and Supabase.
+              
+              <p className="max-w-lg text-xs sm:text-sm text-neutral-400 font-semibold leading-relaxed">
+                Your AI-Powered Music Operating System is ready. Stream from the cloud, YouTube, or your locker.
               </p>
 
               {/* Quick Stats Grid */}
-              <div className="flex gap-6 text-left pt-2">
-                <div>
-                  <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider block">Liked Songs</span>
-                  <span className="text-lg font-black text-cyan-400">{stats.likedCount}</span>
+              <div className="grid grid-cols-3 gap-3 pt-2 max-w-sm">
+                <div className="bg-white/[0.02] border border-white/[0.04] p-3 rounded-xl">
+                  <span className="text-[8px] font-black text-neutral-500 uppercase tracking-wider block">Favorites</span>
+                  <span className="text-sm font-black text-cyan-400">{stats.likedCount}</span>
                 </div>
-                <div className="w-[1px] bg-white/[0.08]" />
-                <div>
-                  <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider block">Cloud Files</span>
-                  <span className="text-lg font-black text-purple-400">{stats.cloudCount}</span>
+                <div className="bg-white/[0.02] border border-white/[0.04] p-3 rounded-xl">
+                  <span className="text-[8px] font-black text-neutral-500 uppercase tracking-wider block">Locker Size</span>
+                  <span className="text-sm font-black text-purple-400">{(stats.cloudCount * 4.2).toFixed(1)}M</span>
                 </div>
-                <div className="w-[1px] bg-white/[0.08]" />
-                <div>
-                  <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider block">Total Plays</span>
-                  <span className="text-lg font-black text-white">{stats.historyCount}</span>
+                <div className="bg-white/[0.02] border border-white/[0.04] p-3 rounded-xl">
+                  <span className="text-[8px] font-black text-neutral-500 uppercase tracking-wider block">Total Loops</span>
+                  <span className="text-sm font-black text-white">{stats.historyCount}</span>
                 </div>
               </div>
             </div>
 
             {/* Quick Play Action Card */}
-            <div className="bg-[#101010]/70 backdrop-blur-md border border-white/[0.08] rounded-2xl p-5 lg:w-80 text-left space-y-4 flex-shrink-0 shadow-lg">
+            <div className="bg-[#0A0C14]/80 backdrop-blur-md border border-white/[0.08] rounded-2xl p-5 w-full lg:w-80 text-left space-y-4 flex-shrink-0 shadow-lg">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-cyan-400/15 flex items-center justify-center text-cyan-400">
-                  <Headphones className="h-5 w-5" />
+                <div className="h-10 w-10 rounded-full bg-cyan-400/10 flex items-center justify-center text-cyan-400 border border-cyan-500/20">
+                  <Headphones className="h-5 w-5 animate-pulse" />
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-neutral-400 uppercase">Personalized Mix</h4>
-                  <p className="text-sm font-black text-white">Saswata&apos;s Workspace Vibe</p>
+                  <h4 className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Today&apos;s Focus Goal</h4>
+                  <p className="text-xs font-black text-white">Coding Soundtrack V5</p>
                 </div>
               </div>
-              <p className="text-[11px] text-neutral-450 font-semibold leading-normal">
-                Based on your liked songs and listening history, launch a custom workspace session.
-              </p>
+              
+              {/* Target / Goal representation */}
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-[10px] font-mono text-neutral-400">
+                  <span>Daily Listening target</span>
+                  <span className="text-cyan-400 font-bold">87% Done</span>
+                </div>
+                <div className="h-1.5 w-full bg-neutral-800 rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-cyan-400 to-purple-500 rounded-full" style={{ width: '87%' }} />
+                </div>
+              </div>
+
               <button
                 onClick={() => handlePlayTrack(arijitSongs[0], arijitSongs)}
                 className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 to-purple-500 hover:from-cyan-350 hover:to-purple-450 py-3 text-xs font-black text-black shadow-lg shadow-cyan-500/10 active:scale-95 transition-all duration-200"
               >
                 <Play className="h-4 w-4 fill-black stroke-black translate-x-[0.5px]" />
-                <span>Listen Now</span>
+                <span>Launch Space Mix</span>
               </button>
             </div>
           </div>
@@ -315,18 +329,18 @@ export default function HomePage() {
       )}
 
       {/* 2. CATEGORY TAB SELECTOR BAR */}
-      <div className="flex items-center space-x-2 border-b border-white/[0.06] pb-1">
+      <div className="flex items-center space-x-2 border-b border-white/[0.06] pb-1 overflow-x-auto scrollbar-hide">
         {[
-          { id: 'home', label: 'Home Dashboard', icon: Grid },
-          { id: 'foryou', label: 'For You & Mixes', icon: Sparkles },
-          { id: 'explore', label: 'Explore & Concerts', icon: Compass }
+          { id: 'home', label: 'Space Feed', icon: Grid },
+          { id: 'foryou', label: 'AI DJ & Mixes', icon: Sparkles },
+          { id: 'explore', label: 'Explore & Live', icon: Compass }
         ].map((tab) => {
           const isActive = activeCategory === tab.id;
           return (
             <button
               key={tab.id}
               onClick={() => setActiveCategory(tab.id as any)}
-              className={`relative flex items-center space-x-2 px-6 py-3.5 text-xs font-black uppercase tracking-wider transition-colors ${
+              className={`relative flex items-center space-x-2 px-5 py-3.5 text-xs font-black uppercase tracking-wider transition-colors flex-shrink-0 ${
                 isActive ? 'text-cyan-400' : 'text-neutral-450 hover:text-white'
               }`}
             >
@@ -357,13 +371,13 @@ export default function HomePage() {
               {history.length > 0 && (
                 <section className="space-y-4 text-left">
                   <div className="flex items-center gap-2 text-neutral-400">
-                    <Clock className="h-4.5 w-4.5" />
-                    <h3 className="text-sm font-black uppercase tracking-wider">Continue Listening</h3>
+                    <Clock className="h-4.5 w-4.5 text-cyan-400" />
+                    <h3 className="text-xs font-black uppercase tracking-wider">Continue Listening</h3>
                   </div>
                   <div className="relative group">
-                    <div className="flex gap-5 overflow-x-auto pb-4 pt-1 scrollbar-hide snap-x w-full">
+                    <div className="flex gap-4 overflow-x-auto pb-4 pt-1 scrollbar-hide snap-x w-full">
                       {history.map((track, i) => (
-                        <div key={`${track.id}-history-${i}`} className="w-40 sm:w-44 md:w-48 flex-shrink-0 snap-start">
+                        <div key={`${track.id}-history-${i}`} className="w-36 sm:w-44 md:w-48 flex-shrink-0 snap-start">
                           <PremiumTrackCard track={track} onClick={() => handlePlayTrack(track, history)} />
                         </div>
                       ))}
@@ -375,10 +389,10 @@ export default function HomePage() {
               {/* Mood Selection Row */}
               <section className="space-y-4 text-left">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-black uppercase tracking-wider text-neutral-400">Match Your Vibe</h3>
-                  <span className="text-[10px] font-black text-cyan-400 bg-cyan-500/10 px-3 py-1 rounded border border-cyan-500/20">{selectedMood} Active</span>
+                  <h3 className="text-xs font-black uppercase tracking-wider text-neutral-400">Vibe Stations</h3>
+                  <span className="text-[9px] font-black text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20 uppercase tracking-widest">{selectedMood}</span>
                 </div>
-                <div className="flex gap-2.5 overflow-x-auto pb-2 scrollbar-hide snap-x">
+                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x">
                   {['Coding', 'Focus', 'Workout', 'Happy', 'Sleep'].map((mood) => {
                     const isActive = selectedMood === mood;
                     const emojis: Record<string, string> = {
@@ -388,14 +402,14 @@ export default function HomePage() {
                       <button
                         key={mood}
                         onClick={() => setSelectedMood(mood)}
-                        className={`snap-start flex-shrink-0 flex items-center gap-2 rounded-full px-5 py-2.5 text-xs font-bold transition-all border ${
+                        className={`snap-start flex-shrink-0 flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all border ${
                           isActive 
-                            ? 'bg-gradient-to-r from-cyan-400 to-purple-500 border-cyan-500 text-black shadow-lg shadow-cyan-500/10'
-                            : 'border-white/[0.06] bg-neutral-900/40 text-neutral-400 hover:text-white hover:border-neutral-700'
+                            ? 'bg-gradient-to-r from-cyan-400 to-purple-500 border-transparent text-black shadow-lg shadow-cyan-500/15 scale-[1.02]'
+                            : 'border-white/[0.04] bg-neutral-900/60 text-neutral-400 hover:text-white hover:border-neutral-700'
                         }`}
                       >
                         <span>{emojis[mood] || '🎵'}</span>
-                        <span>{mood} Mood Station</span>
+                        <span className="uppercase text-[9px] tracking-wider font-bold">{mood} Station</span>
                       </button>
                     );
                   })}
@@ -404,10 +418,10 @@ export default function HomePage() {
 
               {/* Active Mood Station Carousel */}
               <section className="space-y-4 text-left">
-                <h3 className="text-sm font-black uppercase tracking-wider text-neutral-450">Active Mood Playlist</h3>
-                <div className="flex gap-5 overflow-x-auto pb-4 pt-1 scrollbar-hide snap-x w-full">
+                <h3 className="text-xs font-black uppercase tracking-wider text-neutral-500">Active Station Playlist</h3>
+                <div className="flex gap-4 overflow-x-auto pb-4 pt-1 scrollbar-hide snap-x w-full">
                   {getActiveMoodTracks().map((track) => (
-                    <div key={track.id} className="w-40 sm:w-44 md:w-48 flex-shrink-0 snap-start">
+                    <div key={track.id} className="w-36 sm:w-44 md:w-48 flex-shrink-0 snap-start">
                       <PremiumTrackCard track={track} onClick={() => handlePlayTrack(track, getActiveMoodTracks())} />
                     </div>
                   ))}
@@ -419,11 +433,11 @@ export default function HomePage() {
                 <section className="space-y-4 text-left">
                   <div className="flex items-center gap-2 text-cyan-400">
                     <Cloud className="h-4.5 w-4.5" />
-                    <h3 className="text-sm font-black uppercase tracking-wider">Cloud Music Locker</h3>
+                    <h3 className="text-xs font-black uppercase tracking-wider">Cloud Locker Uploads</h3>
                   </div>
-                  <div className="flex gap-5 overflow-x-auto pb-4 pt-1 scrollbar-hide snap-x w-full">
+                  <div className="flex gap-4 overflow-x-auto pb-4 pt-1 scrollbar-hide snap-x w-full">
                     {cloudMusic.map((track) => (
-                      <div key={track.id} className="w-40 sm:w-44 md:w-48 flex-shrink-0 snap-start">
+                      <div key={track.id} className="w-36 sm:w-44 md:w-48 flex-shrink-0 snap-start">
                         <PremiumTrackCard track={track} onClick={() => handlePlayTrack(track, cloudMusic)} />
                       </div>
                     ))}
@@ -437,7 +451,7 @@ export default function HomePage() {
             <div className="lg:col-span-4 space-y-8">
               
               {/* Dynamic AI DJ Panel */}
-              <section className="relative overflow-hidden rounded-3xl border border-white/[0.08] bg-[#101010]/80 p-6 text-left shadow-2xl relative group">
+              <section className="relative overflow-hidden rounded-3xl border border-white/[0.06] bg-[#0E111A]/85 p-6 text-left shadow-2xl relative group nothing-dots">
                 <div className="absolute top-0 right-0 p-4">
                   <button 
                     onClick={() => setShowAiDJDetail(!showAiDJDetail)}
@@ -449,39 +463,46 @@ export default function HomePage() {
 
                 <div className="flex items-center gap-4">
                   {/* Glowing DJ disc */}
-                  <div className="relative h-14 w-14 rounded-full bg-gradient-to-tr from-cyan-400 to-purple-500 p-[1.5px] shadow-[0_0_20px_rgba(0,245,255,0.15)] animate-spin [animation-duration:12s] flex-shrink-0">
-                    <div className="h-full w-full rounded-full bg-neutral-950 flex items-center justify-center">
-                      <Sparkles className="h-6 w-6 text-cyan-400" />
+                  <div className="relative h-12 w-12 rounded-full bg-gradient-to-tr from-cyan-400 to-purple-500 p-[1.5px] shadow-[0_0_15px_rgba(0,245,255,0.2)] animate-spin [animation-duration:15s] flex-shrink-0">
+                    <div className="h-full w-full rounded-full bg-[#050505] flex items-center justify-center">
+                      <Sparkles className="h-5 w-5 text-cyan-400" />
                     </div>
                   </div>
                   <div className="min-w-0">
-                    <span className="text-[9px] font-black uppercase tracking-[0.2em] text-cyan-400">Intelligent Assistant</span>
-                    <h4 className="text-base font-black text-white truncate">NeoTune AI DJ</h4>
+                    <span className="text-[9px] font-black uppercase tracking-[0.2em] text-[#00F5FF]">Intelligent DJ Voice</span>
+                    <h4 className="text-sm font-black text-white truncate">NeoTune AI Mind</h4>
                   </div>
                 </div>
 
-                {/* AI DJ Details */}
-                <div className="mt-5 pt-4 border-t border-white/[0.05] space-y-3.5 text-xs text-neutral-405 font-semibold">
-                  <div className="flex justify-between">
-                    <span className="text-neutral-500">Workspace Vibe</span>
-                    <span className="text-white">Coding React Apps</span>
+                {/* AI DJ conversational preview */}
+                <div className="mt-4 p-3.5 rounded-xl border border-white/[0.04] bg-white/[0.01] text-xs space-y-2">
+                  <div className="flex items-center gap-1.5 text-cyan-400">
+                    <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-ping" />
+                    <span className="text-[9px] font-black uppercase tracking-wider">AI Recommendation context</span>
                   </div>
+                  <p className="text-neutral-300 font-semibold leading-relaxed">
+                    &ldquo;Hey Saswata, since you are coding tonight, I&apos;ve customized a deep instrumental and focus lofi session. Heavy base bias added to help you concentrate.&rdquo;
+                  </p>
+                </div>
+
+                {/* AI DJ Details */}
+                <div className="mt-4 pt-3 border-t border-white/[0.05] space-y-2.5 text-[10px] text-neutral-405 font-bold uppercase tracking-wider">
                   <div className="flex justify-between">
-                    <span className="text-neutral-500">Active Seed Bias</span>
+                    <span className="text-neutral-500">Seed Artists</span>
                     <span className="text-white">Arijit Singh, Daft Punk</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-neutral-500">Local Weather</span>
-                    <span className="text-white">Monsoon Showers 🌧️</span>
+                    <span className="text-white">Showers 🌧️</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-neutral-500">Energy Level</span>
-                    <span className="text-white">High Focus ⚡</span>
+                    <span className="text-neutral-500">Synthesizer Mode</span>
+                    <span className="text-white">Spatial DSP active</span>
                   </div>
                 </div>
 
                 {/* Action button: AI Playlist generator */}
-                <div className="mt-6">
+                <div className="mt-5">
                   <button
                     disabled={isGeneratingAi}
                     onClick={handleGenerateAiPlaylist}
@@ -505,10 +526,10 @@ export default function HomePage() {
               {/* NeoTunes Charts */}
               <section className="space-y-4 text-left">
                 <div className="flex items-center justify-between border-b border-white/[0.04] pb-2">
-                  <h3 className="text-xs font-black uppercase tracking-widest text-neutral-450">Top Charts (Worldwide)</h3>
+                  <h3 className="text-xs font-black uppercase tracking-widest text-neutral-500">Top World Charts</h3>
                   <TrendingUp className="h-4 w-4 text-cyan-400 animate-pulse" />
                 </div>
-                <div className="space-y-1">
+                <div className="space-y-1.5">
                   {globalHits.map((track, i) => (
                     <PremiumTrackCard 
                       key={`${track.id}-chart`} 
@@ -533,19 +554,19 @@ export default function HomePage() {
             {/* Made for You Recommendations */}
             <section className="space-y-4 text-left">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-black uppercase tracking-wider text-neutral-400">Made For You</h3>
-                <span className="text-xs font-bold text-cyan-405 bg-cyan-500/10 border border-cyan-500/20 px-2.5 py-1 rounded">Daily Picks</span>
+                <h3 className="text-xs font-black uppercase tracking-wider text-neutral-400">Made For You</h3>
+                <span className="text-[10px] font-black text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 rounded uppercase tracking-wider">Daily Picks</span>
               </div>
               {recsLoading ? (
-                <div className="flex gap-5 overflow-x-auto pb-4 scrollbar-hide snap-x w-full">
-                  {Array.from({ length: 6 }).map((_, i) => (
+                <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x w-full">
+                  {Array.from({ length: 4 }).map((_, i) => (
                     <div key={i} className="animate-pulse w-44 aspect-square rounded-2xl bg-neutral-900/40 border border-white/[0.04] p-4 flex-shrink-0" />
                   ))}
                 </div>
               ) : (
-                <div className="flex gap-5 overflow-x-auto pb-4 pt-1 scrollbar-hide snap-x w-full">
+                <div className="flex gap-4 overflow-x-auto pb-4 pt-1 scrollbar-hide snap-x w-full">
                   {recommendations.map((track) => (
-                    <div key={track.id} className="w-40 sm:w-44 md:w-48 flex-shrink-0 snap-start">
+                    <div key={track.id} className="w-36 sm:w-44 md:w-48 flex-shrink-0 snap-start">
                       <PremiumTrackCard track={track} onClick={() => handlePlayTrack(track, recommendations)} />
                     </div>
                   ))}
@@ -555,10 +576,10 @@ export default function HomePage() {
 
             {/* Arijit Singh Spotlight Corner */}
             <section className="space-y-4 text-left">
-              <h3 className="text-sm font-black uppercase tracking-wider text-neutral-400">🎤 Artist Spotlight: Arijit Singh</h3>
-              <div className="flex gap-5 overflow-x-auto pb-4 pt-1 scrollbar-hide snap-x w-full">
+              <h3 className="text-xs font-black uppercase tracking-wider text-neutral-400">Artist Spotlight: Arijit Singh</h3>
+              <div className="flex gap-4 overflow-x-auto pb-4 pt-1 scrollbar-hide snap-x w-full">
                 {arijitSongs.map((track) => (
-                  <div key={track.id} className="w-40 sm:w-44 md:w-48 flex-shrink-0 snap-start">
+                  <div key={track.id} className="w-36 sm:w-44 md:w-48 flex-shrink-0 snap-start">
                     <PremiumTrackCard track={track} onClick={() => handlePlayTrack(track, arijitSongs)} />
                   </div>
                 ))}
@@ -567,8 +588,8 @@ export default function HomePage() {
 
             {/* AI Mixes Cards */}
             <section className="space-y-4 text-left">
-              <h3 className="text-sm font-black uppercase tracking-wider text-neutral-400">AI Daily Mixes</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
+              <h3 className="text-xs font-black uppercase tracking-wider text-neutral-400">AI Daily Mixes</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                 {[
                   { title: 'Coding Mix', desc: 'Focus instrumentals and synthwaves', gradient: 'from-[#7B61FF] to-[#00F5FF]' },
                   { title: 'Morning Mix', desc: 'Light acoustic and wake-up songs', gradient: 'from-amber-500 to-cyan-400' },
@@ -580,13 +601,13 @@ export default function HomePage() {
                   <div
                     key={mix.title}
                     onClick={() => handlePlayTrack(getActiveMoodTracks()[0], getActiveMoodTracks())}
-                    className="flex flex-col justify-between aspect-square rounded-2xl bg-neutral-900/40 border border-white/[0.04] p-5 cursor-pointer relative overflow-hidden group hover:border-cyan-500/40 hover:-translate-y-1.5 transition-all duration-300"
+                    className="flex flex-col justify-between aspect-square rounded-2xl bg-[#0E111A]/85 border border-white/[0.04] p-5 cursor-pointer relative overflow-hidden group hover:border-cyan-500/40 hover:-translate-y-1.5 transition-all duration-300"
                   >
                     <div className={`absolute -inset-px -z-10 bg-gradient-to-tr ${mix.gradient} opacity-0 group-hover:opacity-10 rounded-2xl blur-md transition-opacity duration-300`} />
-                    <div className={`h-2 w-10 rounded-full bg-gradient-to-r ${mix.gradient} mb-4`} />
+                    <div className={`h-1.5 w-8 rounded-full bg-gradient-to-r ${mix.gradient} mb-4`} />
                     <div className="space-y-1">
-                      <h4 className="text-sm font-black text-white">{mix.title}</h4>
-                      <p className="text-xs text-neutral-405 font-medium leading-tight">{mix.desc}</p>
+                      <h4 className="text-xs font-black text-white uppercase tracking-wider">{mix.title}</h4>
+                      <p className="text-[10px] text-neutral-400 font-bold leading-normal">{mix.desc}</p>
                     </div>
                   </div>
                 ))}
@@ -602,10 +623,10 @@ export default function HomePage() {
             
             {/* Trending Worldwide */}
             <section className="space-y-4 text-left">
-              <h3 className="text-sm font-black uppercase tracking-wider text-neutral-400">🔥 Trending Worldwide</h3>
-              <div className="flex gap-5 overflow-x-auto pb-4 pt-1 scrollbar-hide snap-x w-full">
+              <h3 className="text-xs font-black uppercase tracking-wider text-neutral-400">Trending Worldwide</h3>
+              <div className="flex gap-4 overflow-x-auto pb-4 pt-1 scrollbar-hide snap-x w-full">
                 {trendingYoutube.map((track) => (
-                  <div key={track.id} className="w-40 sm:w-44 md:w-48 flex-shrink-0 snap-start">
+                  <div key={track.id} className="w-36 sm:w-44 md:w-48 flex-shrink-0 snap-start">
                     <PremiumTrackCard track={track} onClick={() => handlePlayTrack(track, trendingYoutube)} />
                   </div>
                 ))}
@@ -614,10 +635,10 @@ export default function HomePage() {
 
             {/* Popular Artists (Circle Variant) */}
             <section className="space-y-4 text-left">
-              <h3 className="text-sm font-black uppercase tracking-wider text-neutral-400">⭐ Popular Artists</h3>
-              <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide snap-x w-full">
+              <h3 className="text-xs font-black uppercase tracking-wider text-neutral-400">Popular Artists</h3>
+              <div className="flex gap-5 overflow-x-auto pb-4 scrollbar-hide snap-x w-full">
                 {arijitSongs.map((track) => (
-                  <div key={track.id} className="w-32 md:w-36 flex-shrink-0 snap-start">
+                  <div key={track.id} className="w-28 md:w-36 flex-shrink-0 snap-start">
                     <PremiumTrackCard track={track} onClick={() => handlePlayTrack(track, arijitSongs)} variant="circle" />
                   </div>
                 ))}
@@ -626,8 +647,8 @@ export default function HomePage() {
 
             {/* Music Videos (16:9 Aspect Video Variant) */}
             <section className="space-y-4 text-left">
-              <h3 className="text-sm font-black uppercase tracking-wider text-neutral-400">📺 Trending Music Videos</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
+              <h3 className="text-xs font-black uppercase tracking-wider text-neutral-400">Trending Music Videos</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                 {trendingYoutube.map((track) => (
                   <PremiumTrackCard key={track.id} track={track} onClick={() => handlePlayTrack(track, trendingYoutube)} variant="video" />
                 ))}
@@ -636,10 +657,10 @@ export default function HomePage() {
 
             {/* Live Performances */}
             <section className="space-y-4 text-left">
-              <h3 className="text-sm font-black uppercase tracking-wider text-neutral-400">⚡ Live Concerts & Sessions</h3>
-              <div className="flex gap-5 overflow-x-auto pb-4 pt-1 scrollbar-hide snap-x w-full">
+              <h3 className="text-xs font-black uppercase tracking-wider text-neutral-400">Live Concerts & Sessions</h3>
+              <div className="flex gap-4 overflow-x-auto pb-4 pt-1 scrollbar-hide snap-x w-full">
                 {livePerformances.map((track) => (
-                  <div key={track.id} className="w-40 sm:w-44 md:w-48 flex-shrink-0 snap-start">
+                  <div key={track.id} className="w-36 sm:w-44 md:w-48 flex-shrink-0 snap-start">
                     <PremiumTrackCard track={track} onClick={() => handlePlayTrack(track, livePerformances)} />
                   </div>
                 ))}
@@ -648,10 +669,10 @@ export default function HomePage() {
 
             {/* Podcasts */}
             <section className="space-y-4 text-left">
-              <h3 className="text-sm font-black uppercase tracking-wider text-neutral-400">🎙️ Top Podcasts</h3>
-              <div className="flex gap-5 overflow-x-auto pb-4 pt-1 scrollbar-hide snap-x w-full">
+              <h3 className="text-xs font-black uppercase tracking-wider text-neutral-400">Top Podcasts</h3>
+              <div className="flex gap-4 overflow-x-auto pb-4 pt-1 scrollbar-hide snap-x w-full">
                 {podcasts.map((track) => (
-                  <div key={track.id} className="w-40 sm:w-44 md:w-48 flex-shrink-0 snap-start">
+                  <div key={track.id} className="w-36 sm:w-44 md:w-48 flex-shrink-0 snap-start">
                     <PremiumTrackCard track={track} onClick={() => handlePlayTrack(track, podcasts)} />
                   </div>
                 ))}

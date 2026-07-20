@@ -276,4 +276,21 @@ body {
   animation: text-shine 4s linear infinite;
 }
 
+/* Nothing OS dot-matrix pattern */
+.nothing-dots {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 0);
+  background-size: 16px 16px;
+}
+
+/* 3D Vinyl disc rotation keyframe */
+@keyframes spin-vinyl {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.animate-vinyl {
+  animation: spin-vinyl 25s linear infinite;
+}
+
+
 

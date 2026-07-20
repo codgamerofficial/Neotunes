@@ -328,8 +328,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       {/* 3. Collapsible Right Side Context Panel (Desktop Only) */}
       <RightContextPanel />
 
-      {/* 4. Mobile Navigation Bottom Bar (Hidden on Desktop) */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 flex h-16 px-2 py-1 md:hidden justify-around items-center bg-[#0E111A]/90 backdrop-blur-xl border-t border-white/[0.06] shadow-[0_-8px_30px_rgba(0,0,0,0.5)]">
+      {/* 4. Mobile Navigation Bottom Bar (Hidden on Desktop) - Floating Island Capsule */}
+      <nav className="fixed bottom-5 left-4 right-4 z-40 flex h-16 px-3 justify-around items-center rounded-2xl bg-[#0E111A]/85 backdrop-blur-2xl border border-white/[0.08] shadow-[0_10px_35px_rgba(0,0,0,0.6)] md:hidden">
         {navSections.flatMap(sec => sec.items).slice(0, 4).map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
           const Icon = item.icon;
@@ -337,12 +337,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center justify-center flex-1 py-1 text-[10px] font-black uppercase tracking-wider transition-colors ${
-                isActive ? 'text-[#00F5FF]' : 'text-neutral-450'
-              }`}
+              className="flex flex-col items-center justify-center flex-1 py-1 relative group"
             >
-              <Icon className="h-5.5 w-5.5 mb-0.5" />
-              <span>{item.label.split(' ')[0]}</span>
+              {isActive && (
+                <motion.div
+                  layoutId="mobile-nav-indicator"
+                  className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#00F5FF]/10 to-[#9B5CFF]/10 border-t-2 border-t-[#00F5FF] pointer-events-none -z-10 shadow-[0_0_15px_rgba(0,245,255,0.15)]"
+                  transition={{ type: 'spring', stiffness: 350, damping: 25 }}
+                />
+              )}
+              <Icon className={`h-5 w-5 mb-0.5 transition-all duration-300 ${isActive ? 'text-[#00F5FF] scale-110' : 'text-neutral-450 group-hover:text-white'}`} />
+              <span className={`text-[9px] font-black uppercase tracking-wider transition-colors ${isActive ? 'text-white' : 'text-neutral-500'}`}>
+                {item.label.split(' ')[0]}
+              </span>
             </Link>
           );
         })}
