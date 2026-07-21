@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { ThemeProvider } from "@/providers/ThemeProvider";
@@ -16,9 +16,24 @@ const geistMono = localFont({
   variable: "--font-geist-mono",
 });
 
+export const viewport: Viewport = {
+  themeColor: "#090909",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+};
+
 export const metadata: Metadata = {
-  title: "NeoTunes - The Future Sounds Better",
+  title: "NeoTunes - AI Music OS",
   description: "A premium hybrid music streaming platform combining Spotify, Apple Music, and YouTube playback.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "NeoTunes",
+  },
 };
 
 export default function RootLayout({

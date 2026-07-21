@@ -1,0 +1,24 @@
+{
+  "name": "NeoTunes - AI Music OS",
+  "short_name": "NeoTunes",
+  "description": "The world's premium AI audio environment",
+  "start_url": "/home",
+  "display": "standalone",
+  "background_color": "#090909",
+  "theme_color": "#090909",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/images/default-cover.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/images/default-cover.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
