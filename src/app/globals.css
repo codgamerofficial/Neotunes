@@ -4,11 +4,11 @@
 
 @layer base {
   :root {
-    --background: 220 30% 4%; /* Deep dark background #07090D */
+    --background: 220 30% 4%; /* Deep dark background #090909 */
     --foreground: 0 0% 98%;
-    --card: 220 25% 7%; /* Dark OS Card #0A0D14 */
+    --card: 220 25% 7%; /* Dark OS Card #1D1D1D */
     --card-foreground: 0 0% 98%;
-    --popover: 220 30% 5%; /* Surface #080A10 */
+    --popover: 220 30% 5%; /* Surface #171717 */
     --popover-foreground: 0 0% 98%;
     --primary: 182 100% 50%; /* Neon Cyan #00F5FF */
     --primary-foreground: 0 0% 2%;
@@ -23,27 +23,71 @@
     --border: 220 15% 10%;
     --input: 220 15% 10%;
     --ring: 182 100% 50%;
-    --radius: 1.25rem; /* Larger rounded corners (20px) */
+    --radius: 1.5rem; /* 24px rounded corners */
     
-    /* Custom Design System Tokens */
-    --bg-os: #07090d;
-    --glass-bg: rgba(7, 9, 13, 0.45);
-    --glass-bg-heavy: rgba(10, 12, 18, 0.75);
-    --glass-border: rgba(255, 255, 255, 0.05);
-    --glass-border-hover: rgba(255, 255, 255, 0.12);
+    /* NeoTunes Design System Palette */
+    --bg-main: #090909;
+    --bg-secondary: #111111;
+    --bg-surface: #171717;
+    --bg-card: #1d1d1d;
+    --glass-bg: rgba(9, 9, 9, 0.45);
+    --glass-bg-heavy: rgba(23, 23, 23, 0.85);
+    --glass-border: rgba(255, 255, 255, 0.06);
+    --glass-border-hover: rgba(255, 255, 255, 0.14);
   }
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden !important;
 }
 
 body {
   color: hsl(var(--foreground));
-  background:
-    radial-gradient(1000px 500px at 50% -10%, rgba(0, 245, 255, 0.12), transparent 50%),
-    radial-gradient(800px 400px at 10% 40%, rgba(123, 97, 255, 0.08), transparent 45%),
-    radial-gradient(1000px 450px at 90% 90%, rgba(41, 255, 106, 0.07), transparent 50%),
-    hsl(var(--background));
-  font-family: var(--font-geist-sans), sans-serif;
+  background: #090909;
+  font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   overflow-x: hidden;
   font-synthesis: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Safe Area Inset Helpers */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 16px);
+}
+
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 16px);
+}
+
+.pl-safe {
+  padding-left: env(safe-area-inset-left, 16px);
+}
+
+.pr-safe {
+  padding-right: env(safe-area-inset-right, 16px);
+}
+
+/* Fluid Typography Utilities */
+.text-fluid-hero {
+  font-size: clamp(2.25rem, 5vw + 1rem, 4.5rem);
+  line-height: 1.1;
+}
+
+.text-fluid-section {
+  font-size: clamp(1.25rem, 2.5vw + 0.5rem, 1.75rem);
+  line-height: 1.25;
+}
+
+.text-fluid-body {
+  font-size: clamp(0.9375rem, 1vw + 0.5rem, 1.0625rem);
+  line-height: 1.5;
 }
 
 /* Shared liquid-glass system */
