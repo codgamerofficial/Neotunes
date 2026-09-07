@@ -111,7 +111,11 @@ export default function LibraryPage() {
         cover_url: '',
         created_at: new Date().toISOString(),
       };
-      const existing = JSON.parse(localStorage.getItem('neotunes_local_playlists') || '[]');
+      let existing: any[] = [];
+      try {
+        const stored = localStorage.getItem('neotunes_local_playlists');
+        if (stored) existing = JSON.parse(stored);
+      } catch {}
       localStorage.setItem('neotunes_local_playlists', JSON.stringify([newPlaylist, ...existing]));
       return { playlist: newPlaylist };
     },

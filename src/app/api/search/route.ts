@@ -15,6 +15,8 @@ import {
   decodeHTMLEntities,
   parseQueryTokens,
   cleanSearchNoise,
+  detectLanguage,
+  parseSearchQuery,
 } from '@/lib/searchEngine';
 
 const redis = (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
@@ -65,6 +67,7 @@ interface TopArtist {
 }
 
 interface GroupedSearchResults {
+  topResult?: { type: 'artist' | 'song' | 'album' | 'playlist'; data: any } | null;
   topArtist: TopArtist | null;
   artists: any[];
   songs: UnifiedSearchTrack[];
@@ -79,6 +82,8 @@ interface GroupedSearchResults {
   didYouMean: boolean;
   originalQuery?: string;
   correctedQuery?: string;
+  intent?: string;
+  language?: string;
   suggestedArtists?: any[];
   suggestedSongs?: UnifiedSearchTrack[];
   popularBengaliSongs?: UnifiedSearchTrack[];
@@ -118,13 +123,17 @@ export async function GET(request: Request) {
     }
   }
 
-  // Stage 3: Transliteration
+  // Stage 3: Language & Script Detection
+  const detectedLang = detectLanguage(correctedQuery);
+
+  // Stage 4: Transliteration
   const searchTerms = transliterateQuery(correctedQuery);
 
-  // Stage 4: Synonym Expansion
+  // Stage 5: Synonym Expansion
   const expandedSynonyms = expandSynonyms(correctedQuery);
 
-  // Stage 5 & 6: Semantic Intent Classification
+  // Stage 6: Intent & Entity Parsing
+  const parsedSearch = parseSearchQuery(correctedQuery);
   const semanticIntent = classifySemanticIntent(correctedQuery);
 
   const cleanedQuery = cleanSearchNoise(correctedQuery) || correctedQuery;
@@ -328,14 +337,14 @@ export async function GET(request: Request) {
       const confidence = calculateConfidenceScore(
         track,
         correctedQuery,
-        semanticIntent,
+        parsedSearch,
         searchTerms
       );
 
       const matchDetails = getMatchDetails(
         track,
         correctedQuery,
-        semanticIntent
+        parsedSearch
       );
 
       // Extract/simulate metadata parameters
@@ -542,7 +551,24 @@ export async function GET(request: Request) {
       }
     }
 
+    // Determine Top Result with Exact Match Prioritization
+    let topResult: { type: 'artist' | 'song' | 'album' | 'playlist'; data: any } | null = null;
+    const normQ = normalizeString(correctedQuery);
+
+    if (topArtist && normalizeString(topArtist.name) === normQ) {
+      topResult = { type: 'artist', data: topArtist };
+    } else if (songs.length > 0) {
+      topResult = { type: 'song', data: songs[0] };
+    } else if (topArtist) {
+      topResult = { type: 'artist', data: topArtist };
+    } else if (rawAlbums.length > 0) {
+      topResult = { type: 'album', data: rawAlbums[0] };
+    } else if (rawPlaylists.length > 0) {
+      topResult = { type: 'playlist', data: rawPlaylists[0] };
+    }
+
     const responsePayload: GroupedSearchResults = {
+      topResult,
       topArtist,
       artists: artistsList.slice(0, 6),
       songs: songs.slice(0, 15),
@@ -557,6 +583,8 @@ export async function GET(request: Request) {
       didYouMean,
       originalQuery: query,
       correctedQuery,
+      intent: parsedSearch.intent,
+      language: detectedLang.language,
       suggestedArtists,
       suggestedSongs,
       popularBengaliSongs,

@@ -29,4 +29,19 @@ describe('MusicSearchService', () => {
       expect(firstSong).toHaveProperty('duration');
     }
   });
+
+  it('should provide autocomplete suggestions structure', async () => {
+    const sug = await MusicSearchService.getSuggestions('Ari');
+    expect(sug).toBeDefined();
+    expect(Array.isArray(sug.songs)).toBe(true);
+    expect(Array.isArray(sug.artists)).toBe(true);
+    expect(Array.isArray(sug.albums)).toBe(true);
+    expect(Array.isArray(sug.aiSuggestions)).toBe(true);
+  });
+
+  it('should support recording artist interaction for session personalization', () => {
+    expect(() => {
+      MusicSearchService.recordInteraction('Karan Aujla');
+    }).not.toThrow();
+  });
 });
