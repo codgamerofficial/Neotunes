@@ -179,15 +179,15 @@ export default function PlayerContextPanel({
 
   return (
     <aside
-      className={'w-[clamp(340px,26vw,460px)] shrink-0 h-full max-h-[calc(100dvh-64px)] rounded-3xl overflow-hidden shadow-2xl border border-white/10 bg-black/40 backdrop-blur-2xl transition-all duration-300 flex flex-col select-none text-white font-sans ' + className}
+      className={'w-[clamp(270px,26vw,420px)] max-w-[380px] shrink-0 h-full max-h-[calc(100dvh-48px)] rounded-3xl overflow-hidden shadow-2xl border border-white/10 bg-black/40 backdrop-blur-2xl transition-all duration-300 flex flex-col select-none text-white font-sans ' + className}
       aria-label="Contextual Details Panel"
     >
       {/* 1. Header with Compact Tab Switcher + Close Button */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.08] bg-white/[0.02] shrink-0 gap-2">
+      <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-white/[0.08] bg-white/[0.02] shrink-0 gap-2">
         <div className="flex items-center gap-1 bg-white/[0.06] p-1 rounded-2xl border border-white/8 min-w-0 flex-1 overflow-x-auto scrollbar-none">
           <button
             onClick={() => onTabChange('lyrics')}
-            className={'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ' + (activeTab === 'lyrics' ? 'bg-[#DFFF00] text-black shadow-sm' : 'text-white/65 hover:text-white hover:bg-white/[0.04]')}
+            className={'flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#DFFF00] ' + (activeTab === 'lyrics' ? 'bg-[#DFFF00] text-black shadow-sm' : 'text-white/65 hover:text-white hover:bg-white/[0.04]')}
             title="Synchronized Lyrics"
           >
             <Mic2 className="w-3.5 h-3.5" />
@@ -196,7 +196,7 @@ export default function PlayerContextPanel({
 
           <button
             onClick={() => onTabChange('queue')}
-            className={'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ' + (activeTab === 'queue' ? 'bg-[#DFFF00] text-black shadow-sm' : 'text-white/65 hover:text-white hover:bg-white/[0.04]')}
+            className={'flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#DFFF00] ' + (activeTab === 'queue' ? 'bg-[#DFFF00] text-black shadow-sm' : 'text-white/65 hover:text-white hover:bg-white/[0.04]')}
             title="Playback Queue"
           >
             <ListMusic className="w-3.5 h-3.5" />
@@ -210,7 +210,7 @@ export default function PlayerContextPanel({
 
           <button
             onClick={() => onTabChange('recommendations')}
-            className={'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ' + (activeTab === 'recommendations' ? 'bg-[#DFFF00] text-black shadow-sm' : 'text-white/65 hover:text-white hover:bg-white/[0.04]')}
+            className={'flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#DFFF00] ' + (activeTab === 'recommendations' ? 'bg-[#DFFF00] text-black shadow-sm' : 'text-white/65 hover:text-white hover:bg-white/[0.04]')}
             title="Recommended Tracks"
           >
             <Sparkles className="w-3.5 h-3.5" />
@@ -219,7 +219,7 @@ export default function PlayerContextPanel({
 
           <button
             onClick={() => onTabChange('devices')}
-            className={'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ' + (activeTab === 'devices' ? 'bg-[#DFFF00] text-black shadow-sm' : 'text-white/65 hover:text-white hover:bg-white/[0.04]')}
+            className={'flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#DFFF00] ' + (activeTab === 'devices' ? 'bg-[#DFFF00] text-black shadow-sm' : 'text-white/65 hover:text-white hover:bg-white/[0.04]')}
             title="Audio Output Devices"
           >
             <Volume2 className="w-3.5 h-3.5" />
@@ -229,7 +229,7 @@ export default function PlayerContextPanel({
 
         <button
           onClick={onClose}
-          className="p-1.5 rounded-xl hover:bg-white/10 text-white/60 hover:text-white transition-colors cursor-pointer shrink-0"
+          className="p-1.5 rounded-xl hover:bg-white/10 text-white/60 hover:text-white transition-colors cursor-pointer shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#DFFF00]"
           aria-label="Close context panel"
           title="Close panel"
         >

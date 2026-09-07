@@ -187,6 +187,7 @@ function calculateClientRelevanceScore(
   if (title === q) return 100;
   if (combined === q || combinedRev === q) return 98;
   if (artist === q) return 95;
+  if (artist.includes(q) || q.includes(artist)) return 92;
   if (album === q) return 85;
 
   // Prefix Match
@@ -513,7 +514,12 @@ export class MusicSearchService {
       let topResult: NormalizedSearchResult['topResult'] = serverTopResult;
       if (!topResult) {
         const normQ = normalizeString(q);
-        if (rankedArtists.length > 0 && normalizeString(rankedArtists[0].name) === normQ) {
+        if (
+          rankedArtists.length > 0 &&
+          (normalizeString(rankedArtists[0].name) === normQ ||
+            normQ.includes(normalizeString(rankedArtists[0].name)) ||
+            normalizeString(rankedArtists[0].name).includes(normQ))
+        ) {
           topResult = { type: 'artist', data: rankedArtists[0] };
         } else if (rankedSongs.length > 0) {
           topResult = { type: 'song', data: rankedSongs[0] };

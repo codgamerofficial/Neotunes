@@ -1,0 +1,34 @@
+{
+	"appId": "com.neotunes.app",
+	"appName": "NeoTunes",
+	"webDir": "out",
+	"bundledWebRuntime": false,
+	"server": {
+		"url": "https://neotunes.vercel.app",
+		"androidScheme": "https",
+		"cleartext": true,
+		"allowNavigation": [
+			"*.neotunes.vercel.app",
+			"neotunes.vercel.app",
+			"*.youtube.com",
+			"*.ytimg.com",
+			"*.googlevideo.com",
+			"*.spotify.com",
+			"*.supabase.co",
+			"*.deezer.com",
+			"*.unsplash.com"
+		]
+	},
+	"android": {
+		"allowMixedContent": true,
+		"captureInput": true,
+		"backgroundColor": "#070A12"
+	},
+	"plugins": {
+		"SplashScreen": {
+			"launchShowDuration": 2000,
+			"backgroundColor": "#070A12",
+			"showSpinner": false
+		}
+	}
+}

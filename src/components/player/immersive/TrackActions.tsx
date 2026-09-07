@@ -55,7 +55,7 @@ export default function TrackActions({
         onClick={handleLikeToggle}
         aria-label={isLiked ? 'Unlike track' : 'Like track'}
         title={isLiked ? 'Remove from Liked' : 'Save to Liked'}
-        className={`w-11 h-11 rounded-full bg-white/[0.08] hover:bg-white/[0.16] border border-white/12 flex items-center justify-center transition-all cursor-pointer backdrop-blur-md active:scale-90 ${
+        className={`w-11 h-11 rounded-full bg-white/[0.08] hover:bg-white/[0.16] border border-white/12 flex items-center justify-center transition-all cursor-pointer backdrop-blur-md active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#DFFF00] ${
           likeAnimating ? 'scale-120' : 'scale-100'
         }`}
       >
@@ -71,7 +71,7 @@ export default function TrackActions({
         onClick={onOpenOptions}
         aria-label="Track options"
         title="More options"
-        className="w-11 h-11 rounded-full bg-white/[0.08] hover:bg-white/[0.16] border border-white/12 flex items-center justify-center text-white/75 hover:text-white transition-all cursor-pointer backdrop-blur-md active:scale-90"
+        className="w-11 h-11 rounded-full bg-white/[0.08] hover:bg-white/[0.16] border border-white/12 flex items-center justify-center text-white/75 hover:text-white transition-all cursor-pointer backdrop-blur-md active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#DFFF00]"
       >
         <MoreHorizontal className="w-5 h-5" />
       </button>

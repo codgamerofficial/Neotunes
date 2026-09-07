@@ -158,7 +158,7 @@ export default function ImmersivePlayer({ initialTrack }: ImmersivePlayerProps) 
         case 'l':
         case 'L':
           e.preventDefault();
-          if (window.innerWidth >= 1024) {
+          if (window.innerWidth >= 768) {
             setDesktopSidePanel((prev) => (prev === 'lyrics' ? null : 'lyrics'));
           } else {
             setShowLyrics((prev) => !prev);
@@ -167,7 +167,7 @@ export default function ImmersivePlayer({ initialTrack }: ImmersivePlayerProps) 
         case 'q':
         case 'Q':
           e.preventDefault();
-          if (window.innerWidth >= 1024) {
+          if (window.innerWidth >= 768) {
             setDesktopSidePanel((prev) => (prev === 'queue' ? null : 'queue'));
           } else {
             setShowQueue((prev) => !prev);
@@ -176,7 +176,7 @@ export default function ImmersivePlayer({ initialTrack }: ImmersivePlayerProps) 
         case 'd':
         case 'D':
           e.preventDefault();
-          if (window.innerWidth >= 1024) {
+          if (window.innerWidth >= 768) {
             setDesktopSidePanel((prev) => (prev === 'devices' ? null : 'devices'));
           } else {
             setShowDevices((prev) => !prev);
@@ -185,7 +185,7 @@ export default function ImmersivePlayer({ initialTrack }: ImmersivePlayerProps) 
         case 'r':
         case 'R':
           e.preventDefault();
-          if (window.innerWidth >= 1024) {
+          if (window.innerWidth >= 768) {
             setDesktopSidePanel((prev) => (prev === 'recommendations' ? null : 'recommendations'));
           }
           break;
@@ -218,7 +218,7 @@ export default function ImmersivePlayer({ initialTrack }: ImmersivePlayerProps) 
 
   // Handle Queue toggle on Desktop vs Mobile
   const handleQueueToggle = () => {
-    if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
+    if (typeof window !== 'undefined' && window.innerWidth >= 768) {
       setDesktopSidePanel((prev) => (prev === 'queue' ? null : 'queue'));
     } else {
       setShowQueue(true);
@@ -227,7 +227,7 @@ export default function ImmersivePlayer({ initialTrack }: ImmersivePlayerProps) 
 
   // Handle Lyrics toggle on Desktop vs Mobile
   const handleLyricsToggle = () => {
-    if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
+    if (typeof window !== 'undefined' && window.innerWidth >= 768) {
       setDesktopSidePanel((prev) => (prev === 'lyrics' ? null : 'lyrics'));
     } else {
       setShowLyrics(true);
@@ -236,7 +236,7 @@ export default function ImmersivePlayer({ initialTrack }: ImmersivePlayerProps) 
 
   // Handle Device toggle on Desktop vs Mobile
   const handleDeviceToggle = () => {
-    if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
+    if (typeof window !== 'undefined' && window.innerWidth >= 768) {
       setDesktopSidePanel((prev) => (prev === 'devices' ? null : 'devices'));
     } else {
       setShowDevices(true);
@@ -285,8 +285,8 @@ export default function ImmersivePlayer({ initialTrack }: ImmersivePlayerProps) 
       {/* ── 1. DYNAMIC ARTWORK-DERIVED AMBIENT ATMOSPHERE ── */}
       <ArtworkAmbientBackground artworkUrl={artworkUrl} theme={theme} />
 
-      {/* ── 2. MOBILE IMMERSIVE VIEW (< 1024px) ── */}
-      <div className="lg:hidden w-full h-[100dvh] max-h-[100dvh] flex flex-col justify-between overflow-hidden relative z-10 pt-safe pb-safe">
+      {/* ── 2. MOBILE IMMERSIVE VIEW (< 768px) ── */}
+      <div className="md:hidden w-full h-[100dvh] max-h-[100dvh] flex flex-col overflow-hidden relative z-10 pt-safe pb-safe">
         {/* Header */}
         <PlayerHeader
           onOpenDevices={handleDeviceToggle}
@@ -297,8 +297,8 @@ export default function ImmersivePlayer({ initialTrack }: ImmersivePlayerProps) 
         {/* Square Hero Artwork with intelligent shrinkage */}
         <ArtworkHero track={track} theme={theme} isDesktop={false} />
 
-        {/* Lower Control Stack (Fixed height budget) */}
-        <div className="w-full max-w-md mx-auto px-6 pb-2 pt-1 flex flex-col gap-2.5 sm:gap-3 shrink-0">
+        {/* Lower Control Stack — clamp()-driven gaps for viewport adaptability */}
+        <div className="w-full max-w-md mx-auto px-6 pb-[clamp(4px,1vh,12px)] pt-[clamp(2px,0.6vh,6px)] flex flex-col gap-[clamp(2px,0.8vh,8px)] shrink-0">
           {/* Metadata Row: Title & Artist (Left) + Like & More (Right) */}
           <div className="flex items-center justify-between gap-3 w-full">
             <TrackMeta track={track} />
@@ -308,14 +308,16 @@ export default function ImmersivePlayer({ initialTrack }: ImmersivePlayerProps) 
             />
           </div>
 
-          {/* Context / Lyric Preview Banner */}
-          <ContextPreview
-            track={track}
-            lyrics={lyrics}
-            lyricsLoading={lyricsLoading}
-            progress={progress}
-            onOpenLyrics={handleLyricsToggle}
-          />
+          {/* Context / Lyric Preview Banner - hidden on short viewports to save vertical budget */}
+          <div className="[@media(max-height:600px)]:hidden">
+            <ContextPreview
+              track={track}
+              lyrics={lyrics}
+              lyricsLoading={lyricsLoading}
+              progress={progress}
+              onOpenLyrics={handleLyricsToggle}
+            />
+          </div>
 
           {/* Scrubber / Progress Section */}
           <ProgressBar
@@ -334,12 +336,12 @@ export default function ImmersivePlayer({ initialTrack }: ImmersivePlayerProps) 
           <SecondaryControls onOpenQueue={handleQueueToggle} />
 
           {/* Bottom Gesture Bar Indicator */}
-          <div className="w-32 h-1 bg-white/25 rounded-full mx-auto mt-0.5 shrink-0 pointer-events-none" />
+          <div className="w-28 h-[3px] bg-white/25 rounded-full mx-auto mt-0.5 shrink-0 pointer-events-none" />
         </div>
       </div>
 
-      {/* ── 3. DESKTOP IMMERSIVE VIEW (>= 1024px) ── */}
-      <div className="hidden lg:flex w-full h-[100dvh] max-h-[100dvh] overflow-hidden relative z-10 flex-col">
+      {/* ── 3. DESKTOP IMMERSIVE VIEW (>= 768px) ── */}
+      <div className="hidden md:flex w-full h-[100dvh] max-h-[100dvh] overflow-hidden relative z-10 flex-col">
         {/* Desktop Top Header Bar */}
         <PlayerHeader
           onOpenDevices={handleDeviceToggle}
@@ -347,15 +349,15 @@ export default function ImmersivePlayer({ initialTrack }: ImmersivePlayerProps) 
           isDesktop={true}
         />
 
-        {/* Main Desktop Layout: Sidebar is in AppLayout, so here we render Center Player + Context Panel */}
-        <div className="flex-1 min-h-0 w-full px-6 xl:px-10 py-2 flex items-center justify-center gap-6 xl:gap-8 overflow-hidden">
+        {/* Main Desktop Layout: Center Player + optional Context Panel */}
+        <div className="flex-1 min-h-0 w-full px-4 sm:px-6 xl:px-10 py-[clamp(2px,0.5vh,8px)] flex items-center justify-center gap-4 xl:gap-8 overflow-hidden">
           
-          {/* Central Hero Player Container (dominant, perfectly vertically balanced) */}
-          <div className="flex-1 max-w-2xl h-full min-h-0 flex flex-col items-center justify-center gap-2 xl:gap-2.5 overflow-hidden">
-            {/* Desktop Hero Artwork (Strictly square 1:1, never squashed) */}
+          {/* Central Hero Player Container — clamp()-driven vertical gaps prevent overlap at short viewports */}
+          <div className="flex-1 max-w-2xl h-full min-h-0 flex flex-col items-center justify-center gap-[clamp(2px,0.6vh,8px)] overflow-hidden">
+            {/* Desktop Hero Artwork (Strictly square 1:1, clamp-driven max-h) */}
             <ArtworkHero track={track} theme={theme} isDesktop={true} />
 
-            {/* Desktop Track Meta & Actions (Fluid 2-line title without premature cut-off) */}
+            {/* Desktop Track Meta & Actions */}
             <div className="w-full max-w-lg flex items-center justify-between gap-4 shrink-0 px-2">
               <TrackMeta track={track} />
               <TrackActions
@@ -364,8 +366,8 @@ export default function ImmersivePlayer({ initialTrack }: ImmersivePlayerProps) 
               />
             </div>
 
-            {/* Desktop Context / Lyric Snippet */}
-            <div className="w-full max-w-lg shrink-0 px-2">
+            {/* Desktop Context / Lyric Snippet — hidden below 580px height to keep controls spacious */}
+            <div className="w-full max-w-lg shrink-0 px-2 [@media(max-height:580px)]:hidden">
               <ContextPreview
                 track={track}
                 lyrics={lyrics}
@@ -384,12 +386,12 @@ export default function ImmersivePlayer({ initialTrack }: ImmersivePlayerProps) 
               />
             </div>
 
-            {/* Desktop Primary Playback Controls (Dominant 72-80px play/pause button) */}
+            {/* Desktop Primary Playback Controls */}
             <div className="w-full max-w-lg shrink-0">
               <PrimaryPlaybackControls />
             </div>
 
-            {/* Desktop Volume Slider (clean horizontal slider, anchored popover above) */}
+            {/* Desktop Volume Slider */}
             <div className="w-full max-w-xs shrink-0 mx-auto px-2">
               <VolumeControl />
             </div>

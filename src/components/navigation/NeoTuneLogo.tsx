@@ -24,6 +24,7 @@ export interface NeoTuneLogoProps {
   showText?: boolean;
   animated?: boolean;
   onClick?: () => void;
+  href?: string | null;
 }
 
 function getSymbolPxSize(size: LogoSize): number {
@@ -127,6 +128,8 @@ export function NeoTunesWordmark({
   );
 }
 
+import Link from 'next/link';
+
 export default function NeoTuneLogo({
   className = '',
   variant = 'full',
@@ -136,43 +139,61 @@ export default function NeoTuneLogo({
   showText = true,
   animated = false,
   onClick,
+  href = '/',
 }: NeoTuneLogoProps) {
   const isMarkOnly =
     variant === 'mark' || variant === 'icon' || variant === 'symbol' || (!showText && variant !== 'wordmark');
 
-  if (isMarkOnly) {
-    return (
-      <div
-        onClick={onClick}
-        className={`inline-flex items-center justify-center cursor-pointer select-none transition-transform hover:scale-105 ${className}`}
-      >
-        <NeoTunesMark size={size} theme={theme} animated={animated} />
-      </div>
-    );
-  }
-
-  if (variant === 'wordmark') {
-    return (
-      <div
-        onClick={onClick}
-        className={`inline-flex items-center cursor-pointer select-none ${className}`}
-      >
-        <NeoTunesWordmark size={size} theme={theme} showTagline={showTagline} />
-      </div>
-    );
-  }
-
-  return (
-    <div
-      onClick={onClick}
-      className={`inline-flex items-center cursor-pointer select-none group transition-transform hover:scale-[1.02] ${className}`}
-    >
+  const content = isMarkOnly ? (
+    <NeoTunesMark size={size} theme={theme} animated={animated} />
+  ) : variant === 'wordmark' ? (
+    <NeoTunesWordmark size={size} theme={theme} showTagline={showTagline} />
+  ) : (
+    <>
       <div className="mr-2.5 shrink-0">
         <NeoTunesMark size={size} theme={theme} animated={animated} />
       </div>
       {showText && (
         <NeoTunesWordmark size={size} theme={theme} showTagline={showTagline} />
       )}
+    </>
+  );
+
+  const baseClasses = isMarkOnly
+    ? `inline-flex items-center justify-center cursor-pointer select-none transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#DFFF00] rounded-xl ${className}`
+    : variant === 'wordmark'
+    ? `inline-flex items-center cursor-pointer select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#DFFF00] rounded-xl ${className}`
+    : `inline-flex items-center cursor-pointer select-none group transition-transform hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#DFFF00] rounded-xl ${className}`;
+
+  if (href) {
+    return (
+      <Link
+        href={href}
+        onClick={onClick}
+        className={baseClasses}
+        aria-label="NeoTunes Home"
+        title="NeoTunes Home"
+      >
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <div
+      onClick={onClick}
+      className={baseClasses}
+      role="button"
+      tabIndex={0}
+      aria-label="NeoTunes Home"
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick?.();
+        }
+      }}
+    >
+      {content}
     </div>
   );
 }

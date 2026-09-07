@@ -168,7 +168,7 @@ export default function VolumeControl({
           onClick={toggleMute}
           aria-label={isMuted ? 'Unmute' : 'Mute'}
           title={isMuted ? 'Unmute (M)' : 'Mute (M)'}
-          className="text-white/60 hover:text-white transition-colors cursor-pointer p-1.5 active:scale-90 shrink-0"
+          className="text-white/60 hover:text-white transition-colors cursor-pointer p-2 active:scale-90 shrink-0 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#DFFF00]"
         >
           <VolumeIcon className={`w-4 h-4 ${isMuted || volume === 0 ? 'text-red-400' : ''}`} />
         </button>
@@ -184,7 +184,7 @@ export default function VolumeControl({
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={volumePercent}
-          className="relative flex-1 h-4 flex items-center cursor-pointer group touch-none"
+          className="relative flex-1 h-4 flex items-center cursor-pointer group touch-none rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#DFFF00]"
         >
           <div className="h-1 w-full bg-white/20 group-hover:h-1.5 rounded-full relative overflow-hidden transition-all">
             <div

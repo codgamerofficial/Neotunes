@@ -74,7 +74,7 @@ export default function ProgressBar({
   }, [audioQuality]);
 
   return (
-    <div className={`w-full space-y-1.5 select-none ${className}`}>
+    <div className={`w-full space-y-[clamp(1px,0.3vh,4px)] select-none ${className}`}>
       {/* Scrubber Bar Track */}
       <div
         ref={timelineRef}
@@ -86,7 +86,7 @@ export default function ProgressBar({
         aria-valuemin={0}
         aria-valuemax={displayDuration}
         aria-valuenow={currentTime}
-        className="relative py-2.5 cursor-pointer group focus:outline-none touch-none"
+        className="relative py-1.5 cursor-pointer group focus:outline-none touch-none"
       >
         {/* Background Track Bar */}
         <div className="h-1 w-full bg-white/20 rounded-full overflow-hidden relative group-hover:h-1.5 transition-all">
@@ -115,7 +115,7 @@ export default function ProgressBar({
         {onOpenQuality ? (
           <button
             onClick={onOpenQuality}
-            className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-white/75 hover:text-white transition-all cursor-pointer text-[11px] font-semibold truncate max-w-[200px]"
+            className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-white/75 hover:text-white transition-all cursor-pointer text-[11px] font-semibold truncate max-w-[200px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#DFFF00]"
             title="Audio Quality"
           >
             <Headphones className="w-3.5 h-3.5 shrink-0 text-[#DFFF00]" />

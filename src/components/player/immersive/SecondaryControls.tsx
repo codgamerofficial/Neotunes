@@ -46,20 +46,20 @@ export default function SecondaryControls({
 
   return (
     <div
-      className={`w-full grid grid-cols-4 items-center justify-items-center pt-1 pb-1 select-none ${className}`}
+      className={`w-full grid grid-cols-4 items-center justify-items-center py-[clamp(0px,0.3vh,4px)] select-none ${className}`}
     >
       {/* 1. Shuffle */}
       <button
         onClick={handleToggleShuffle}
         aria-label={shuffle ? 'Disable shuffle' : 'Enable shuffle'}
         title={shuffle ? 'Shuffle: On' : 'Shuffle: Off'}
-        className={`p-3 transition-all cursor-pointer active:scale-90 relative ${
+        className={`p-3 min-w-[44px] min-h-[44px] rounded-full transition-all cursor-pointer active:scale-90 relative flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#DFFF00] ${
           shuffle ? 'text-white' : 'text-white/40 hover:text-white/70'
         }`}
       >
         <Shuffle className="w-5 h-5" />
         {shuffle && (
-          <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#DFFF00]" />
+          <span className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#DFFF00]" />
         )}
       </button>
 
@@ -68,7 +68,7 @@ export default function SecondaryControls({
         onClick={handleToggleRepeat}
         aria-label={`Repeat mode: ${repeatMode}`}
         title={`Repeat: ${repeatMode}`}
-        className={`p-3 transition-all cursor-pointer relative active:scale-90 ${
+        className={`p-3 min-w-[44px] min-h-[44px] rounded-full transition-all cursor-pointer relative active:scale-90 flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#DFFF00] ${
           repeatMode !== 'off' ? 'text-white' : 'text-white/40 hover:text-white/70'
         }`}
       >
@@ -79,7 +79,7 @@ export default function SecondaryControls({
           </span>
         )}
         {repeatMode === 'all' && (
-          <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#DFFF00]" />
+          <span className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#DFFF00]" />
         )}
       </button>
 
@@ -88,7 +88,7 @@ export default function SecondaryControls({
         onClick={handleToggleAutoplay}
         aria-label={autoplayEnabled ? 'Disable autoplay' : 'Enable autoplay'}
         title={autoplayEnabled ? 'Continuous Autoplay: On' : 'Continuous Autoplay: Off'}
-        className={`w-11 h-11 rounded-full flex items-center justify-center transition-all cursor-pointer active:scale-90 ${
+        className={`w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center transition-all cursor-pointer active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#DFFF00] ${
           autoplayEnabled
             ? 'bg-[#DFFF00]/20 text-[#DFFF00] shadow-[0_0_15px_rgba(223,255,0,0.3)] border border-[#DFFF00]/40'
             : 'bg-white/[0.07] text-white/60 hover:text-white hover:bg-white/[0.12] border border-white/8'
@@ -102,13 +102,13 @@ export default function SecondaryControls({
         onClick={onOpenQueue}
         aria-label="Open playback queue"
         title="Playback Queue"
-        className={`p-3 transition-colors cursor-pointer active:scale-90 relative ${
+        className={`p-3 min-w-[44px] min-h-[44px] rounded-full transition-colors cursor-pointer active:scale-90 relative flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#DFFF00] ${
           isQueueOpen ? 'text-[#DFFF00]' : 'text-white/60 hover:text-white'
         }`}
       >
         <ListMusic className="w-5 h-5" />
         {isQueueOpen && (
-          <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#DFFF00]" />
+          <span className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#DFFF00]" />
         )}
       </button>
     </div>

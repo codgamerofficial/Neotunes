@@ -186,20 +186,38 @@ export async function GET(request: Request) {
 
     let iTunesTracks: UnifiedSearchTrack[] = [];
     let iTunesTopArtist: TopArtist | null = null;
+    let iTunesArtists: any[] = [];
+    let iTunesAlbums: any[] = [];
     if (iTunesResults.status === 'fulfilled' && iTunesResults.value) {
       iTunesTracks = iTunesResults.value.tracks;
       iTunesTopArtist = iTunesResults.value.topArtist;
+      iTunesArtists = iTunesResults.value.artists || [];
+      iTunesAlbums = iTunesResults.value.albums || [];
     }
 
-    // Fallback to Deezer if Spotify returns zero results
-    if (spotifyTracks.length === 0 && localTracks.length < 5) {
-      console.log('Spotify search returned zero results. Running Deezer fallback...');
+    if (artistsList.length === 0 && iTunesArtists.length > 0) {
+      artistsList = iTunesArtists;
+    }
+    if (rawAlbums.length === 0 && iTunesAlbums.length > 0) {
+      rawAlbums = iTunesAlbums;
+    }
+
+    // Fallback to Deezer if Spotify returns zero results or artists/albums are missing
+    if (spotifyTracks.length === 0 || artistsList.length === 0 || rawAlbums.length === 0) {
       const fallback = await searchDeezerFallback(cleanedQuery);
-      spotifyTracks = fallback.tracks;
+      if (spotifyTracks.length === 0) {
+        spotifyTracks = fallback.tracks;
+      }
       spotifyTopArtist = spotifyTopArtist || fallback.topArtist;
-      artistsList = artistsList.length === 0 ? (fallback.artists || []) : artistsList;
-      rawAlbums = rawAlbums.length === 0 ? (fallback.albums || []) : rawAlbums;
-      rawPlaylists = rawPlaylists.length === 0 ? (fallback.playlists || []) : rawPlaylists;
+      if (artistsList.length === 0) {
+        artistsList = fallback.artists || [];
+      }
+      if (rawAlbums.length === 0) {
+        rawAlbums = fallback.albums || [];
+      }
+      if (rawPlaylists.length === 0) {
+        rawPlaylists = fallback.playlists || [];
+      }
     }
 
     // Merge and Deduplicate results
@@ -420,21 +438,35 @@ export async function GET(request: Request) {
     }
 
     if (!topArtist && artistsList.length > 0) {
-      // Promoted top artist if query matches name closely
-      const bestArtist = artistsList[0];
       const normQ = normalizeString(correctedQuery);
-      const normA = normalizeString(bestArtist.name);
-      if (normQ === normA || normQ.includes(normA) || normA.includes(normQ) || getSimilarity(normQ, normA) >= 0.6) {
+      const matchedArtist = artistsList.find((a: any) => {
+        const normA = normalizeString(a.name || '');
+        return normQ === normA || normQ.includes(normA) || normA.includes(normQ) || getSimilarity(normQ, normA) >= 0.6;
+      }) || (parsedSearch.intent === 'artist' ? artistsList[0] : null);
+
+      if (matchedArtist) {
         topArtist = {
-          id: bestArtist.id,
-          name: bestArtist.name,
-          coverUrl: bestArtist.coverUrl || bestArtist.images?.[0]?.url || '',
-          followers: bestArtist.followers || 150000,
-          popularity: bestArtist.popularity || 70,
-          genres: bestArtist.genres || [],
+          id: matchedArtist.id,
+          name: matchedArtist.name,
+          coverUrl: matchedArtist.coverUrl || matchedArtist.images?.[0]?.url || matchedArtist.avatarUrl || '',
+          followers: matchedArtist.followers || 150000,
+          popularity: matchedArtist.popularity || 75,
+          genres: matchedArtist.genres || ['Artist'],
           verified: true,
         };
       }
+    }
+
+    if (topArtist && !artistsList.some((a: any) => normalizeString(a.name) === normalizeString(topArtist!.name))) {
+      artistsList.unshift({
+        id: topArtist.id,
+        name: topArtist.name,
+        coverUrl: topArtist.coverUrl,
+        followers: topArtist.followers,
+        popularity: topArtist.popularity,
+        genres: topArtist.genres,
+        verified: true,
+      });
     }
 
     // Support AI queries (generate dynamic playlist metadata on the fly if query matches mood/intent)
@@ -555,7 +587,14 @@ export async function GET(request: Request) {
     let topResult: { type: 'artist' | 'song' | 'album' | 'playlist'; data: any } | null = null;
     const normQ = normalizeString(correctedQuery);
 
-    if (topArtist && normalizeString(topArtist.name) === normQ) {
+    const isArtistIntent = parsedSearch.intent === 'artist';
+    if (
+      topArtist &&
+      (normalizeString(topArtist.name) === normQ ||
+        normQ.includes(normalizeString(topArtist.name)) ||
+        normalizeString(topArtist.name).includes(normQ) ||
+        isArtistIntent)
+    ) {
       topResult = { type: 'artist', data: topArtist };
     } else if (songs.length > 0) {
       topResult = { type: 'song', data: songs[0] };
@@ -670,19 +709,44 @@ async function searchYouTube(query: string): Promise<UnifiedSearchTrack[]> {
 // Helper to query Deezer Search API as fallback for Spotify 403/errors
 async function searchDeezerFallback(query: string): Promise<{ tracks: UnifiedSearchTrack[]; topArtist: TopArtist | null; artists?: any[]; albums?: any[]; playlists?: any[] }> {
   try {
-    const res = await fetch(`https://api.deezer.com/search?q=${encodeURIComponent(query)}&limit=30`);
-    if (!res.ok) {
-      throw new Error(`Deezer search API returned status ${res.status}`);
-    }
+    const [res, artistRes] = await Promise.allSettled([
+      fetch(`https://api.deezer.com/search?q=${encodeURIComponent(query)}&limit=30`),
+      fetch(`https://api.deezer.com/search/artist?q=${encodeURIComponent(query)}&limit=5`),
+    ]);
 
-    const data = await res.json();
+    const data = res.status === 'fulfilled' && res.value.ok ? await res.value.json() : { data: [] };
     const items = data.data || [];
 
+    const artistData = artistRes.status === 'fulfilled' && artistRes.value.ok ? await artistRes.value.json() : { data: [] };
+    const deezerArtists = artistData.data || [];
+
     let topArtist: TopArtist | null = null;
-    if (items.length > 0) {
+    const normQ = normalizeString(query);
+
+    // 1. Check direct Deezer artist endpoint for exact/close artist match
+    if (deezerArtists.length > 0) {
+      const matched = deezerArtists.find((a: any) => {
+        const normA = normalizeString(a.name || '');
+        return normQ === normA || normQ.includes(normA) || normA.includes(normQ) || getSimilarity(normQ, normA) >= 0.6;
+      }) || deezerArtists[0];
+
+      if (matched) {
+        topArtist = {
+          id: `dz_${matched.id}`,
+          name: matched.name,
+          coverUrl: matched.picture_xl || matched.picture_big || matched.picture_medium || '',
+          followers: matched.nb_fan || 500000,
+          popularity: 88,
+          genres: ['Pop', 'Hits'],
+          verified: true,
+        };
+      }
+    }
+
+    // 2. Fallback check tracks first artist if direct artist match wasn't found
+    if (!topArtist && items.length > 0) {
       const best = items[0];
       const artistName = best.artist?.name || '';
-      const normQ = normalizeString(query);
       const normA = normalizeString(artistName);
       if (normQ && normA && (normQ === normA || normQ.includes(normA) || normA.includes(normQ) || getSimilarity(normQ, normA) >= 0.6)) {
         topArtist = {
@@ -698,6 +762,33 @@ async function searchDeezerFallback(query: string): Promise<{ tracks: UnifiedSea
     }
 
     const artistsMap = new Map();
+    if (topArtist) {
+      artistsMap.set(topArtist.id, {
+        id: topArtist.id,
+        name: topArtist.name,
+        coverUrl: topArtist.coverUrl,
+        followers: topArtist.followers,
+        popularity: topArtist.popularity,
+        genres: topArtist.genres,
+        verified: true,
+      });
+    }
+
+    deezerArtists.forEach((a: any) => {
+      const artId = `dz_${a.id}`;
+      if (!artistsMap.has(artId)) {
+        artistsMap.set(artId, {
+          id: artId,
+          name: a.name,
+          coverUrl: a.picture_xl || a.picture_big || a.picture_medium || '',
+          followers: a.nb_fan || 300000,
+          popularity: 80,
+          genres: ['Music'],
+          verified: true,
+        });
+      }
+    });
+
     const albumsMap = new Map();
 
     const tracks: UnifiedSearchTrack[] = items.map((item: any) => {
@@ -985,35 +1076,127 @@ async function searchLocalDatabase(
 }
 
 // Helper to query iTunes Search API directly (Free, highly reliable global music metadata)
-async function searchITunes(query: string): Promise<{ tracks: UnifiedSearchTrack[]; topArtist: TopArtist | null }> {
+async function searchITunes(query: string): Promise<{ tracks: UnifiedSearchTrack[]; topArtist: TopArtist | null; artists?: any[]; albums?: any[] }> {
   try {
-    const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&entity=song&limit=25`);
-    if (!res.ok) return { tracks: [], topArtist: null };
+    const [songsRes, artistsRes] = await Promise.allSettled([
+      fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&entity=song&limit=25`),
+      fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&entity=musicArtist&limit=5`),
+    ]);
 
-    const data = await res.json();
+    const data = songsRes.status === 'fulfilled' && songsRes.value.ok ? await songsRes.value.json() : { results: [] };
     const results = data.results || [];
 
+    const artistData = artistsRes.status === 'fulfilled' && artistsRes.value.ok ? await artistsRes.value.json() : { results: [] };
+    const artistResults = artistData.results || [];
+
     let topArtist: TopArtist | null = null;
-    if (results.length > 0) {
-      const best = results[0];
-      topArtist = {
-        id: `itunes_${best.artistId || 'artist'}`,
-        name: best.artistName || 'Unknown Artist',
-        coverUrl: (best.artworkUrl100 || '').replace('100x100bb', '600x600bb'),
-        followers: 850000,
-        popularity: 80,
-        genres: [best.primaryGenreName || 'Pop'],
-        verified: true,
-      };
+    const normQ = normalizeString(query);
+
+    // 1. Check direct iTunes musicArtist entity results
+    if (artistResults.length > 0) {
+      const bestArtist = artistResults.find((a: any) => {
+        const normA = normalizeString(a.artistName || '');
+        return normQ === normA || normQ.includes(normA) || normA.includes(normQ) || getSimilarity(normQ, normA) >= 0.6;
+      }) || artistResults[0];
+
+      if (bestArtist) {
+        // Find high-res image from song results if available
+        const matchingSong = results.find((s: any) => s.artistId === bestArtist.artistId);
+        const artCover = matchingSong ? (matchingSong.artworkUrl100 || '').replace('100x100bb', '600x600bb') : '';
+
+        topArtist = {
+          id: `itunes_${bestArtist.artistId || 'artist'}`,
+          name: bestArtist.artistName || 'Unknown Artist',
+          coverUrl: artCover,
+          followers: 850000,
+          popularity: 85,
+          genres: [bestArtist.primaryGenreName || 'Pop'],
+          verified: true,
+        };
+      }
     }
+
+    // 2. Fallback check first song's artist if artist search wasn't conclusive
+    if (!topArtist && results.length > 0) {
+      const best = results[0];
+      const normA = normalizeString(best.artistName || '');
+      if (normQ === normA || normQ.includes(normA) || normA.includes(normQ) || getSimilarity(normQ, normA) >= 0.6) {
+        topArtist = {
+          id: `itunes_${best.artistId || 'artist'}`,
+          name: best.artistName || 'Unknown Artist',
+          coverUrl: (best.artworkUrl100 || '').replace('100x100bb', '600x600bb'),
+          followers: 850000,
+          popularity: 80,
+          genres: [best.primaryGenreName || 'Pop'],
+          verified: true,
+        };
+      }
+    }
+
+    const artistsMap = new Map();
+    if (topArtist) {
+      artistsMap.set(topArtist.id, {
+        id: topArtist.id,
+        name: topArtist.name,
+        coverUrl: topArtist.coverUrl,
+        followers: topArtist.followers,
+        popularity: topArtist.popularity,
+        genres: topArtist.genres,
+        verified: true,
+      });
+    }
+
+    artistResults.forEach((a: any) => {
+      const artId = `itunes_${a.artistId}`;
+      if (!artistsMap.has(artId)) {
+        const matchingSong = results.find((s: any) => s.artistId === a.artistId);
+        const artCover = matchingSong ? (matchingSong.artworkUrl100 || '').replace('100x100bb', '600x600bb') : '';
+        artistsMap.set(artId, {
+          id: artId,
+          name: a.artistName,
+          coverUrl: artCover,
+          followers: 500000,
+          popularity: 75,
+          genres: [a.primaryGenreName || 'Pop'],
+          verified: true,
+        });
+      }
+    });
+
+    const albumsMap = new Map();
 
     const tracks: UnifiedSearchTrack[] = results.map((item: any) => {
       const highResCover = (item.artworkUrl100 || item.artworkUrl60 || '').replace('100x100bb', '600x600bb').replace('60x60bb', '600x600bb');
+      const artId = `itunes_${item.artistId}`;
+
+      if (!artistsMap.has(artId)) {
+        artistsMap.set(artId, {
+          id: artId,
+          name: item.artistName || 'Unknown Artist',
+          coverUrl: highResCover,
+          followers: 350000,
+          popularity: 70,
+          genres: [item.primaryGenreName || 'Pop'],
+          verified: true,
+        });
+      }
+
+      if (item.collectionId && !albumsMap.has(item.collectionId)) {
+        albumsMap.set(item.collectionId, {
+          id: `itunes_alb_${item.collectionId}`,
+          name: item.collectionName || 'Unknown Album',
+          coverUrl: highResCover,
+          releaseDate: item.releaseDate ? item.releaseDate.substring(0, 4) : '',
+          type: 'album',
+          artist: { name: item.artistName || 'Unknown Artist' },
+        });
+      }
+
       return {
         id: `itunes_${item.trackId}`,
         title: item.trackName || 'Unknown Track',
         artist: {
-          id: `itunes_${item.artistId}`,
+          id: artId,
           name: item.artistName || 'Unknown Artist',
           avatarUrl: highResCover,
         },
@@ -1033,9 +1216,14 @@ async function searchITunes(query: string): Promise<{ tracks: UnifiedSearchTrack
       };
     });
 
-    return { tracks, topArtist };
+    return { 
+      tracks, 
+      topArtist, 
+      artists: Array.from(artistsMap.values()), 
+      albums: Array.from(albumsMap.values()) 
+    };
   } catch (err) {
     console.warn('iTunes Search API failed:', err);
-    return { tracks: [], topArtist: null };
+    return { tracks: [], topArtist: null, artists: [], albums: [] };
   }
 }

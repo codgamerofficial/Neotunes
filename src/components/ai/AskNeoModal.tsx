@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Sparkles, 
@@ -62,6 +62,7 @@ export default function AskNeoModal({ isOpen, onClose }: AskNeoModalProps) {
   const [addedQueueTrackIds, setAddedQueueTrackIds] = useState<Set<string>>(new Set());
   const [likedTrackIds, setLikedTrackIds] = useState<Set<string>>(new Set());
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -83,15 +84,28 @@ export default function AskNeoModal({ isOpen, onClose }: AskNeoModalProps) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  // Auto-scroll chat container
-  useEffect(() => {
+  // Auto-scroll chat container to bottom with smooth behavior
+  const scrollToBottom = useCallback(() => {
     if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTo({
-        top: chatContainerRef.current.scrollHeight,
-        behavior: 'smooth',
+      requestAnimationFrame(() => {
+        chatContainerRef.current?.scrollTo({
+          top: chatContainerRef.current.scrollHeight,
+          behavior: 'smooth',
+        });
       });
     }
-  }, [messages, neoState, activeToolProgress]);
+  }, []);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, neoState, activeToolProgress, scrollToBottom]);
+
+  // Focus input when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => inputRef.current?.focus(), 150);
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -192,30 +206,30 @@ export default function AskNeoModal({ isOpen, onClose }: AskNeoModalProps) {
           className="absolute inset-0"
         />
 
-        {/* Modal Window with Selective Neubrutalist & Glass Styling */}
+        {/* Modal Window with Thin Neon-Lime Border & Responsive Sizing */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 15 }}
+          initial={{ opacity: 0, scale: 0.96, y: 12 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 15 }}
-          transition={{ duration: 0.2 }}
-          className="relative z-10 w-full max-w-2xl h-[85vh] max-h-[720px] rounded-3xl bg-[#0B0D12] border-2 border-[#DFFF00] shadow-[0_20px_60px_rgba(0,0,0,0.9),4px_4px_0px_#DFFF00] flex flex-col overflow-hidden text-white"
+          exit={{ opacity: 0, scale: 0.96, y: 12 }}
+          transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+          className="relative z-10 w-full max-w-2xl h-[min(720px,calc(100dvh-32px))] max-h-[calc(100dvh-32px)] rounded-3xl bg-[#0B0D12] border border-[#DFFF00]/60 shadow-[0_20px_60px_rgba(0,0,0,0.9),0_0_30px_rgba(223,255,0,0.12)] flex flex-col overflow-hidden text-white"
         >
           {/* Header Bar */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.08] bg-[#11141A] shrink-0">
+          <div className="flex items-center justify-between px-5 sm:px-6 py-3 sm:py-3.5 border-b border-white/[0.08] bg-[#0E1117]/90 backdrop-blur-xl shrink-0">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-2xl bg-[#DFFF00] text-black shadow-md shrink-0">
-                <Sparkles className="h-5 w-5" />
+              <div className="p-2 rounded-xl bg-[#DFFF00] text-black shadow-[0_0_12px_rgba(223,255,0,0.3)] shrink-0">
+                <Sparkles className="h-[18px] w-[18px]" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <h2 className="text-base font-extrabold text-white tracking-tight">
+                  <h2 className="text-sm sm:text-base font-extrabold text-white tracking-tight">
                     Neo AI Music Copilot
                   </h2>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#DFFF00]/15 text-[#DFFF00] border border-[#DFFF00]/30">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#DFFF00]/12 text-[#DFFF00] border border-[#DFFF00]/25 shrink-0">
                     Bedrock Intelligence
                   </span>
                 </div>
-                <p className="text-xs text-[#9AA1AD]">
+                <p className="text-[11px] sm:text-xs text-[#7A8394] truncate max-w-[280px] sm:max-w-none">
                   {activeToolProgress || 'Ready for natural language music requests'}
                 </p>
               </div>
@@ -223,80 +237,81 @@ export default function AskNeoModal({ isOpen, onClose }: AskNeoModalProps) {
 
             <button
               onClick={onClose}
-              className="p-2 rounded-full hover:bg-white/10 text-[#9AA1AD] hover:text-white transition-colors cursor-pointer"
+              className="p-2 rounded-full hover:bg-white/10 text-[#7A8394] hover:text-white transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#DFFF00]"
               aria-label="Close Neo AI"
             >
               <X className="h-5 w-5" />
             </button>
           </div>
 
-          {/* Chat Messages Body */}
+          {/* Chat Messages Body - Independent Scroll */}
           <div
             ref={chatContainerRef}
-            className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 scrollbar-none"
+            className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5 sm:space-y-4 scrollbar-none overscroll-contain"
           >
             {messages.map((msg) => {
               const isUser = msg.sender === 'user';
               return (
-                <div
+                <motion.div
                   key={msg.id}
-                  className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} space-y-2`}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} space-y-1.5 w-full`}
                 >
                   {/* Sender Badge */}
-                  <div className="flex items-center gap-1.5 px-1 text-[11px] font-bold text-[#9AA1AD]">
+                  <div className="flex items-center gap-1.5 px-1 text-[11px] font-bold text-[#7A8394]">
                     {isUser ? (
                       <span>You</span>
                     ) : (
-                      <span className="text-[#DFFF00] flex items-center gap-1">
+                      <span className="text-[#DFFF00] flex items-center gap-1.5 font-extrabold tracking-wide">
                         <Bot className="h-3.5 w-3.5" /> Neo
                       </span>
                     )}
                   </div>
 
-                  {/* Message Bubble */}
+                  {/* Message Bubble Card */}
                   <div
-                    className={`p-4 rounded-2xl max-w-[88%] text-xs sm:text-sm leading-relaxed ${
+                    className={`p-3.5 sm:p-4 rounded-2xl text-[13px] sm:text-sm leading-relaxed ${
                       isUser
-                        ? 'bg-[#171A21] text-white border border-white/10 shadow-sm'
-                        : 'bg-[#11141A] text-[#F5F7FA] border border-white/[0.08] shadow-md space-y-3'
+                        ? 'bg-[#171A21] text-white border border-white/10 shadow-sm max-w-[min(580px,calc(100%-24px))] ml-auto'
+                        : 'bg-[#11141A]/80 text-[#F5F7FA] border border-white/[0.06] shadow-md w-full max-w-[min(680px,calc(100%-32px))] space-y-2.5'
                     }`}
                   >
-                    <p className="whitespace-pre-line">{msg.text}</p>
+                    {/* 1. Concise Answer */}
+                    <p className="whitespace-pre-line text-white/95 leading-relaxed">{msg.text}</p>
 
-                    {/* Executed Tools Telemetry Feedback */}
+                    {/* 2. Optional Executed Tools Status Pill */}
                     {msg.executedTools && msg.executedTools.length > 0 && (
-                      <div className="pt-2 border-t border-white/5 space-y-1">
-                        <span className="text-[10px] font-mono font-bold text-[#9AA1AD] uppercase block">
-                          Executed Tools:
+                      <div className="flex items-center flex-wrap gap-1.5 pt-1">
+                        <span className="text-[10px] font-mono font-bold text-[#7A8394] uppercase mr-1">
+                          Executed tools:
                         </span>
-                        <div className="flex flex-wrap gap-1.5">
-                          {msg.executedTools.map((t, idx) => (
-                            <span
-                              key={idx}
-                              className="px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-[10px] font-mono text-[#00E5FF] flex items-center gap-1"
-                            >
-                              <Check className="h-2.5 w-2.5 text-emerald-400" />
-                              {t.name}
-                            </span>
-                          ))}
-                        </div>
+                        {msg.executedTools.map((t, idx) => (
+                          <span
+                            key={idx}
+                            className="px-2 py-0.5 rounded-full bg-[#00E5FF]/10 border border-[#00E5FF]/20 text-[10px] font-mono text-[#00E5FF] flex items-center gap-1 shadow-sm"
+                          >
+                            <Check className="h-2.5 w-2.5 text-[#00E5FF]" />
+                            {t.name}
+                          </span>
+                        ))}
                       </div>
                     )}
 
-                    {/* Rich Response Track Cards */}
+                    {/* 3. Compact Track / Action Cards */}
                     {msg.tracks && msg.tracks.length > 0 && (
-                      <div className="pt-2 space-y-2">
+                      <div className="pt-1 space-y-1.5">
                         {msg.tracks.map((trk) => {
                           const isAdded = addedQueueTrackIds.has(trk.id);
-                          const isLiked = likedTrackIds.has(trk.id) || likedSongsService.isLiked(trk.id);
                           const isTrackPlaying = (currentTrack?.id === trk.id || currentTrack?.canonicalId === trk.canonicalId) && isPlaying;
 
                           return (
                             <div
                               key={trk.id}
-                              className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/10 hover:border-white/20 transition-all gap-3"
+                              className="flex items-center justify-between p-2 sm:p-2.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.06] hover:border-white/15 transition-all gap-3 group"
                             >
-                              <div className="flex items-center gap-3 min-w-0 flex-1">
+                              <div className="flex items-center gap-2.5 min-w-0 flex-1">
                                 <Artwork
                                   source={resolveArtwork(trk)}
                                   size="small"
@@ -306,8 +321,8 @@ export default function AskNeoModal({ isOpen, onClose }: AskNeoModalProps) {
                                   className="h-10 w-10 rounded-lg object-cover border border-white/10 shrink-0"
                                 />
                                 <div className="min-w-0 flex-1">
-                                  <h4 className="text-xs font-bold text-white truncate">{trk.title}</h4>
-                                  <p className="text-[11px] text-[#9AA1AD] truncate mt-0.5">
+                                  <h4 className="text-[13px] font-bold text-white truncate">{trk.title}</h4>
+                                  <p className="text-[11px] text-[#7A8394] truncate mt-0.5">
                                     {getArtistName(trk.artists || trk.artist)}
                                   </p>
                                 </div>
@@ -316,8 +331,9 @@ export default function AskNeoModal({ isOpen, onClose }: AskNeoModalProps) {
                               <div className="flex items-center gap-1.5 shrink-0">
                                 <button
                                   onClick={() => handlePlayTrack(trk)}
-                                  className="p-2 rounded-full bg-[#DFFF00] text-black hover:scale-105 transition-transform"
-                                  title="Play"
+                                  className="w-8 h-8 rounded-full bg-[#DFFF00] text-black flex items-center justify-center hover:scale-105 active:scale-95 transition-transform shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#DFFF00]"
+                                  title={isTrackPlaying ? 'Pause' : 'Play'}
+                                  aria-label={isTrackPlaying ? 'Pause' : 'Play'}
                                 >
                                   {isTrackPlaying ? (
                                     <Pause className="h-3.5 w-3.5 fill-black" />
@@ -327,12 +343,13 @@ export default function AskNeoModal({ isOpen, onClose }: AskNeoModalProps) {
                                 </button>
                                 <button
                                   onClick={() => handleAddToQueue(trk)}
-                                  className={`p-2 rounded-full border transition-colors ${
+                                  className={`w-8 h-8 rounded-full border flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#DFFF00] ${
                                     isAdded
                                       ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
-                                      : 'bg-white/5 border-white/10 text-[#9AA1AD] hover:text-white'
+                                      : 'bg-white/5 border-white/10 text-[#7A8394] hover:text-white hover:bg-white/10'
                                   }`}
-                                  title="Add to queue"
+                                  title={isAdded ? 'Added to queue' : 'Add to queue'}
+                                  aria-label={isAdded ? 'Added to queue' : 'Add to queue'}
                                 >
                                   {isAdded ? <Check className="h-3.5 w-3.5" /> : <ListPlus className="h-3.5 w-3.5" />}
                                 </button>
@@ -345,7 +362,7 @@ export default function AskNeoModal({ isOpen, onClose }: AskNeoModalProps) {
 
                     {/* Pending Confirmation Box */}
                     {msg.pendingAction && (
-                      <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-2 mt-2">
+                      <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 space-y-2 mt-1.5">
                         <div className="flex items-center gap-2 text-xs font-bold text-amber-400">
                           <ShieldAlert className="h-4 w-4" />
                           <span>Confirmation Required</span>
@@ -364,36 +381,40 @@ export default function AskNeoModal({ isOpen, onClose }: AskNeoModalProps) {
                     )}
                   </div>
 
-                  {/* Suggested Prompts */}
+                  {/* Suggestion Chips: Compact, wrap gracefully */}
                   {msg.suggestedPrompts && msg.suggestedPrompts.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 pt-1 max-w-[90%]">
+                    <div className="flex flex-wrap gap-1.5 pt-1 w-full max-w-[min(680px,calc(100%-32px))]">
                       {msg.suggestedPrompts.map((promptText, idx) => (
                         <button
                           key={idx}
                           onClick={() => handleSendPrompt(promptText)}
-                          className="px-3 py-1.5 rounded-full bg-white/5 border border-white/10 hover:border-[#DFFF00]/40 text-xs text-[#9AA1AD] hover:text-white flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+                          className="px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.08] hover:border-[#DFFF00]/40 hover:bg-[#DFFF00]/[0.06] text-[11px] sm:text-xs text-[#9AA1AD] hover:text-white flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#DFFF00]"
                         >
-                          <Sparkles className="h-3 w-3 text-[#DFFF00]" />
+                          <Sparkles className="h-3 w-3 text-[#DFFF00] shrink-0" />
                           <span>{promptText}</span>
                         </button>
                       ))}
                     </div>
                   )}
-                </div>
+                </motion.div>
               );
             })}
 
             {/* Thinking Animation */}
             {neoState === 'thinking' && (
-              <div className="flex items-center gap-2 p-3 rounded-2xl bg-[#11141A] border border-white/10 w-fit text-xs text-[#DFFF00]">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Thinking &amp; orchestrating Bedrock tools...</span>
-              </div>
+              <motion.div
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-center gap-2.5 p-3 rounded-2xl bg-[#11141A] border border-[#DFFF00]/20 w-fit text-xs"
+              >
+                <Loader2 className="h-4 w-4 animate-spin text-[#DFFF00]" />
+                <span className="text-[#DFFF00] font-semibold">Thinking &amp; orchestrating Bedrock tools...</span>
+              </motion.div>
             )}
           </div>
 
-          {/* Input Footer */}
-          <div className="p-4 border-t border-white/[0.08] bg-[#11141A] shrink-0">
+          {/* Fixed Composer Footer */}
+          <div className="p-3 sm:p-4 border-t border-white/[0.06] bg-[#0E1117]/90 backdrop-blur-xl shrink-0">
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -402,17 +423,17 @@ export default function AskNeoModal({ isOpen, onClose }: AskNeoModalProps) {
               className="flex items-center gap-2"
             >
               <input
+                ref={inputRef}
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Ask Neo (e.g. 'Play relaxing evening tunes', 'What's in my queue?')..."
-                className="flex-1 px-4 py-3 rounded-full bg-white/5 border border-white/10 text-white placeholder-[#9AA1AD] text-xs sm:text-sm outline-none focus:border-[#DFFF00] transition-colors"
-                autoFocus
+                className="flex-1 px-4 py-2.5 sm:py-3 rounded-full bg-white/[0.04] border border-white/[0.08] text-white placeholder-[#606876] text-xs sm:text-sm outline-none focus:border-[#DFFF00]/60 focus:bg-white/[0.06] transition-all"
               />
               <button
                 type="submit"
                 disabled={!input.trim() || neoState === 'thinking'}
-                className="h-11 w-11 rounded-full bg-[#DFFF00] text-black flex items-center justify-center hover:scale-105 active:scale-95 transition-all disabled:opacity-40 disabled:scale-100 cursor-pointer shadow-md shrink-0"
+                className="h-10 w-10 sm:h-11 sm:w-11 rounded-full bg-[#DFFF00] text-black flex items-center justify-center hover:scale-105 active:scale-95 transition-all disabled:opacity-30 disabled:scale-100 cursor-pointer shadow-[0_0_12px_rgba(223,255,0,0.25)] shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#DFFF00]"
                 aria-label="Send query"
               >
                 <Send className="h-4 w-4 fill-black" />
